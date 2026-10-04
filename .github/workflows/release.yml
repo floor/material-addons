@@ -4,11 +4,12 @@
 # provenance. A pre-release version (x.y.z-next.N) goes under the `next`
 # dist-tag, anything else under `latest`.
 #
-# Two jobs, so the OIDC token exists in as few steps as possible: `verify` (no
-# id-token) runs the on-main and tag checks, installs, runs the release:pack
+# Three jobs, so the OIDC token exists in as few steps as possible: `verify`
+# (no id-token) runs the on-main and tag checks, installs, runs the release:pack
 # gate and uploads the tarball; `publish` alone holds `id-token: write` and
 # downloads the tarball, re-checks its version and publishes it — no checkout,
-# no install, no build.
+# no install, no build; `github-release` alone holds `contents: write` and
+# creates the release page from the version's CHANGELOG section.
 #
 # A tag only publishes from main, and only when it equals package.json's
 # version. A `v*` tag ruleset, so only the owner creates release tags, is
@@ -109,3 +110,35 @@ jobs:
             *) dist=latest ;;
           esac
           npm publish "$tgz" --provenance --access public --tag "$dist"
+
+  # The GitHub release, after npm has the version: the notes are the version's
+  # CHANGELOG section, a pre-release version is flagged as one, and a release
+  # that already exists is left alone — a re-run, or one made by hand.
+  github-release:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="$GITHUB_REF_NAME"
+          version="${tag#v}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "The release $tag exists; nothing to do."
+            exit 0
+          fi
+          node scripts/release-notes.mjs "$version" > "$RUNNER_TEMP/notes.md"
+          case "$version" in
+            *-*) flags="--prerelease --latest=false" ;;
+            *) flags="--latest" ;;
+          esac
+          gh release create "$tag" --title "material-addons $version" --notes-file "$RUNNER_TEMP/notes.md" --verify-tag $flags
