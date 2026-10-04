@@ -59,7 +59,11 @@ export interface LayoutItemConfig {
 export interface LayoutOptions {
   /** Default creator function to use if not specified in schema */
   creator?: Function;
-  /** Whether to apply CSS class prefix @default true */
+  /**
+   * @deprecated No effect: a layout item's classes (class, className and the
+   * deprecated rawClass) are applied as written. Kept so existing code keeps
+   * compiling.
+   */
   prefix?: boolean;
   /** Additional options */
   [key: string]: any;
@@ -179,8 +183,12 @@ function releaseFragment(fragment: DocumentFragment): void {
 }
 
 /**
- * Optimized class processing with minimal string operations
- * Handles arrays, strings, className aliases, and rawClass efficiently
+ * Merges a layout item's class options into one `class` string, as written:
+ * `className` is an alias of `class`, and the deprecated `rawClass` follows
+ * it. Nothing is prefixed — material's createElement receives the classes
+ * verbatim, and so does the layout.
+ * @param skipPrefix - No longer used: the classes are always applied as
+ *   written. The parameter is kept so existing callers keep compiling.
  */
 function processClassNames(
   options: Record<string, any>,
@@ -194,58 +202,32 @@ function processClassNames(
   // Fast path: no class properties at all
   if (!hasRawClass && !hasRegularClass) return options;
 
-  // Fast path: only rawClass and skipping prefix (most common rawClass scenario)
-  if (hasRawClass && !hasRegularClass && skipPrefix) {
-    const processed = { ...options };
-    delete processed.rawClass;
-
-    // Direct assignment for simple string
-    if (typeof hasRawClass === "string") {
-      processed.class = hasRawClass;
-    } else {
-      // Handle array case
-      processed.class = hasRawClass.join(" ");
-    }
-    return processed;
-  }
-
-  // Full processing path (only when needed)
   const processed = { ...options };
-  let finalClasses = "";
+  const classes: string[] = [];
 
-  // Handle prefixed classes only if not skipping prefix
-  if (!skipPrefix && hasRegularClass) {
-    let prefixedString = "";
-
-    if (processed.class) {
-      prefixedString += Array.isArray(processed.class)
-        ? processed.class.join(" ")
-        : processed.class;
-    }
-    if (processed.className) {
-      prefixedString += (prefixedString ? " " : "") + processed.className;
-    }
-
-    if (prefixedString) {
-      finalClasses = prefixedString
-        .split(/\s+/)
-        .filter(Boolean)
-        .map((cls) =>
-          cls.startsWith(PREFIX_WITH_DASH) ? cls : PREFIX_WITH_DASH + cls,
-        )
-        .join(" ");
-    }
+  if (processed.class) {
+    classes.push(
+      Array.isArray(processed.class)
+        ? processed.class.filter(Boolean).join(" ")
+        : processed.class,
+    );
   }
-
-  // Handle rawClass (always processed when present)
+  if (processed.className) {
+    classes.push(
+      Array.isArray(processed.className)
+        ? processed.className.filter(Boolean).join(" ")
+        : processed.className,
+    );
+  }
   if (hasRawClass) {
-    const rawString = Array.isArray(hasRawClass)
-      ? hasRawClass.filter(Boolean).join(" ")
-      : hasRawClass;
-
-    finalClasses += (finalClasses ? " " : "") + rawString;
+    classes.push(
+      Array.isArray(hasRawClass)
+        ? hasRawClass.filter(Boolean).join(" ")
+        : hasRawClass,
+    );
   }
 
+  const finalClasses = classes.filter(Boolean).join(" ");
   if (finalClasses) {
     processed.class = finalClasses;
   }
@@ -708,15 +690,9 @@ function processArraySchema(
     // Advance index by consumed items minus 1 (loop increment handles the +1)
     i += consumed - 1;
 
-    // Process options with prefix - optimized decision logic
-    const shouldApplyPrefix =
-      "prefix" in itemOptions ? itemOptions.prefix : options.prefix !== false;
-
-    // Fast path: process only when needed
-    const processedOptions =
-      shouldApplyPrefix || itemOptions.rawClass
-        ? processClassNames(itemOptions, !shouldApplyPrefix)
-        : itemOptions; // No copy needed if no processing
+    // A layout item's classes are applied as written: merge class, className
+    // and the deprecated rawClass; no prefix is involved.
+    const processedOptions = processClassNames(itemOptions);
 
     // Add name to options if needed
     if (
@@ -790,10 +766,7 @@ function processObjectSchema(
     const createElementFn = elementDef.creator || defaultCreator;
 
     const elementOptions = elementDef.options || {};
-    const processedOptions =
-      options.prefix !== false
-        ? processClassNames(elementOptions)
-        : { ...elementOptions };
+    const processedOptions = processClassNames(elementOptions);
 
     const rootComponent = createComponentInstance(
       createElementFn,
@@ -827,13 +800,7 @@ function processObjectSchema(
 
     const elementCreator = def.creator || defaultCreator;
     const elementOptions = def.options || {};
-    const shouldApplyPrefix =
-      "prefix" in elementOptions
-        ? elementOptions.prefix
-        : options.prefix !== false;
-    const processedOptions = shouldApplyPrefix
-      ? processClassNames(elementOptions)
-      : { ...elementOptions };
+    const processedOptions = processClassNames(elementOptions);
 
     if (!def.name && key !== "element") {
       def.name = key;
