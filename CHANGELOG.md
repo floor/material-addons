@@ -2,17 +2,65 @@
 
 Published as `mtrl-addons` up to 0.9.x. This file has written notes from 0.8.0, and the commit history below for everything earlier.
 
-material-addons — full changelog
-initial commit → latest
-239 commits · Apr 30, 2025 – Sep 16, 2026
+## [3.0.0] - YYYY-MM-DD
 
-## [Unreleased]
+The first stable release for material 3, and everything since 0.9.0. There
+is no 1.0.0: this is the release 0.9.0 calls mtrl-addons 1.0. The
+3.0.0-next.0 entry below shipped while material 3 was a pre-release itself.
+
+### Renamed
+
+- The package is material-addons; it was published as mtrl-addons up to
+  0.9.x, for mtrl 0.10.x. Switch the dependency — remove mtrl-addons,
+  install material-addons with material beside it. Switch the import —
+  every mtrl-addons specifier becomes material-addons: the root, and the
+  styles, layout, gestures and components subpaths alike.
+
+### Breaking changes
+
+- The peer range is material ^3.0.0 (0.9.0 required mtrl ^0.10.5).
+- ESM only. The CommonJS builds (dist/**/*.cjs) and every require
+  condition are removed; main is dist/index.mjs. require('material-addons')
+  no longer resolves: use import, or await import('material-addons') from
+  CommonJS. material 3 made the same change.
+- material 3 removed pipe, createBase, withElement, withEvents,
+  withLifecycle, withDisabled, hasEmit, hasLifecycle and their types
+  from its root. material-addons imports them from material/core/compose,
+  and EventCallback from material/core/state.
+- The text field's classes are mtrl-text-field… and the tag is
+  <m-text-field>. The colour picker's styles select those classes.
+- A layout applies its items' class and className as written: the
+  automatic mtrl- prefix is gone, and the prefix option (layout-wide or
+  per item) is deprecated and no longer has an effect.
+
+### Migration
+
+- Import material-addons with import, not require.
+- Upgrade material to 3 alongside it. Code of your own that imported the
+  composition core from 'material' moves it to 'material/core/compose'
+  (material's migration table lists every name).
+- Rename the dependency and every specifier (see Renamed).
+- A layout item's class is the class it is given. Before,
+  ['div', { class: 'card' }] rendered class="mtrl-card"; now it renders
+  class="card". Write 'mtrl-card' yourself where a stylesheet wants it.
+- rawClass keeps working and is deprecated until 4.0.0: appended after
+  class, as written, on every schema shape — an object schema's rawClass
+  under prefix: false was previously not merged. Use class alone.
+
+### Changed
+
+- null, undefined and "" are equal when the form decides it is modified,
+  including the fields getModifiedData returns.
+- The README's examples are checked in Chromium against the packed package
+  and the installed material, in CI and before a release (bun run
+  readme:check).
 
 ### Fixed
 
 - `setData(data, true)` loads a record: new baseline, not modified, Save stays disabled. `setData(data)` and `setFieldValue(name, value)` keep that baseline, recompute the modified state, and emit `state:change` when it changes. `isModified()` only reads.
 - `setData(data, true)` on a form the user has edited disables Save and Cancel.
 - A caller that relied on a non-silent `setData` leaving Save disabled now sees Save enable when the new values differ from the baseline: pass `true` to load a record. A non-silent `setData` whose values differ from the baseline also arms the unsaved-changes protection (the `beforeunload` warning, and `data:conflict` on the next non-silent `setData`). `setFieldValue(name, value, true)` emits `state:change` when the modified state flips.
+- A select in a form takes a silently set value (`setData(data, true)`, `setFieldValue(name, value, true)`) on material 3: it is recognised by `getOptions` and updated through `setValue`, so the selected option follows the value.
 
 ## [3.0.0-next.0] - 2026-10-02
 

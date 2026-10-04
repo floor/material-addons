@@ -13,10 +13,10 @@ The form and the colour picker have a page with live examples on [md3.io](https:
 
 <!-- install -->
 ```bash
-npm install material-addons material@next
+npm install material-addons material
 ```
 
-`material` 3.0.0 is in pre-release, on its `next` tag; this package's peer range is `^3.0.0-next.0`. The 3.0.0 release moves the peer to `^3.0.0`.
+This package's peer range is `material` `^3.0.0`.
 <!-- /install -->
 
 Both packages are ESM only. The examples below import stylesheets, so they need a bundler that handles CSS imports, such as Vite.
@@ -181,7 +181,18 @@ The gestures:
 
 ## Upgrading
 
-The package was published as `mtrl-addons` up to 0.9.x. What each release changed, and what 0.8.0 removed (the virtual list and the viewport), is in the [changelog](CHANGELOG.md).
+The package was published as `mtrl-addons` up to 0.9.x; from 3.0.0 it is `material-addons`, for `material` 3. Two things change:
+
+- Dependency: remove `mtrl-addons`; install `material-addons` beside `material`.
+
+  ```bash
+  npm uninstall mtrl-addons
+  npm install material-addons material
+  ```
+
+- Import: `mtrl-addons` becomes `material-addons` in every specifier. The styles, layout, gestures and components subpaths change with it.
+
+What each release changed, and what 0.8.0 removed (the virtual list and the viewport), is in the [changelog](CHANGELOG.md).
 
 ## Development
 
@@ -208,10 +219,12 @@ Until the trusted publisher is bound, publish by hand:
 
 ```bash
 npm run release:pack
-npm publish material-addons-<version>.tgz --access public --tag next
+npm publish material-addons-<version>.tgz --access public
 ```
 
-Use `--tag latest` for a stable release.
+`release:pack` runs the gate first: the types, the tests, the production build, the packed package and the README's examples, so it needs Chromium once (see Development). `npm publish` tags a release `latest`; a pre-release passes `--tag next`.
+
+Tag only on main: the release workflow refuses a `v*` tag whose commit is not on `origin/main`. A `v*` tag ruleset, so only the owner creates release tags, is recommended.
 
 ## Related
 

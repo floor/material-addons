@@ -178,6 +178,87 @@ describe("Layout System", () => {
     expect(all.text).toBeDefined();
   });
 
+  test("should apply class and className as written", () => {
+    const result = createLayout(["div", { class: "a b", className: "c" }]);
+
+    expect(result.element.className).toBe("a b c");
+  });
+
+  test("should keep a class that already names the prefix", () => {
+    const result = createLayout(["div", { class: "mtrl-kept" }]);
+
+    expect(result.element.className).toBe("mtrl-kept");
+  });
+
+  test("should apply rawClass as written, after class", () => {
+    const result = createLayout(["div", { class: "a", rawClass: ["b", "c"] }]);
+
+    expect(result.element.className).toBe("a b c");
+  });
+
+  test("should apply the classes as written whatever prefix says", () => {
+    const withoutPrefix = createLayout(["div", { class: "a b" }], null, {
+      prefix: false,
+    });
+    const onTheItem = createLayout(["div", { class: "a b", prefix: false }]);
+
+    expect(withoutPrefix.element.className).toBe("a b");
+    expect(onTheItem.element.className).toBe("a b");
+  });
+
+  test("should apply an object schema's classes as written", () => {
+    const seen: unknown[] = [];
+    createLayout({
+      element: {
+        creator: (opts: any) => {
+          seen.push(opts.class);
+          return document.createElement("div");
+        },
+        options: { class: "root", rawClass: "raw" },
+      },
+    });
+
+    expect(seen).toEqual(["root raw"]);
+  });
+
+  test("should apply an object schema's rawClass under prefix: false", () => {
+    const seen: unknown[] = [];
+    createLayout(
+      {
+        element: {
+          creator: (opts: any) => {
+            seen.push(opts.class);
+            return document.createElement("div");
+          },
+          options: { rawClass: ["raw", "kept"] },
+        },
+      },
+      null,
+      { prefix: false },
+    );
+
+    expect(seen).toEqual(["raw kept"]);
+  });
+
+  test("should apply rawClass on an object schema item under prefix: false", () => {
+    const seen: unknown[] = [];
+    createLayout(
+      {
+        item: {
+          creator: (opts: any) => {
+            seen.push(opts.class);
+            return document.createElement("div");
+          },
+          options: { rawClass: "raw" },
+        },
+      },
+      null,
+      { prefix: false },
+    );
+
+    expect(seen).toEqual(["raw"]);
+  });
+
   test("should handle layout configurations", () => {
     const result = createLayout([
       "div",
