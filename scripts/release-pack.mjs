@@ -31,6 +31,15 @@ const TOOLING_FIELDS = [
   "browserslist",
 ];
 
+// The public-history rule: the stylesheets this package ships sit next to the
+// declaration files built from src comments, so no internal ticket reference may
+// reach the tarball. The pattern itself carries no id.
+const INTERNAL_ID = /FLO-\d+/g;
+
+export function internalIdRefs(text) {
+  return text.match(INTERNAL_ID) ?? [];
+}
+
 export function releasePack({ root = process.cwd(), destination, log = true } = {}) {
   const manifestPath = join(root, "package.json");
   const original = readFileSync(manifestPath);
@@ -72,6 +81,19 @@ export function releasePack({ root = process.cwd(), destination, log = true } = 
     const tarball = join(dest, packed.filename);
     const size = statSync(tarball).size;
     const files = packed.files.map((file) => file.path);
+
+    // Walk the packed files themselves (the staged copies npm just read), so a
+    // failure is exact — and it leaves no tarball for a publish step to pick up.
+    const offenders = [];
+    for (const file of packed.files) {
+      const refs = internalIdRefs(readFileSync(join(stage, file.path), "utf8"));
+      if (refs.length > 0) offenders.push(`${file.path} (${refs.join(", ")})`);
+    }
+    if (offenders.length > 0) {
+      rmSync(tarball, { force: true });
+      throw new Error(`release-pack: internal ticket references in packed files:\n${offenders.join("\n")}`);
+    }
+
     if (log) {
       console.log(tarball);
       console.log(`size ${size}`);
