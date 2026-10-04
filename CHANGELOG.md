@@ -2,7 +2,7 @@
 
 Published as `mtrl-addons` up to 0.9.x. This file has written notes from 0.8.0, and the commit history below for everything earlier.
 
-## [3.0.0] - YYYY-MM-DD
+## [3.0.0] - 2026-10-04
 
 The first stable release for material 3, and everything since 0.9.0. There
 is no 1.0.0: this is the release 0.9.0 calls mtrl-addons 1.0. The
