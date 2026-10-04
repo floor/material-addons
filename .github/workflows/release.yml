@@ -3,6 +3,16 @@
 # npmjs.com for the package), no token is stored, and the release carries
 # provenance. A pre-release version (x.y.z-next.N) goes under the `next`
 # dist-tag, anything else under `latest`.
+#
+# Two jobs, so the OIDC token exists in as few steps as possible: `verify` (no
+# id-token) runs the on-main and tag checks, installs, runs the release:pack
+# gate and uploads the tarball; `publish` alone holds `id-token: write` and
+# downloads the tarball, re-checks its version and publishes it — no checkout,
+# no install, no build.
+#
+# A tag only publishes from main, and only when it equals package.json's
+# version. A `v*` tag ruleset, so only the owner creates release tags, is
+# recommended.
 name: Release
 
 on:
@@ -12,12 +22,14 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
-  publish:
+  # Everything that runs this repository's code, with no OIDC token around to
+  # leak: the checks, the build and the pack.
+  verify:
     runs-on: ubuntu-latest
     steps:
+      # The actions are pinned by commit; the version comment says which release it is.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
@@ -36,10 +48,6 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
-          registry-url: https://registry.npmjs.org
-
-      # trusted publishing needs npm 11.5.1 or later; pinned on purpose, bump it deliberately
-      - run: npm install -g npm@11.21.0
 
       - name: The tag must be the package version
         run: |
@@ -55,14 +63,49 @@ jobs:
       - name: Chromium for the README's examples
         run: npx playwright install --with-deps chromium
 
-      # release:pack runs the gate once, then writes the tarball. Publishing that
-      # file does not run lifecycle scripts, so prepublishOnly does not run again.
-      - name: Publish
+      # release:pack runs the gate once (the types, the tests, the production
+      # build, the packed package, the README's examples), then writes the
+      # tarball. Publishing that file does not run lifecycle scripts, so
+      # prepublishOnly does not run again.
+      - name: Pack the tarball
+        run: npm run release:pack
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: package
+          path: material-addons-*.tgz
+          if-no-files-found: error
+
+  # Only the token, a Node with the pinned npm, and the tarball verify built.
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: package
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      # trusted publishing needs npm 11.5.1 or later; pinned on purpose, bump it deliberately
+      - run: npm install -g npm@11.21.0
+
+      - name: Publish the tarball
         run: |
-          version="$(node -p "require('./package.json').version")"
+          tgz="$(ls material-addons-*.tgz)"
+          tag="${GITHUB_REF_NAME#v}"
+          version="$(tar -xzOf "$tgz" package/package.json | node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).version')"
+          if [ "$tag" != "$version" ]; then
+            echo "the tarball holds $version, not v$tag" >&2
+            exit 1
+          fi
           case "$version" in
-            *-*) tag=next ;;
-            *) tag=latest ;;
+            *-*) dist=next ;;
+            *) dist=latest ;;
           esac
-          npm run release:pack
-          npm publish "material-addons-${version}.tgz" --provenance --access public --tag "$tag"
+          npm publish "$tgz" --provenance --access public --tag "$dist"
