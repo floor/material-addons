@@ -6,7 +6,49 @@ material-addons — full changelog
 initial commit → latest
 239 commits · Apr 30, 2025 – Sep 16, 2026
 
-## [Unreleased]
+## [3.0.0] - YYYY-MM-DD
+
+The first stable release for material 3, and everything since 0.9.0. There
+is no 1.0.0: this is the release 0.9.0 calls mtrl-addons 1.0. The
+3.0.0-next.0 entry below shipped while material 3 was a pre-release itself.
+
+### Renamed
+
+- The package is material-addons; it was published as mtrl-addons up to
+  0.9.x, for mtrl 0.10.x. Switch the dependency — remove mtrl-addons,
+  install material-addons with material beside it. Switch the import —
+  every mtrl-addons specifier becomes material-addons: the root, and the
+  styles, layout, gestures and components subpaths alike.
+
+### Breaking changes
+
+- The peer range is material ^3.0.0 (0.9.0 required mtrl ^0.10.5).
+- ESM only. The CommonJS builds (dist/**/*.cjs) and every require
+  condition are removed; main is dist/index.mjs. require('material-addons')
+  no longer resolves: use import, or await import('material-addons') from
+  CommonJS. material 3 made the same change.
+- material 3 removed pipe, createBase, withElement, withEvents,
+  withLifecycle, withDisabled, hasEmit, hasLifecycle and their types
+  from its root. material-addons imports them from material/core/compose,
+  and EventCallback from material/core/state.
+- The text field's classes are mtrl-text-field… and the tag is
+  <m-text-field>. The colour picker's styles select those classes.
+
+### Migration
+
+- Import material-addons with import, not require.
+- Upgrade material to 3 alongside it. Code of your own that imported the
+  composition core from 'material' moves it to 'material/core/compose'
+  (material's migration table lists every name).
+- Rename the dependency and every specifier (see Renamed).
+
+### Changed
+
+- null, undefined and "" are equal when the form decides it is modified,
+  including the fields getModifiedData returns.
+- The README's examples are checked in Chromium against the packed package
+  and the installed material, in CI and before a release (bun run
+  readme:check).
 
 ### Fixed
 

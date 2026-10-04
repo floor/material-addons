@@ -43,6 +43,9 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
+      - name: Chromium for the README's examples
+        run: npx playwright install --with-deps chromium
+
       # release:pack runs the gate once, then writes the tarball. Publishing that
       # file does not run lifecycle scripts, so prepublishOnly does not run again.
       - name: Publish
