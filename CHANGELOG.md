@@ -29,6 +29,9 @@ is no 1.0.0: this is the release 0.9.0 calls mtrl-addons 1.0. The
   and EventCallback from material/core/state.
 - The text field's classes are mtrl-text-field… and the tag is
   <m-text-field>. The colour picker's styles select those classes.
+- A layout applies its items' class and className as written: the
+  automatic mtrl- prefix is gone, and the prefix option (layout-wide or
+  per item) is deprecated and no longer has an effect.
 
 ### Migration
 
@@ -37,6 +40,12 @@ is no 1.0.0: this is the release 0.9.0 calls mtrl-addons 1.0. The
   composition core from 'material' moves it to 'material/core/compose'
   (material's migration table lists every name).
 - Rename the dependency and every specifier (see Renamed).
+- A layout item's class is the class it is given. Before,
+  ['div', { class: 'card' }] rendered class="mtrl-card"; now it renders
+  class="card". Write 'mtrl-card' yourself where a stylesheet wants it.
+- rawClass keeps working and is deprecated until 4.0.0: appended after
+  class, as written, on every schema shape — an object schema's rawClass
+  under prefix: false was previously not merged. Use class alone.
 
 ### Changed
 
