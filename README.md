@@ -224,6 +224,8 @@ npm publish material-addons-<version>.tgz --access public
 
 `release:pack` runs the gate first — the types, the tests, the production build, the packed package and the README's examples — so it needs Chromium once (see Development). `npm publish` tags a release `latest`; a pre-release passes `--tag next`.
 
+Tag only on main: the release workflow refuses a `v*` tag whose commit is not on `origin/main`. A `v*` tag ruleset, so only the owner creates release tags, is recommended.
+
 ## Related
 
 - [material](https://github.com/floor/material): the Material Design 3 component library this package extends.
