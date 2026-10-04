@@ -2,10 +2,6 @@
 
 Published as `mtrl-addons` up to 0.9.x. This file has written notes from 0.8.0, and the commit history below for everything earlier.
 
-material-addons — full changelog
-initial commit → latest
-239 commits · Apr 30, 2025 – Sep 16, 2026
-
 ## [3.0.0] - YYYY-MM-DD
 
 The first stable release for material 3, and everything since 0.9.0. There
@@ -55,6 +51,7 @@ is no 1.0.0: this is the release 0.9.0 calls mtrl-addons 1.0. The
 - `setData(data, true)` loads a record: new baseline, not modified, Save stays disabled. `setData(data)` and `setFieldValue(name, value)` keep that baseline, recompute the modified state, and emit `state:change` when it changes. `isModified()` only reads.
 - `setData(data, true)` on a form the user has edited disables Save and Cancel.
 - A caller that relied on a non-silent `setData` leaving Save disabled now sees Save enable when the new values differ from the baseline: pass `true` to load a record. A non-silent `setData` whose values differ from the baseline also arms the unsaved-changes protection (the `beforeunload` warning, and `data:conflict` on the next non-silent `setData`). `setFieldValue(name, value, true)` emits `state:change` when the modified state flips.
+- A select in a form takes a silently set value (`setData(data, true)`, `setFieldValue(name, value, true)`) on material 3: it is recognised by `getOptions` and updated through `setValue`, so the selected option follows the value.
 
 ## [3.0.0-next.0] - 2026-10-02
 

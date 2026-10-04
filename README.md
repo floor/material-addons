@@ -16,7 +16,7 @@ The form and the colour picker have a page with live examples on [md3.io](https:
 npm install material-addons material
 ```
 
-`material` 3.0.1 is the current release; this package's peer range is `^3.0.0`.
+This package's peer range is `material` `^3.0.0`.
 <!-- /install -->
 
 Both packages are ESM only. The examples below import stylesheets, so they need a bundler that handles CSS imports, such as Vite.
@@ -222,7 +222,7 @@ npm run release:pack
 npm publish material-addons-<version>.tgz --access public
 ```
 
-`release:pack` runs the gate first — the types, the tests, the production build, the packed package and the README's examples — so it needs Chromium once (see Development). `npm publish` tags a release `latest`; a pre-release passes `--tag next`.
+`release:pack` runs the gate first: the types, the tests, the production build, the packed package and the README's examples, so it needs Chromium once (see Development). `npm publish` tags a release `latest`; a pre-release passes `--tag next`.
 
 Tag only on main: the release workflow refuses a `v*` tag whose commit is not on `origin/main`. A `v*` tag ruleset, so only the owner creates release tags, is recommended.
 
