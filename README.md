@@ -139,7 +139,7 @@ With strict mode, only a suggestion can be selected. In free-form mode, blurring
 
 The custom element uses its option children as suggestions. The style module registers the shadow sheets before the element is defined.
 
-<!-- example: run, shows "Switzerland" -->
+<!-- example: run, shows "Country" -->
 ```javascript
 import 'material/styles';
 import 'material-addons/elements/preupgrade.css';

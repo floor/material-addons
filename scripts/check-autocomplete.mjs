@@ -19,7 +19,7 @@ try {
     document.documentElement.dataset.themeMode = mode;
     document.documentElement.dir = direction;
     const crop = document.createElement("div");
-    crop.style.cssText = "margin:40px;width:260px;height:65px;overflow:hidden";
+    crop.style.cssText = "position:fixed;inset-block-start:40px;inset-inline-start:40px;width:320px;height:65px;overflow:hidden";
     const config = {
       variant, value: forced ? "sf" : null, label: "City", supportingText: "Choose a city", strict: true,
       filter: forced ? false : undefined,
@@ -56,6 +56,7 @@ try {
         const foreground = luminance(getComputedStyle(mark).color);
         const background = luminance(getComputedStyle(listbox).backgroundColor);
         const contrast = (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05);
+        const trailing = textField.trailingIcon.getBoundingClientRect();
         return {
           edge: listbox.dir === "rtl" ? popup.right - anchor.right : popup.left - anchor.left,
           gap: popup.top - anchor.bottom,
@@ -64,6 +65,7 @@ try {
           contrast,
           variant: textField.getVariant(),
           clear: textField.trailingIcon.getAttribute("aria-label"),
+          trailingSide: (trailing.left + trailing.width / 2 > anchor.left + anchor.width / 2) === (listbox.dir === "ltr"),
         };
       });
       assert.ok(Math.abs(boxes.edge) < 1 && Math.abs(boxes.gap) < 1, JSON.stringify(boxes));
@@ -71,6 +73,7 @@ try {
       assert.ok(boxes.contrast >= 4.5, `${mode}/${direction} match contrast ${boxes.contrast}`);
       assert.equal(boxes.variant, variant);
       assert.equal(boxes.clear, "Clear");
+      assert.equal(boxes.trailingSide, true);
       assert.equal(await input.inputValue(), "San ");
       await input.press("Escape");
       const editableKeys = ["Home", "End", direction === "ltr" ? "ArrowLeft" : "ArrowRight"];
@@ -97,11 +100,25 @@ try {
       assert.equal(await input.evaluate(el => document.activeElement === el), true);
       await page.getByRole("button", { name: "Clear" }).click();
       assert.equal(await input.inputValue(), "");
-      await page.getByRole("option", { name: /San Diego/ }).click();
+      // Use the actual top-layer hit point. Scrolling a locator into view
+      // would scroll its clipped layout ancestor and dismiss the popup.
+      const option = await page.getByRole("option", { name: /San Diego/ }).boundingBox();
+      assert.ok(option?.width && option.height, `${mode}/${direction} pointer option has no box`);
+      await page.mouse.click(option.x + option.width / 2, option.y + option.height / 2);
       assert.equal(await input.inputValue(), "San Diego");
       assert.equal(await input.evaluate(el => document.activeElement === el), true);
     }
   }
+
+  await reset();
+  await mount("light", "rtl", "outlined");
+  const flipped = await page.evaluate(() => {
+    const { element, listbox, textField } = window.component;
+    element.parentElement.style.insetBlockStart = "450px";
+    window.component.open();
+    return listbox.getBoundingClientRect().bottom - textField.field.getBoundingClientRect().top;
+  });
+  assert.ok(Math.abs(flipped) < 1, "the popup flips above an anchor near the viewport bottom");
 
   await reset();
   await page.emulateMedia({ forcedColors: "active" });
@@ -166,7 +183,8 @@ try {
     await Promise.resolve();
     return {
       redraws, same: host.component === original && host.shadowRoot.activeElement === input && input.selectionStart === 1,
-      rendered: original.listbox.textContent.includes("San Jose"),
+      rendered: original.listbox.textContent.includes("San Jose") &&
+        original.listbox.matches(":popover-open") && getComputedStyle(original.listbox).position === "fixed",
     };
   });
   assert.deepEqual(update, { redraws: 1, same: true, rendered: true });

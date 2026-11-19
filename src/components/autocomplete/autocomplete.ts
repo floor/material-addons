@@ -81,7 +81,7 @@ export function createAutocomplete<T = unknown>(options: AutocompleteConfig<T> =
     return items.map(snapshot);
   }
 
-  function refresh(event: Event | null, immediate = false) {
+  function refresh(event: Event | null, immediate = false, navigate?: false | -1 | 1) {
     cancel();
     if (!interactive() || !eligible()) {
       close(event);
@@ -91,9 +91,15 @@ export function createAutocomplete<T = unknown>(options: AutocompleteConfig<T> =
     }
     const query = input.value;
     const source = config.source;
+    const present = () => {
+      draw(query, event, true);
+      if (navigate === undefined) return;
+      popup.highlight(-1);
+      if (navigate) popup.move(navigate, value);
+    };
     const run = () => {
       if (!source) {
-        draw(query, event, true);
+        present();
         return;
       }
       const controller = new AbortController();
@@ -116,7 +122,7 @@ export function createAutocomplete<T = unknown>(options: AutocompleteConfig<T> =
           return;
         }
         available = normalize(items);
-        draw(query, event, true);
+        present();
       })();
     };
     if ((!immediate || source) && config.debounce > 0) timer = setTimeout(run, config.debounce);
@@ -256,8 +262,7 @@ export function createAutocomplete<T = unknown>(options: AutocompleteConfig<T> =
     if (altKey) {
       if (key === "ArrowDown" && !open) {
         event.preventDefault();
-        refresh(event, true);
-        popup.highlight(-1);
+        refresh(event, true, false);
       } else if (key === "ArrowUp" && open) {
         event.preventDefault();
         if (active) choose(active, event);
@@ -265,12 +270,9 @@ export function createAutocomplete<T = unknown>(options: AutocompleteConfig<T> =
       }
     } else if (key === "ArrowDown" || key === "ArrowUp" || (open && (key === "PageDown" || key === "PageUp"))) {
       event.preventDefault();
-      if (!open) {
-        refresh(event, true);
-        popup.highlight(-1);
-      }
-      const step = key.startsWith("Page") ? 10 : 1;
-      popup.move(key.endsWith("Down") ? step : -step, open ? undefined : value);
+      const direction = key.endsWith("Down") ? 1 : -1;
+      if (open) popup.move(direction * (key.startsWith("Page") ? 10 : 1));
+      else refresh(event, true, direction);
     } else if (key === "Enter" && open) {
       if (active) { event.preventDefault(); choose(active, event); }
       else if (!config.strict) { commitText(event); close(event); }

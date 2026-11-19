@@ -133,6 +133,22 @@ test("free-solo blur commits text, while strict blur restores a selection or rep
   expect(strict.input.validity.valueMissing).toBe(true);
 });
 
+test("applies the arrow opening intent after async suggestions arrive", async () => {
+  const { component, input, box } = mount({
+    openOnFocus: false, autoHighlight: true, debounce: 0, source: async () => ["First", "Last"],
+  });
+  input.focus();
+  expect(key(input, "ArrowDown", true)).toBe(true);
+  await Promise.resolve();
+  expect(component.isOpen()).toBe(true);
+  expect(input.hasAttribute("aria-activedescendant")).toBe(false);
+  expect(key(input, "ArrowUp", true)).toBe(true);
+  expect(component.isOpen()).toBe(false);
+  expect(key(input, "ArrowUp")).toBe(true);
+  await Promise.resolve();
+  expect(input.getAttribute("aria-activedescendant")).toBe(rows(box)[1].id);
+});
+
 test("debounces async suggestions, aborts requests and ignores late results", async () => {
   const pending: Array<{ query: string; signal: AbortSignal; resolve(options: string[]): void }> = [];
   const { component, input, box } = mount({
