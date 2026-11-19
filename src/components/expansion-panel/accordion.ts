@@ -10,7 +10,6 @@ import type {
   AccordionComponent,
   AccordionConfig,
   AccordionEvents,
-  ExpansionPanelBeforeEvent,
   ExpansionPanelComponent,
   ExpansionPanelConfig,
   ExpansionPanelEvent,
@@ -76,13 +75,15 @@ const withAccordionCore =
       });
     };
 
-    // Single selection is decided before the panel opens: the others close
-    // first, and a close that refuses cancels the opening, so no open event
-    // describes a panel that then gives way
-    const onBeforeOpen = (event: ExpansionPanelBeforeEvent): void => {
-      if (settings.multiSelect) return;
-      for (const other of panels) if (other !== event.component && other.isOpen()) other.close();
-      if (panels.some((other) => other !== event.component && other.isOpen())) event.preventDefault();
+    // Single selection is a guard, not a veto: it runs after the caller's
+    // beforeopen listener has allowed the opening, closes the others first,
+    // and cancels the opening when a close refuses, so no open event
+    // describes a panel that then gives way and a vetoed opening changes
+    // nothing else
+    const guardFor = (panel: ExpansionPanelComponent) => (open: boolean): boolean => {
+      if (!open || settings.multiSelect) return true;
+      for (const other of panels) if (other !== panel && other.isOpen()) other.close();
+      return !panels.some((other) => other !== panel && other.isOpen());
     };
 
     const inherit = (config: ExpansionPanelConfig): ExpansionPanelConfig => ({
@@ -94,17 +95,19 @@ const withAccordionCore =
 
     const listeners = new Map<
       ExpansionPanelComponent,
-      { change: (event: ExpansionPanelEvent) => void; before: (event: ExpansionPanelBeforeEvent) => void }
+      { change: (event: ExpansionPanelEvent) => void; guard: (open: boolean) => boolean }
     >();
+    const panelGuards = (panel: ExpansionPanelComponent): Array<(open: boolean) => boolean> | undefined =>
+      (panel as unknown as { panel?: { guards: Array<(open: boolean) => boolean> } }).panel?.guards;
 
     /** The one registration path: creation, addPanel and the element's claim */
     const register = (panel: ExpansionPanelComponent, move: boolean): void => {
       panel.element.setAttribute("data-mtrl-accordion-panel", "");
       const change = (event: ExpansionPanelEvent): void => onPanelChange(panel, event.open);
-      const before = (event: ExpansionPanelBeforeEvent): void => onBeforeOpen(event);
-      listeners.set(panel, { change, before });
+      const guard = guardFor(panel);
+      listeners.set(panel, { change, guard });
       panel.on(EXPANSION_PANEL_EVENTS.CHANGE, change);
-      panel.on(EXPANSION_PANEL_EVENTS.BEFORE_OPEN, before);
+      panelGuards(panel)?.push(guard);
       if (move) component.element.appendChild(panel.element);
       positions();
       if (settings.disabled) {
@@ -118,7 +121,9 @@ const withAccordionCore =
       const registered = listeners.get(panel);
       if (registered) {
         panel.off(EXPANSION_PANEL_EVENTS.CHANGE, registered.change);
-        panel.off(EXPANSION_PANEL_EVENTS.BEFORE_OPEN, registered.before);
+        const guards = panelGuards(panel);
+        const at = guards?.indexOf(registered.guard) ?? -1;
+        if (guards && at !== -1) guards.splice(at, 1);
         listeners.delete(panel);
       }
       const index = panels.indexOf(panel);
@@ -127,11 +132,12 @@ const withAccordionCore =
       positions();
     };
 
-    // Several panels can arrive open: one selection keeps the first by order
+    // Several panels can arrive open: one selection keeps the first by order,
+    // and an initial state is programmatic, so a veto does not keep a second
     const reconcile = (): void => {
       if (settings.multiSelect) return;
       const open = panels.filter((panel) => panel.isOpen());
-      for (const extra of open.slice(1)) extra.close();
+      for (const extra of open.slice(1)) void silent(extra, false);
     };
 
     const insert = (panel: ExpansionPanelComponent, index: number): void => {

@@ -31,6 +31,12 @@ export interface PanelCore {
   syncHeader: () => void;
   getValue: () => string;
   setValue: (value: string) => void;
+  /**
+   * Runs after the before-events allow an opening and before the panel
+   * opens; returning false cancels it. The accordion closes the others here,
+   * so a listener's veto arrives before anything else changes.
+   */
+  guards: Array<(open: boolean) => boolean>;
 }
 
 interface PanelHost {
@@ -82,6 +88,7 @@ const withPanelCore =
       return !prevented;
     };
 
+    const guards: Array<(open: boolean) => boolean> = [];
     const header = withHeader(settings)(component);
     const region = withRegion(settings)(component, header, () => self ?? host);
 
@@ -104,15 +111,19 @@ const withPanelCore =
     const request = async (open: boolean): Promise<boolean> => {
       if (state.open === open || state.disabled) return false;
       if (!ask(open ? EXPANSION_PANEL_EVENTS.BEFORE_OPEN : EXPANSION_PANEL_EVENTS.BEFORE_CLOSE)) return false;
+      if (open && !guards.every((guard) => guard(true))) return false;
       state.open = open;
       syncHeader();
       // The region is in its new state before the event describes it: an
       // `open` listener sees the content, not a hidden inert region
       const settled = region.apply(open);
+      // The after-event describes the transition that settles, even if
+      // another request changed the state before it did
+      const done = payload();
       emit(open ? EXPANSION_PANEL_EVENTS.OPEN : EXPANSION_PANEL_EVENTS.CLOSE, payload());
       emit(EXPANSION_PANEL_EVENTS.CHANGE, payload());
       void settled.then(() => {
-        emit(open ? EXPANSION_PANEL_EVENTS.AFTER_OPEN : EXPANSION_PANEL_EVENTS.AFTER_CLOSE, payload());
+        emit(open ? EXPANSION_PANEL_EVENTS.AFTER_OPEN : EXPANSION_PANEL_EVENTS.AFTER_CLOSE, done);
       });
       return true;
     };
@@ -147,6 +158,7 @@ const withPanelCore =
       setValue: (next) => {
         value = next;
       },
+      guards,
     };
 
     return { ...component, panel: core };
