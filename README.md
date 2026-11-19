@@ -341,9 +341,9 @@ registerSkeleton(createAvatar, (options) => ({
   variant: 'circle', size: options.size ?? 'large',
 }));
 
-// a field stands in as a block the field's own height
+// a field stands in as a block the field's own box, width and height
 registerSkeleton(createTextField, () => ({
-  variant: 'rect', blockSize: '56px',
+  variant: 'rect', inlineSize: '280px', blockSize: '56px',
 }));
 
 const layout = skeleton([
