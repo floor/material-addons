@@ -429,7 +429,6 @@ export function createSkeletonHost(
         if (carriedClasses.length) realElement.classList.add(...carriedClasses);
         host.replaceWith(realElement);
         placeholder.destroy();
-        placeholder.destroy();
         for (const key of Object.keys(real)) {
           if (key !== "destroy") slot[key] = (real as Record<string, unknown>)[key];
         }

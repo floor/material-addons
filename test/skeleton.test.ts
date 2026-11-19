@@ -174,7 +174,7 @@ describe("layout integration", () => {
     element.remove();
   });
 
-  test("reveal() swaps the real component into the same host without moving the classes", async () => {
+  test("reveal() replaces the host with the real component, carrying the layout classes", async () => {
     const { createLayout } = await import("../src/core/layout");
     const element = document.createElement("div");
     document.body.appendChild(element);
@@ -187,10 +187,15 @@ describe("layout integration", () => {
     const classesBefore = host.className;
     expect(host.querySelector(".mtrl-skeleton")).toBeTruthy();
     result.reveal();
-    const real = host.querySelector("button");
-    expect(real?.textContent).toBe("Save");
-    expect(host.querySelector(".mtrl-skeleton")).toBe(null);
-    expect(host.className).toBe(classesBefore);
+    // The host leaves the layout: the slot's element is the real component,
+    // in the document at the host's position, wearing the layout classes.
+    const real = result.get("save").element as HTMLElement;
+    expect(real.tagName).toBe("BUTTON");
+    expect(real.textContent).toBe("Save");
+    expect(real.className).toContain("mtrl-layout__item");
+    expect(classesBefore).toContain("mtrl-layout__item");
+    expect(host.isConnected).toBe(false);
+    expect(real.querySelector(".mtrl-skeleton")).toBe(null);
     expect(element.hasAttribute("aria-busy")).toBe(false);
     result.destroy();
   });
