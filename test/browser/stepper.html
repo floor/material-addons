@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en" data-theme="baseline">
+<meta charset="utf-8">
+<title>Stepper browser fixture</title>
+<body>
+<script type="module">
+  import 'material/styles';
+  import 'material-addons/styles';
+  import 'material-addons/elements/css/stepper';
+  import { createStepper } from 'material-addons/components/stepper';
+  import { defineStepper } from 'material-addons/elements/stepper';
+  window.stepper = { createStepper, defineStepper };
+</script>
