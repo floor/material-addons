@@ -21,7 +21,7 @@ import {
   type ElementHost,
   type ElementSpec,
 } from "material/elements";
-import { createAccordion, createExpansionPanel } from "../components/expansion-panel";
+import { createAccordion, createExpansionPanel, reconcilePanels, unregisterPanel } from "../components/expansion-panel";
 import {
   EXPANSION_PANEL_EVENTS,
   type ExpansionPanelDensity,
@@ -47,14 +47,33 @@ const slotFor = (name?: string): HTMLSlotElement => {
 const slotted = (host: HTMLElement, name: string): HTMLSlotElement | undefined =>
   Array.from(host.children).some((child) => child.getAttribute("slot") === name) ? slotFor(name) : undefined;
 
-/** Claims upgraded panel children, leaving the ones already registered */
+/** The children this element claimed, so a removal can unregister them */
+const claimedPanels = new WeakMap<AccordionComponent, Set<ExpansionPanelComponent>>();
+
+/** Claims upgraded panel children, drops removed ones, then reconciles */
 const claimPanels = (host: HTMLElement, component: AccordionComponent): void => {
+  let claims = claimedPanels.get(component);
+  if (!claims) {
+    claims = new Set();
+    claimedPanels.set(component, claims);
+  }
   for (const child of Array.from(host.children)) {
     if (child.localName !== "m-expansion-panel") continue;
     const panel = (child as unknown as { component: ExpansionPanelComponent | null }).component;
     const known = component.getPanels().some((candidate) => candidate.element === panel?.element);
-    if (panel && !known) component.addPanel(panel);
+    if (panel && !known) {
+      component.addPanel(panel);
+      claims.add(panel);
+    }
   }
+  for (const panel of claims) {
+    // A panel's own element lives in its shadow root: the child is the host
+    const root = panel.element.getRootNode();
+    if (host.contains(root instanceof ShadowRoot ? root.host : panel.element)) continue;
+    claims.delete(panel);
+    unregisterPanel(component, panel);
+  }
+  reconcilePanels(component);
 };
 
 const panelSpec = {

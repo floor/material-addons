@@ -15,7 +15,7 @@ export type {
   ExpansionPanelPlacement,
   ExpansionPanelVariant,
 } from "./constants";
-export { default as createAccordion } from "./accordion";
+export { default as createAccordion, reconcilePanels, unregisterPanel } from "./accordion";
 
 export type {
   AccordionChangeEvent,
