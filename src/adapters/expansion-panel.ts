@@ -45,9 +45,12 @@ export { expansionPanelEventNames };
 export { defineExpansionPanel };
 
 export function attributes(host: typeof panelHost | typeof accordionHost, props: object) {
-  const result: Record<string, string | undefined> = {};
+  const result: Record<string, string> = {};
   for (const [key, attribute] of host.attributes) {
-    result[attribute.name] = toAttribute(attribute.type, (props as Record<string, unknown>)[key]);
+    const value = toAttribute(attribute.type, (props as Record<string, unknown>)[key]);
+    // An absent prop sets nothing: a custom element's property would
+    // otherwise be patched with an empty value on the next render
+    if (value !== undefined) result[attribute.name] = value;
   }
   return result;
 }
