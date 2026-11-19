@@ -1,0 +1,12 @@
+// Before the element definitions arrive: keep each panel's box, and bound a
+// closed panel so its light-DOM body does not expand the page first.
+m-accordion:not(:defined),
+m-expansion-panel:not(:defined) {
+  display: block;
+  contain: layout;
+}
+
+m-expansion-panel:not(:defined):not([open]) {
+  max-height: 48px;
+  overflow: hidden;
+}

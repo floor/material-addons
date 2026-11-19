@@ -432,6 +432,13 @@ export interface FormComponent extends FormAPI {
 
   /** Destroy the form and clean up */
   destroy: () => void;
+
+  /**
+   * Swaps the skeleton placeholders for the real components, in place, and
+   * clears the form's busy flag. Present when the form was created with
+   * `skeleton: true`; a no-op otherwise.
+   */
+  reveal: () => void;
 }
 
 /**

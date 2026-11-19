@@ -76,6 +76,8 @@ const wireControlButtons = (
  * Extended component interface before API is applied
  */
 interface EnhancedFormComponent extends BaseFormComponent {
+  /** Forwarded from the layout feature: the way out of skeleton mode. */
+  reveal?: () => void;
   form: HTMLFormElement;
   ui: Record<string, unknown>;
   fields: FormFieldRegistry;
@@ -401,6 +403,10 @@ export const withAPI = (config: FormConfig) => {
       /**
        * Destroy the form and clean up resources
        */
+      reveal(): void {
+        component.reveal?.();
+      },
+
       destroy(): void {
         // Clear all field event listeners
         for (const [, field] of component.fields) {

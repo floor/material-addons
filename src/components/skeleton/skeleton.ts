@@ -73,6 +73,8 @@ const createSkeleton = (config: SkeletonConfig = {}): SkeletonComponent => {
   let busy = config.busy !== false;
 
   if (config.class) root.classList.add(...String(config.class).split(/\s+/).filter(Boolean));
+  if (config.blockSize) root.style.setProperty("--mtrl-skeleton-block-size", config.blockSize);
+  if (config.inlineSize) root.style.setProperty("--mtrl-skeleton-inline-size", config.inlineSize);
 
   /** Draws the shape for the current variant and line count. */
   const draw = (): void => {

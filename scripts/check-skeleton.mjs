@@ -320,6 +320,69 @@ try {
   assert.equal(noBusy, false, "no-busy leaves aria-busy off the placeholder");
   console.log("element: no-busy opts out");
 
+  // The documented reveal holds the layout: registered creators, a paragraph
+  // below, and nothing moves.
+  await reset("light");
+  const zeroShift = await page.evaluate(async () => {
+    const { createLayout, registerSkeleton } = window.skeleton;
+    document.body.innerHTML = "";
+    // A field creator whose real element is exactly 56px tall, mapped to the
+    // same box: the registered pattern the README documents.
+    const createField = (options) => {
+      const element = document.createElement("div");
+      element.style.height = "56px";
+      element.textContent = options.label ?? "";
+      return { element, destroy: () => element.remove() };
+    };
+    registerSkeleton(createField, () => ({ variant: "rect", blockSize: "56px" }));
+    const below = document.createElement("p");
+    below.textContent = "after";
+    const region = document.createElement("div");
+    document.body.append(region, below);
+    const result = createLayout(
+      [
+        "div",
+        { layout: { type: "row", gap: "1rem" } },
+        [createField, "field", { label: "Name" }],
+      ],
+      region,
+      { skeleton: true },
+    );
+    const before = { host: result.get("field").element.getBoundingClientRect().height, below: below.getBoundingClientRect().top };
+    result.reveal();
+    const after = { host: result.get("field").element.getBoundingClientRect().height, below: below.getBoundingClientRect().top };
+    result.destroy();
+    return { before, after };
+  });
+  assert.equal(zeroShift.before.host, 56, "the mapped box holds the field's height");
+  assert.equal(zeroShift.after.host, 56, `the host does not change height across the swap (got ${zeroShift.after.host})`);
+  assert.equal(zeroShift.after.below, zeroShift.before.below, `the page below does not move (got ${zeroShift.before.below} -> ${zeroShift.after.below})`);
+  console.log(`documented reveal: 56px -> 56px, the paragraph below stays at ${zeroShift.after.below}px`);
+
+  // The form's public reveal(): placeholders stand in, reveal swaps them in
+  // and clears the busy flag.
+  const formReveal = await page.evaluate(async () => {
+    const { createForm } = window.skeleton;
+    document.body.innerHTML = "";
+    const form = createForm({
+      layout: [["div", { textContent: "field" }]],
+      skeleton: true,
+    });
+    document.body.appendChild(form.element);
+    const hadPlaceholder = !!form.element.querySelector(".mtrl-skeleton");
+    const busyBefore = form.element.hasAttribute("aria-busy") || !!form.form?.hasAttribute?.("aria-busy");
+    const hasReveal = typeof form.reveal === "function";
+    if (hasReveal) form.reveal();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const busyAfter = form.element.hasAttribute("aria-busy") || !!form.form?.hasAttribute?.("aria-busy");
+    form.destroy?.();
+    return { hadPlaceholder, hasReveal, busyBefore, busyAfter };
+  });
+  assert.equal(formReveal.hasReveal, true, "the form exposes a public reveal()");
+  assert.equal(formReveal.busyBefore, true, "the form region is busy in skeleton mode");
+  assert.equal(formReveal.busyAfter, false, "reveal() clears the busy flag");
+  console.log("form: public reveal() clears the busy flag");
+
   assert.deepEqual(errors, [], "no page errors");
   console.log("Passed skeleton browser checks.");
 } finally {

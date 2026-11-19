@@ -11,6 +11,12 @@
  */
 
 import type { SkeletonConfig } from "./types";
+import { createAvatar } from "../avatar/avatar";
+
+// The builtin rows live in this module — the one the layout's hook reads —
+// so the map is one instance for every consumer: a registration made in a
+// bundled barrel would land in that barrel's private copy and never reach
+// the placeholders.
 
 /** Reads a creator's options into the placeholder it stands in as. */
 export type SkeletonMapping = (options: Record<string, any>) => SkeletonConfig;
@@ -21,6 +27,9 @@ const mappings = new WeakMap<Function, SkeletonMapping>();
 export const registerSkeleton = (creator: Function, map: SkeletonMapping): void => {
   mappings.set(creator, map);
 };
+
+// The avatar stands in as its circle, at the avatar box for its size.
+registerSkeleton(createAvatar, (options) => ({ variant: "circle", size: options.size ?? "large" }));
 
 /** The placeholder config a creator's options map to. Unknown creators are a rect. */
 export const skeletonFor = (creator: Function, options: Record<string, any> = {}): SkeletonConfig => {

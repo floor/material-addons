@@ -171,6 +171,12 @@ export const withLayout = (config: FormConfig) => {
       ui,
       layoutResult,
       _cleanupScrollIndicator: cleanupScrollIndicator,
+      // The documented way out of skeleton mode: swap the real components
+      // in and clear the form region's busy flag.
+      reveal: (): void => {
+        const revealOf = (layoutResult as { reveal?: () => void } | null)?.reveal;
+        if (typeof revealOf === "function") revealOf();
+      },
     };
   };
 };

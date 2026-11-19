@@ -74,6 +74,31 @@ const MODULES = [
     outDir: "dist/components/autocomplete",
   },
   {
+    name: "expansion panel",
+    entry: "src/components/expansion-panel/index.ts",
+    outDir: "dist/components/expansion-panel",
+  },
+  {
+    name: "expansion panel constants",
+    entry: "src/components/expansion-panel/constants.ts",
+    outDir: "dist/components/expansion-panel",
+    basename: "constants",
+  },
+  {
+    name: "expansion panel element",
+    entry: "src/elements/expansion-panel.ts",
+    outDir: "dist/elements",
+    basename: "expansion-panel",
+    plugins: [{
+      name: "reuse-expansion-factories",
+      setup(build) {
+        build.onResolve({ filter: /^\.\.\/components\/expansion-panel$/ }, () => ({
+          path: "../components/expansion-panel/index.mjs", external: true,
+        }));
+      },
+    }],
+  },
+  {
     name: "autocomplete constants",
     entry: "src/components/autocomplete/constants.ts",
     outDir: "dist/components/autocomplete",
@@ -268,7 +293,7 @@ const buildStyles = async () => {
 const buildElementStyles = async () => {
   const dir = join(DIST_DIR, "elements/css");
   await mkdir(dir, { recursive: true });
-  for (const name of ["stepper", "avatar", "skeleton"]) {
+  for (const name of ["stepper", "expansion-panel", "avatar", "skeleton"]) {
     const source = `src/styles/components/_${name}.scss`;
     const result = Bun.spawn(
       ["npx", "sass", source, "--style=compressed", "--no-source-map", "--load-path=node_modules"],
@@ -286,7 +311,7 @@ const buildElementStyles = async () => {
     await Bun.write(join(dir, `${name}.js`),
       'import "material/elements/css/ripple";\n' + peerStyle +
       'import { registerStyles } from "material/elements";\n' +
-      `registerStyles({ ${name}: ${JSON.stringify(css)} });\n`,
+      `registerStyles({ ${JSON.stringify(name)}: ${JSON.stringify(css)} });\n`,
     );
     await Bun.write(join(dir, `${name}.d.ts`), "export {};\n");
     console.log(`  Element stylesheet ${name}: ${(css.length / 1024).toFixed(2)} KB`);

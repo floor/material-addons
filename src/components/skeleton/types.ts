@@ -30,6 +30,14 @@ export interface SkeletonConfig {
   busy?: boolean;
   /** CSS classes, as the shared configuration takes them. */
   class?: string;
+  /**
+   * The placeholder's block size, as a CSS length. A mapping that must hold
+   * the real component's exact box sets this when no `size` in the scale
+   * matches; it writes `--mtrl-skeleton-block-size`.
+   */
+  blockSize?: string;
+  /** The placeholder's inline size, writing `--mtrl-skeleton-inline-size`. */
+  inlineSize?: string;
   componentName?: string;
 }
 

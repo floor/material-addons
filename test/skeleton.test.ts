@@ -92,6 +92,14 @@ describe("skeleton primitive", () => {
     circle.destroy();
   });
 
+  test("blockSize and inlineSize write their tokens", async () => {
+    const { createSkeleton } = await import("../src/components/skeleton");
+    const skeleton = createSkeleton({ variant: "rect", blockSize: "56px", inlineSize: "200px" });
+    expect(skeleton.element.style.getPropertyValue("--mtrl-skeleton-block-size")).toBe("56px");
+    expect(skeleton.element.style.getPropertyValue("--mtrl-skeleton-inline-size")).toBe("200px");
+    skeleton.destroy();
+  });
+
   test("the wave computes when the skeleton is appended after creation", async () => {
     const { createSkeleton } = await import("../src/components/skeleton");
     const skeleton = createSkeleton({ variant: "rect" });
