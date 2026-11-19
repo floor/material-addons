@@ -593,6 +593,39 @@ try {
   assert.equal(twin.grown.skeleton, twin.grown.plain, `content growth behaves like the twin (skeleton ${twin.grown.skeleton}, plain ${twin.grown.plain})`);
   console.log(`post-reveal elasticity: 50% child ${twin.at600.skeleton}px -> ${twin.at400.skeleton}px with the container, growth ${twin.grown.skeleton}px — all equal to the no-skeleton twin`);
 
+  // A single-component layout's root references follow the real element.
+  const rootFollows = await page.evaluate(() => {
+    const { createLayout } = window.skeleton;
+    document.body.innerHTML = "";
+    const creator = (options) => {
+      const element = document.createElement("button");
+      element.textContent = options.label ?? "Save";
+      return { element, destroy: () => element.remove() };
+    };
+    const region = document.createElement("div");
+    document.body.appendChild(region);
+    const result = createLayout([creator, "save", { label: "Save" }], region, { skeleton: true });
+    const host = result.get("save").element;
+    const before = { element: result.element === host, layoutElement: result.layout.element === host };
+    result.reveal();
+    const real = result.get("save").element;
+    const after = {
+      element: result.element === real,
+      layoutElement: result.layout.element === real,
+      connected: result.element.isConnected && result.element === region.querySelector("button"),
+      hostGone: !host.isConnected,
+    };
+    result.destroy();
+    return { before, after };
+  });
+  assert.equal(rootFollows.before.element, true, "before reveal the root is the placeholder's host");
+  assert.equal(rootFollows.before.layoutElement, true, "layout.element is the host too");
+  assert.equal(rootFollows.after.element, true, "result.element follows the real element after reveal");
+  assert.equal(rootFollows.after.layoutElement, true, "result.layout.element follows it too");
+  assert.equal(rootFollows.after.connected, true, "the root reference is the live button in the document");
+  assert.equal(rootFollows.after.hostGone, true, "the host is detached");
+  console.log("single-component root: result.element and result.layout.element follow the real button");
+
   // The form's public reveal(): placeholders stand in, reveal swaps them in
   // and clears the busy flag.
   const formReveal = await page.evaluate(async () => {

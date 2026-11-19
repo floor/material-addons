@@ -744,7 +744,7 @@ function processArraySchema(
   const layout: Record<string, any> = {};
   const components: Array<[string, any]> = [];
   const fragment = createFragment();
-  let component = null;
+  let component: any = null;
 
   if (!Array.isArray(schema)) {
     return createLayoutResult(layout);
@@ -807,7 +807,19 @@ function processArraySchema(
     component = createComponentInstance(creator, processedOptions, options.skeleton === true);
     const element = isComponent(component) ? component.element : component;
 
-    if (level === 1) layout.element = element;
+    if (level === 1) {
+      layout.element = element;
+      // A skeleton root is the placeholder's host; when reveal() replaces
+      // it, the layout's root reference follows the real element.
+      if (component && typeof (component as any).reveal === "function" && (component as any).element === element) {
+        const slotReveal = (component as any).reveal.bind(component);
+        (component as any).reveal = () => {
+          const revealed = slotReveal();
+          layout.element = (component as any).element;
+          return revealed;
+        };
+      }
+    }
     if (name) {
       layout[name] = component;
       components.push([name, component]);
@@ -970,7 +982,12 @@ function createLayoutResult(layout: Record<string, any>): LayoutResult {
 
   return {
     layout,
-    element: layout.element,
+    // Live: a skeleton layout's root is the placeholder's host until
+    // reveal() replaces it with the real element; the root reference
+    // follows that swap instead of pointing at the detached host.
+    get element() {
+      return layout.element;
+    },
     component: flattenedComponents,
 
     get(name: string): any {

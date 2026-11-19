@@ -200,6 +200,27 @@ describe("layout integration", () => {
     result.destroy();
   });
 
+  test("a single-component layout's root references follow the real element after reveal", async () => {
+    const { createLayout } = await import("../src/core/layout");
+    const element = document.createElement("div");
+    document.body.appendChild(element);
+    const creator = (options: any) => ({
+      element: Object.assign(document.createElement("button"), { textContent: options.label }),
+      destroy: () => {},
+    });
+    const result = createLayout([creator, "save", { label: "Save" }], element, { skeleton: true });
+    const host = result.get("save").element as HTMLElement;
+    expect(result.element).toBe(host);
+    expect(result.layout.element).toBe(host);
+    result.reveal();
+    const real = result.get("save").element as HTMLElement;
+    expect(result.element).toBe(real);
+    expect(result.layout.element).toBe(real);
+    expect(result.element.isConnected).toBe(true);
+    expect(host.isConnected).toBe(false);
+    result.destroy();
+  });
+
   test("skeleton(schema, parent) matches the options call; an unknown creator is a rect", async () => {
     const { default: createLayout, skeleton } = await import("../src/core/layout");
     void createLayout;
