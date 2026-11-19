@@ -184,6 +184,9 @@ try {
   for (const field of SHIPPED_FIELDS) {
     assert.deepEqual(pkg[field], source[field], field);
   }
+  // The published peer tracks the tested release with a caret, as the release
+  // brief requires: the development dependency may pin, the peer may not.
+  assert.equal(pkg.peerDependencies.material, `^${source.devDependencies.material}`);
 
   const specifiers = [];
   const adapters = new Map([["./react", "react"], ["./vue", "vue"], ["./solid", "solid-js"]]);

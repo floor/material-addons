@@ -15,10 +15,10 @@ The form and the colour picker have a page with live examples on [md3.io](https:
 
 <!-- install -->
 ```bash
-npm install material-addons material@3.15.1
+npm install material-addons material
 ```
 
-This release uses `material` 3.15.1.
+This package's peer range is `material` `^3.15.1`.
 <!-- /install -->
 
 Both packages are ESM only. The examples below import stylesheets, so they need a bundler that handles CSS imports, such as Vite.
@@ -372,7 +372,7 @@ The gestures:
 
 | Import | From |
 |--------|------|
-| The form, the stepper, the autocomplete, the colour picker, the colour conversions | `material-addons` |
+| The form, the stepper, the autocomplete, the colour picker, the colour conversions, plus the layout and gestures | `material-addons` |
 | The autocomplete factory and types | `material-addons/components/autocomplete` |
 | The autocomplete and option elements | `material-addons/elements/autocomplete` |
 | The autocomplete's shadow styles | `material-addons/elements/css/autocomplete` |
