@@ -382,7 +382,75 @@ defineAutocomplete();
 document.querySelector('m-autocomplete').open();
 ```
 
+#### Framework adapters
+
+| Framework | Import | Components | Model |
+| --- | --- | --- | --- |
+| React | `material-addons/react` | `Autocomplete`, `AutocompleteOption` | `value` and `onChange` |
+| Vue | `material-addons/vue` | `MAutocomplete`, `MAutocompleteOption` | `v-model` or `v-model:value` |
+| Svelte 5 | `material-addons/svelte` | `Autocomplete`, `AutocompleteOption` | `bind:value` |
+| Solid | `material-addons/solid` | `Autocomplete`, `AutocompleteOption` | `value` and `onChange` |
+
+Use `defaultValue` for an uncontrolled initial selection. The adapters register the elements and shadow styles on the client. Each entry exports `AutocompleteElementEventMap`. Event handlers receive the custom event, and `event.detail.value` carries the selection on `change`. In Svelte use lowercase handler props such as `onchange` and `onselect`. Import `material-addons/styles` for pre-upgrade styles.
+
 The element works in the browser and submits its committed value under its name. Its definition can be imported on the server.
+
+## Avatar
+
+Use an image, a monogram, or an icon. The small, medium, and large sizes draw a 24, 30, or 40 px shape. A button or link has a target of at least 48 × 48 px. `supportingText` describes the avatar, and `ariaLabel` overrides its accessible name. Set `decorative` when the surrounding content already names it.
+
+<!-- example: run, shows "Ada Lovelace" -->
+```javascript
+import 'material/styles';
+import 'material-addons/styles';
+import { createAvatar } from 'material-addons/components/avatar';
+
+const avatar = createAvatar({
+  variant: 'text',
+  text: 'AL',
+  label: 'Ada Lovelace',
+  supportingText: 'Editor',
+  badge: { variant: 'large', label: 3 },
+});
+document.body.append(avatar.element);
+```
+
+Pass trusted markup or an element as factory `content`. For `<m-avatar>`, place image or icon markup in the default slot and import the avatar's shadow styles before calling `defineAvatar()`.
+
+<!-- example: fragment -->
+```html
+<m-avatar variant="text" text="AL" label="Ada Lovelace" supporting-text="Editor"></m-avatar>
+```
+
+<!-- example: fragment -->
+```javascript
+import 'material-addons/elements/css/avatar';
+import { defineAvatar } from 'material-addons/elements/avatar';
+
+defineAvatar();
+```
+
+Set `href` for a link. In the factory, pass `onClick` for a native button. On the element, register a direct `click` listener after `defineAvatar()` to make it a button. A disabled avatar blocks activation. The badge uses Material's badge; `placement` uses logical corners and follows writing direction.
+
+| Framework | Import | Component | Click handler |
+| --- | --- | --- | --- |
+| React | `material-addons/react` | `Avatar` | `onClick` |
+| Vue | `material-addons/vue` | `MAvatar` | `@click` |
+| Svelte 5 | `material-addons/svelte` | `Avatar` | `onclick` |
+| Solid | `material-addons/solid` | `Avatar` | `onClick` |
+
+The adapters register the client element and shadow styles. Each framework entry exports `AvatarElementEventMap`. Click handlers receive a native `MouseEvent`.
+
+### Size
+
+Production CI measures each artifact separately at gzip level 9. Material dependencies and framework runtimes are external.
+
+| Artifact | Gzip | Spec estimate |
+| --- | ---: | ---: |
+| Factory | 2,592 B | 1,200 B |
+| Client element | 1,141 B | 500 B |
+| Compiled stylesheet | 1,244 B | 800 B |
+| Combined | 4,977 B | 2,500 B |
 
 ## Layout
 
@@ -445,6 +513,8 @@ The gestures:
 | Import | From |
 |--------|------|
 | The form, the stepper, the autocomplete, the colour picker, the colour conversions, plus the layout and gestures | `material-addons` |
+| The avatar factory and types | `material-addons/components/avatar` |
+| The avatar element and its shadow styles | `material-addons/elements/avatar`, `material-addons/elements/css/avatar` |
 | The autocomplete factory and types | `material-addons/components/autocomplete` |
 | The autocomplete and option elements | `material-addons/elements/autocomplete` |
 | The autocomplete's shadow styles | `material-addons/elements/css/autocomplete` |
@@ -491,6 +561,7 @@ bun run build --production  # the build a release ships
 bun run check:package       # the packed package: its files, its manifest, its entry points
 bun run readme:check        # this file's examples, in Chromium
 bun run check:autocomplete  # autocomplete interactions and form behavior, in Chromium
+bun run check:avatar        # avatar styles, native activation, and adapters, in Chromium
 bun run check:stepper       # stepper focus and validation, in Chromium
 bun run check:stepper-adapters # framework stepper bindings, in Chromium
 bun run link:material       # use the material checkout in ../material

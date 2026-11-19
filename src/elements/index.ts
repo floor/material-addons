@@ -17,3 +17,6 @@ export {
 export type {
   AccordionElement, ExpansionPanelElement, ExpansionPanelElementEventMap,
 } from "./expansion-panel";
+
+export { avatarElement, defineAvatar } from "./avatar";
+export type { AvatarElement, AvatarElementEventMap } from "./avatar";

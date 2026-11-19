@@ -11,6 +11,16 @@ import { releasePack } from "./release-pack.mjs";
 const EXPECTED_PATHS = [
   "LICENSE",
   "README.md",
+  "dist/adapters/autocomplete/contract.d.ts",
+  "dist/adapters/autocomplete/react.d.ts",
+  "dist/adapters/autocomplete/solid.d.ts",
+  "dist/adapters/autocomplete/svelte.d.ts",
+  "dist/adapters/autocomplete/vue.d.ts",
+  "dist/adapters/avatar/contract.d.ts",
+  "dist/adapters/avatar/react.d.ts",
+  "dist/adapters/avatar/solid.d.ts",
+  "dist/adapters/avatar/svelte.d.ts",
+  "dist/adapters/avatar/vue.d.ts",
   "dist/adapters/expansion-panel.d.ts",
   "dist/adapters/react-expansion.d.ts",
   "dist/adapters/react.d.ts",
@@ -32,6 +42,15 @@ const EXPECTED_PATHS = [
   "dist/components/autocomplete/index.d.ts",
   "dist/components/autocomplete/index.mjs",
   "dist/components/autocomplete/types.d.ts",
+  "dist/components/avatar/avatar.d.ts",
+  "dist/components/avatar/config.d.ts",
+  "dist/components/avatar/constants.d.ts",
+  "dist/components/avatar/constants.mjs",
+  "dist/components/avatar/features/withBadge.d.ts",
+  "dist/components/avatar/features/withRenderer.d.ts",
+  "dist/components/avatar/index.d.ts",
+  "dist/components/avatar/index.mjs",
+  "dist/components/avatar/types.d.ts",
   "dist/components/colorpicker/api.d.ts",
   "dist/components/colorpicker/colorpicker.d.ts",
   "dist/components/colorpicker/config.d.ts",
@@ -120,6 +139,11 @@ const EXPECTED_PATHS = [
   "dist/elements/autocomplete-css.mjs",
   "dist/elements/autocomplete.d.ts",
   "dist/elements/autocomplete.mjs",
+  "dist/elements/avatar.d.ts",
+  "dist/elements/avatar.mjs",
+  "dist/elements/css/avatar.css",
+  "dist/elements/css/avatar.d.ts",
+  "dist/elements/css/avatar.js",
   "dist/elements/css/expansion-panel.css",
   "dist/elements/css/expansion-panel.d.ts",
   "dist/elements/css/expansion-panel.js",
@@ -142,12 +166,20 @@ const EXPECTED_PATHS = [
   "dist/styles.css",
   "dist/svelte/Accordion.svelte",
   "dist/svelte/Accordion.svelte.d.ts",
+  "dist/svelte/Autocomplete.svelte",
+  "dist/svelte/Autocomplete.svelte.d.ts",
+  "dist/svelte/AutocompleteOption.svelte",
+  "dist/svelte/AutocompleteOption.svelte.d.ts",
+  "dist/svelte/Avatar.svelte",
+  "dist/svelte/Avatar.svelte.d.ts",
   "dist/svelte/ExpansionPanel.svelte",
   "dist/svelte/ExpansionPanel.svelte.d.ts",
+  "dist/svelte/autocomplete-runtime.mjs",
   "dist/svelte/Step.svelte",
   "dist/svelte/Step.svelte.d.ts",
   "dist/svelte/Stepper.svelte",
   "dist/svelte/Stepper.svelte.d.ts",
+  "dist/svelte/avatar-runtime.mjs",
   "dist/svelte/index.d.ts",
   "dist/svelte/index.js",
   "dist/svelte/runtime.mjs",
@@ -155,12 +187,14 @@ const EXPECTED_PATHS = [
   "dist/vue/index.mjs",
   "package.json",
   "src/styles/components/_autocomplete.scss",
+  "src/styles/components/_avatar.scss",
   "src/styles/components/_colorpicker.scss",
   "src/styles/components/_expansion-panel.scss",
   "src/styles/components/_form.scss",
   "src/styles/components/_stepper.scss",
   "src/styles/core/_layout.scss",
   "src/styles/elements/_autocomplete.scss",
+  "src/styles/elements/_avatar.scss",
   "src/styles/elements/_expansion-panel.scss",
   "src/styles/elements/_stepper.scss",
   "src/styles/index.scss",
@@ -226,7 +260,7 @@ try {
   const specifiers = [];
   const adapters = new Map([["./react", "react"], ["./vue", "vue"], ["./solid", "solid-js"]]);
   for (const [entry, conditions] of Object.entries(pkg.exports)) {
-    const components = entry.includes("*") ? ["form", "colorpicker", "autocomplete", "stepper", "expansion-panel"] : [""];
+    const components = entry.includes("*") ? ["form", "colorpicker", "autocomplete", "stepper", "expansion-panel", "avatar"] : [""];
     for (const component of components) {
       const paths = typeof conditions === "string" ? [conditions] : Object.values(conditions);
       for (const path of paths) {
@@ -253,10 +287,13 @@ try {
     symlinkSync(resolve(root, "node_modules", peer), join(modules, peer), "junction");
     const name = entry === "./vue" ? "MStepper" : "Stepper";
     const child = entry === "./vue" ? "MStep" : "Step";
+    const prefix = entry === "./vue" ? "M" : "";
     run(process.execPath, ["--input-type=module", "-e", `
       import assert from 'node:assert/strict';
       const adapter = await import(${JSON.stringify(pkg.name + entry.slice(1))});
       assert.ok(adapter.${name} && adapter.${child});
+      assert.ok(adapter.${prefix}Autocomplete && adapter.${prefix}AutocompleteOption);
+      assert.ok(adapter.${prefix}Avatar);
     `], fixture);
   }
   assert.match(readFileSync(join(addon, "dist/react/index.mjs"), "utf8"), /^"use client";/);
@@ -272,6 +309,8 @@ try {
     "dist/components/autocomplete/index.mjs", "dist/elements/autocomplete.mjs",
     "dist/components/autocomplete/autocomplete.css", "dist/elements/preupgrade.css",
     "dist/elements/autocomplete-css.mjs",
+    "dist/components/avatar/index.mjs",
+    "dist/elements/avatar.mjs", "dist/elements/css/avatar.css",
   ]) {
     const bytes = readFileSync(join(addon, path));
     console.log(`${path}: ${bytes.length} B raw, ${gzipSync(bytes, { level: 9 }).length} B gzip`);
