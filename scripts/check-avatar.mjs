@@ -163,6 +163,96 @@ try {
     assert.deepEqual(errors, [], "fallback: no page errors");
     await page.close();
     console.log("Avatar image fallback: broken src hidden, initials shown, no layout shift");
+
+  // Recovery: the same img's src changes to a valid URL; the picture
+  // returns and the initials leave.
+  {
+    const page = await browser.newPage();
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto(`http://127.0.0.1:${port}/test/browser/avatar.html`);
+    await page.waitForFunction(() => !!window.createAvatar);
+    const recovery = await page.evaluate(async () => {
+      document.body.innerHTML = "";
+      const avatar = window.createAvatar({
+        variant: "image",
+        text: "Ada Lovelace",
+        content: '<img src="/definitely-missing.png" alt="Ada">',
+      });
+      document.body.appendChild(avatar.element);
+      const img = avatar.element.querySelector("img");
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      const fallen = avatar.element.classList.contains("mtrl-avatar--image-fallback");
+      const initialsShown = !!avatar.element.querySelector(".mtrl-avatar__shape .mtrl-avatar__text");
+      img.src = "/@fs" + "/Users/jvial/Code/floor/worktrees/material-addons/seat-implementer-glm/test/browser/valid.svg";
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      return {
+        fallen,
+        initialsShown,
+        recovered: !img.classList.contains("mtrl-avatar__img--failed") && !avatar.element.classList.contains("mtrl-avatar--image-fallback"),
+        imgDisplayed: img.isConnected && getComputedStyle(img).display !== "none" && img.naturalWidth > 0,
+        initialsGone: !avatar.element.querySelector(".mtrl-avatar__shape .mtrl-avatar__text"),
+        imgAltKept: img.getAttribute("alt"),
+      };
+    });
+    assert.equal(recovery.fallen, true, "the fallback engaged first");
+    assert.equal(recovery.initialsShown, true, "the initials were showing");
+    assert.equal(recovery.recovered, true, `a valid src on the same img recovers the picture (got ${JSON.stringify(recovery.recovered)})`);
+    assert.equal(recovery.imgDisplayed, true, "the recovered image is displayed");
+    assert.equal(recovery.initialsGone, true, "the initials leave the shape on recovery");
+    assert.equal(recovery.imgAltKept, "Ada", `the alt survives the whole cycle (got ${recovery.imgAltKept})`);
+    assert.deepEqual(errors, [], "recovery: no page errors");
+    await page.close();
+    console.log("Avatar fallback recovery: valid src restores the picture, initials leave, name kept");
+  }
+
+  // The element: a slotted image that fails shows the initials, and a
+  // slotted image that loads shows the picture (labelled or not).
+  {
+    const page = await browser.newPage();
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto(`http://127.0.0.1:${port}/test/browser/avatar.html`);
+    await page.waitForFunction(() => !!window.createAvatar);
+    const element = await page.evaluate(async () => {
+      await import("material-addons/elements/css/avatar");
+      window.defineAvatar();
+      document.body.innerHTML = "";
+      const host = document.createElement("m-avatar");
+      host.setAttribute("variant", "image");
+      host.setAttribute("text", "AL");
+      const broken = document.createElement("img");
+      broken.src = "/definitely-missing.png";
+      broken.alt = "Ada photograph";
+      broken.slot = "";
+      host.appendChild(broken);
+      document.body.appendChild(host);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      const inner = host.shadowRoot?.querySelector(".mtrl-avatar") ?? null;
+      const fallenState = {
+        fallbackClass: inner?.classList.contains("mtrl-avatar--image-fallback") ?? false,
+        initials: inner?.querySelector(".mtrl-avatar__shape .mtrl-avatar__text")?.textContent ?? null,
+        name: inner?.getAttribute("aria-label") ?? host.getAttribute("aria-label") ?? null,
+      };
+      broken.src = "/@fs/Users/jvial/Code/floor/worktrees/material-addons/seat-implementer-glm/test/browser/valid.svg";
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      const recoveredState = {
+        fallbackClass: inner?.classList.contains("mtrl-avatar--image-fallback") ?? true,
+        initialsGone: !inner?.querySelector(".mtrl-avatar__shape .mtrl-avatar__text"),
+        loaded: broken.naturalWidth > 0,
+      };
+      return { fallenState, recoveredState };
+    });
+    assert.equal(element.fallenState.fallbackClass, true, `element: the slotted broken image engages the fallback (got ${element.fallenState.fallbackClass})`);
+    assert.equal(element.fallenState.initials, "AL", `element: the initials show (got ${element.fallenState.initials})`);
+    assert.notEqual(element.fallenState.name, null, "element: the name survives on the fallback");
+    assert.equal(element.recoveredState.fallbackClass, false, `element: a valid src on the slotted image recovers (got ${element.recoveredState.fallbackClass})`);
+    assert.equal(element.recoveredState.initialsGone, true, "element: the initials leave on recovery");
+    assert.equal(element.recoveredState.loaded, true, "element: the slotted image really loaded");
+    assert.deepEqual(errors, [], "element: no page errors");
+    await page.close();
+    console.log("Avatar element fallback: slotted broken image falls back and recovers");
+  }
   }
 
   console.log("Avatar crop, names, badge direction, colors, and link behavior passed");

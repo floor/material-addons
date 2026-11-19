@@ -72,6 +72,12 @@
     display: none;
   }
 
+  // The initials fallback: the content stays mounted (a later valid src
+  // still loads and the alt still names the avatar) but is not shown.
+  &--image-fallback &__content {
+    display: none;
+  }
+
   &--icon &__content > :is(svg, img),
   &--icon &__content ::slotted(:is(svg, img)) {
     inline-size: var(--_avatar-icon-size);

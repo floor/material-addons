@@ -96,13 +96,17 @@ export function withRenderer(settings: AvatarSettings) {
       if (settings.variant !== "image") return;
       const blank = contentIsBlank();
       const initials = fallbackInitials();
-      text.textContent = blank && initials ? initials : Array.from(settings.text).slice(0, 2).join("");
-      const next = blank && initials ? text : content;
-      const previous = shape.firstElementChild;
-      if (previous !== next) {
-        if (previous === content || previous === text) previous.replaceWith(next);
-        else shape.prepend(next);
-      }
+      const fallen = blank;
+      root.classList.toggle(`${AVATAR_CLASSES.ROOT}--image-fallback`, fallen);
+      // The content node stays mounted — hidden by the class — so a later
+      // valid src still fires load on a node under the root, and the alt
+      // keeps feeding the accessible name. The initials render beside it
+      // when there are any.
+      text.textContent = initials;
+      if (fallen && initials && text.parentElement !== shape) shape.append(text);
+      else if ((!fallen || !initials) && text.parentElement === shape) text.remove();
+      // The name the root carries depends on the fallback state.
+      updateName();
     }
 
     /** An image element, without an instanceof that a jsdom page cannot name. */
@@ -129,11 +133,16 @@ export function withRenderer(settings: AvatarSettings) {
       const pictures = settings.variant === "image" ? images() : [];
       const first = pictures[0];
       const imageLabel = first && (first.getAttribute("alt") || hiddenImages.get(first));
-      const name = settings.ariaLabel ?? (settings.label || (settings.variant === "text" ? settings.text : imageLabel)) ?? "";
+      // On the initials fallback the image is hidden, so its own alt cannot
+      // name anything: the root takes the name — the alt when there is one,
+      // else the initials.
+      const fallen = root.classList.contains(`${AVATAR_CLASSES.ROOT}--image-fallback`);
+      const fallbackName = fallen ? (imageLabel || fallbackInitials()) : undefined;
+      const name = settings.ariaLabel ?? (settings.label || (settings.variant === "text" ? settings.text : imageLabel) || fallbackName) ?? "";
       const description = settings.supportingText;
       const announcement = badge.name();
       const namedRoot = root.localName !== "div" || settings.variant !== "image" ||
-        settings.ariaLabel !== undefined || !!settings.label || !!description || !!announcement;
+        settings.ariaLabel !== undefined || !!settings.label || !!description || !!announcement || !!fallbackName;
 
       for (const [img, original] of hiddenImages) {
         if (!namedRoot || !pictures.includes(img)) restoreImage(img, original);
@@ -183,10 +192,10 @@ export function withRenderer(settings: AvatarSettings) {
         const replacement = document.createElement(tag);
         for (const attr of Array.from(root.attributes)) replacement.setAttribute(attr.name, attr.value);
         replacement.append(...Array.from(root.childNodes));
-        root.removeEventListener("click", click);
+        unbindRootListeners();
         root.replaceWith(replacement);
         root = replacement;
-        root.addEventListener("click", click);
+        bindRootListeners();
       }
       setAttribute(root, "type", tag === "button" ? "button" : undefined);
       syncDisabled();
@@ -227,6 +236,7 @@ export function withRenderer(settings: AvatarSettings) {
         if (previous === content || previous === text) previous.replaceWith(next);
         else shape.prepend(next);
       }
+      if (settings.variant !== "image") root.classList.remove(`${AVATAR_CLASSES.ROOT}--image-fallback`);
       updateName();
       syncFallback();
     }
@@ -241,11 +251,26 @@ export function withRenderer(settings: AvatarSettings) {
       updateName();
     }
 
-    root.addEventListener("click", click);
-    root.addEventListener("error", imageError, true);
-    root.addEventListener("load", ((event: Event) => {
+    // error does not bubble and load fires per resource; both are heard in
+    // capture on the CURRENT root, because setInteractive replaces the root
+    // node and rebinds them along with click.
+    function imageLoad(event: Event): void {
       if (isImage(event.target)) checkImagesLoaded();
-    }) as EventListener, true);
+    }
+
+    function bindRootListeners(): void {
+      root.addEventListener("click", click);
+      root.addEventListener("error", imageError, true);
+      root.addEventListener("load", imageLoad, true);
+    }
+
+    function unbindRootListeners(): void {
+      root.removeEventListener("click", click);
+      root.removeEventListener("error", imageError, true);
+      root.removeEventListener("load", imageLoad, true);
+    }
+
+    bindRootListeners();
     setModifier("variant", settings.variant);
     setModifier("size", settings.size);
     setModifier("shape", settings.shape);
@@ -264,7 +289,7 @@ export function withRenderer(settings: AvatarSettings) {
       setBadge(config: AvatarSettings["badge"]) { badge.set(config); placeBadge(); },
       destroy() {
         imageObserver.disconnect();
-        root.removeEventListener("error", imageError, true);
+        unbindRootListeners();
         slot?.removeEventListener("slotchange", observeImages);
         for (const [img, original] of hiddenImages) restoreImage(img, original);
         root.removeEventListener("click", click);

@@ -11,6 +11,8 @@
   window.avatarClicks = [];
   const { createAvatar } = await import("material-addons");
   window.createAvatar = createAvatar;
+  const { defineAvatar } = await import("material-addons/elements/avatar");
+  window.defineAvatar = defineAvatar;
   window.recordAvatarClick = event => avatarClicks.push([event.type, event instanceof MouseEvent]);
   const attributes = {
     variant: "text", size: "small", text: "AL", label: "Account", supportingText: "Editor", onClick: recordAvatarClick,
