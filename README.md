@@ -325,7 +325,7 @@ The element works in the browser and submits its committed value under its name.
 
 ## Avatar
 
-Use an image, a monogram, or an icon. Sizes `small`, `medium`, and `large` draw a 24, 30, or 40 px shape. A button or link has a target of at least 48 × 48 px. `supportingText` describes the avatar, and `ariaLabel` overrides its accessible name. Set `decorative` when the surrounding content already names it.
+Use an image, a monogram, or an icon. The small, medium, and large sizes draw a 24, 30, or 40 px shape. A button or link has a target of at least 48 × 48 px. `supportingText` describes the avatar, and `ariaLabel` overrides its accessible name. Set `decorative` when the surrounding content already names it.
 
 <!-- example: run, shows "Ada Lovelace" -->
 ```javascript
@@ -345,10 +345,12 @@ document.body.append(avatar.element);
 
 Pass trusted markup or an element as factory `content`. For `<m-avatar>`, place image or icon markup in the default slot and import the avatar's shadow styles before calling `defineAvatar()`.
 
+<!-- example: fragment -->
 ```html
 <m-avatar variant="text" text="AL" label="Ada Lovelace" supporting-text="Editor"></m-avatar>
 ```
 
+<!-- example: fragment -->
 ```javascript
 import 'material-addons/elements/css/avatar';
 import { defineAvatar } from 'material-addons/elements/avatar';
@@ -365,7 +367,18 @@ Set `href` for a link. In the factory, pass `onClick` for a native button. On th
 | Svelte 5 | `material-addons/svelte` | `Avatar` | `onclick` |
 | Solid | `material-addons/solid` | `Avatar` | `onClick` |
 
-The adapters register the client element and shadow styles. Each framework entry exports `AvatarElementEventMap`, with a native `MouseEvent` for `click`.
+The adapters register the client element and shadow styles. Each framework entry exports `AvatarElementEventMap`. Click handlers receive a native `MouseEvent`.
+
+### Size
+
+The production build measures each artifact separately at gzip level 9. Material dependencies and framework runtimes are external.
+
+| Artifact | Gzip | Spec estimate |
+| --- | ---: | ---: |
+| Factory | 2,592 B | 1,200 B |
+| Client element | 1,138 B | 500 B |
+| Compiled stylesheet | 1,246 B | 800 B |
+| Combined | 4,976 B | 2,500 B |
 
 ## Layout
 

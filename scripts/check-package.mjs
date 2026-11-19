@@ -38,7 +38,6 @@ const EXPECTED_PATHS = [
   "dist/components/autocomplete/index.mjs",
   "dist/components/autocomplete/types.d.ts",
   "dist/components/avatar/avatar.d.ts",
-  "dist/components/avatar/avatar.mjs",
   "dist/components/avatar/config.d.ts",
   "dist/components/avatar/constants.d.ts",
   "dist/components/avatar/constants.mjs",
@@ -282,7 +281,7 @@ try {
     "dist/components/autocomplete/index.mjs", "dist/elements/autocomplete.mjs",
     "dist/components/autocomplete/autocomplete.css", "dist/elements/preupgrade.css",
     "dist/elements/autocomplete-css.mjs",
-    "dist/components/avatar/index.mjs", "dist/components/avatar/avatar.mjs",
+    "dist/components/avatar/index.mjs",
     "dist/elements/avatar.mjs", "dist/elements/css/avatar.css",
   ]) {
     const bytes = readFileSync(join(addon, path));

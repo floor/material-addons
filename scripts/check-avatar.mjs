@@ -63,6 +63,14 @@ try {
   assert.equal(await page.locator("#image").getByRole("group", { name: "Portrait" }).count(), 1);
   assert.equal(await page.getByRole("img", { name: "Alternate portrait" }).count(), 0);
 
+  const icon = page.getByRole("img", { name: "Account icon" });
+  const iconShape = await icon.locator(".mtrl-avatar__shape").boundingBox();
+  const glyph = await page.locator("#icon svg").boundingBox();
+  assert.equal(glyph.width, 18);
+  assert.equal(glyph.height, 18);
+  assert.equal(glyph.x - iconShape.x, 3);
+  assert.equal(glyph.y - iconShape.y, 3);
+
   const link = page.getByRole("link", { name: "Profile" });
   assert.equal(await link.getAttribute("aria-disabled"), "true");
   assert.equal(await link.getAttribute("tabindex"), "-1");

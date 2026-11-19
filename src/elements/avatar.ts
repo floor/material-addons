@@ -1,8 +1,7 @@
 import { defineElement, type DefineOptions, type ElementHost, type ElementInstance, type ElementSpec } from "material/elements";
-import { createAvatarController } from "../components/avatar/avatar";
-import type { AvatarBadgeConfig, AvatarConfig } from "../components/avatar";
+import { createAvatar, type AvatarBadgeConfig, type AvatarComponent, type AvatarConfig } from "../components/avatar";
+import type { AvatarController as Controller } from "../components/avatar/avatar";
 
-type Controller = ReturnType<typeof createAvatarController>;
 type AvatarHost = ElementHost<Controller>;
 type Listener = EventListenerOrEventListenerObject;
 interface ClickSubscription {
@@ -29,7 +28,7 @@ function updateBadge(component: Controller, _value: unknown, host: HTMLElement) 
 const spec = {
   name: "avatar",
   ssr: false,
-  create: (config: Record<string, unknown>) => createAvatarController(config as AvatarConfig),
+  create: (config: Record<string, unknown>) => createAvatar(config as AvatarConfig) as Controller,
   styles: ["badge", "avatar"],
   hostStyles: ":host{display:inline-flex}",
   attributes: {
@@ -61,7 +60,7 @@ const spec = {
 
 export type AvatarSpec = typeof spec;
 export type AvatarElementEventMap = { click: MouseEvent };
-export type AvatarElement = ElementInstance<AvatarSpec, Controller>;
+export type AvatarElement = ElementInstance<AvatarSpec, AvatarComponent>;
 
 const definition = defineElement<Controller>(spec);
 let prepared = false;

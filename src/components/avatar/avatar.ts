@@ -5,7 +5,7 @@ import { withRenderer } from "./features/withRenderer";
 import type { AvatarComponent, AvatarConfig } from "./types";
 
 /** @internal Updates the client element's native control when a host listener is attached. */
-export function createAvatarController(config: AvatarConfig = {}) {
+function createAvatarController(config: AvatarConfig = {}) {
   const settings = avatarSettings(config);
   const renderer = pipe(createBase, withElement(getElementConfig(settings)), withRenderer(settings))({ componentName: "avatar", ...config });
   const avatar: AvatarComponent = {
@@ -46,7 +46,7 @@ export function createAvatarController(config: AvatarConfig = {}) {
   });
 }
 
+export type AvatarController = ReturnType<typeof createAvatarController>;
+
 /** Creates an image, monogram or icon avatar with optional text and badge. */
-export function createAvatar(config: AvatarConfig = {}): AvatarComponent {
-  return createAvatarController(config);
-}
+export const createAvatar: (config?: AvatarConfig) => AvatarComponent = createAvatarController;

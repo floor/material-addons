@@ -47,17 +47,13 @@ const MODULES = [
   { name: "svelte avatar runtime", entry: "src/adapters/avatar/svelte.ts", outDir: "dist/svelte", basename: "avatar-runtime", adapter: true },
   {
     name: "avatar", entry: "src/components/avatar/index.ts", outDir: "dist/components/avatar",
-    plugins: [externalEntry(/^\.\/avatar$/, "./avatar.mjs")],
-  },
-  {
-    name: "avatar factory", entry: "src/components/avatar/avatar.ts", outDir: "dist/components/avatar", basename: "avatar",
   },
   {
     name: "avatar constants", entry: "src/components/avatar/constants.ts", outDir: "dist/components/avatar", basename: "constants",
   },
   {
     name: "avatar element", entry: "src/elements/avatar.ts", outDir: "dist/elements", basename: "avatar",
-    plugins: [externalEntry(/^\.\.\/components\/avatar\/avatar$/, "../components/avatar/avatar.mjs")],
+    plugins: [externalEntry(/^\.\.\/components\/avatar$/, "../components/avatar/index.mjs")],
   },
   {
     name: "form constants",
