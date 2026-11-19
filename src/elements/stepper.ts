@@ -17,11 +17,13 @@
 import {
   DEFAULT_PREFIX,
   defineElement,
+  type AttributeSpec,
   type DefineOptions,
+  type ElementHost,
   type ElementSpec,
 } from "material/elements";
 import createStepper from "../components/stepper";
-import type { StepConfig, StepState, StepperComponent, StepperConfig, StepperOrientation } from "../components/stepper/types";
+import type { StepConfig, StepState, StepperComponent, StepperConfig, StepperEvents, StepperOrientation } from "../components/stepper/types";
 
 /** The tag of the step declaration for a stepper host: `<m-stepper>` reads `<m-step>`. */
 const stepTagOf = (host: HTMLElement): string => host.localName.replace(/stepper$/, "step");
@@ -83,26 +85,28 @@ const authored = new WeakMap<HTMLElement, string>();
 
 const camel = (name: string): string => name.replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
 
+type StepperAttributeValue = Parameters<NonNullable<AttributeSpec<StepperComponent>["update"]>>[1];
+
 const stepperSpec = {
   name: "stepper",
   ssr: false,
   styles: ["stepper"],
   hostStyles: ":host{display:block;contain:layout}",
-  create: (config) => {
+  create: (config: Record<string, unknown>) => {
     const component = createStepper(config as StepperConfig);
     return component;
   },
   attributes: {
-    value: { type: "string", config: "value", update: (c, value) => void c.setValue(value === null ? null : String(value)) },
+    value: { type: "string", config: "value", update: (c: StepperComponent, value: StepperAttributeValue) => void c.setValue(value === null ? null : String(value)) },
     orientation: {
       type: "string",
       config: "orientation",
-      update: (c, value) => {
+      update: (c: StepperComponent, value: StepperAttributeValue) => {
         if (value !== null) c.setOrientation(value as StepperOrientation);
       },
     },
     "auto-breakpoint": { type: "number", config: "autoBreakpoint" },
-    linear: { type: "boolean", config: "linear", update: (c, value) => void c.setLinear(!!value) },
+    linear: { type: "boolean", config: "linear", update: (c: StepperComponent, value: StepperAttributeValue) => void c.setLinear(!!value) },
     "label-placement": { type: "string", config: "labelPlacement" },
     "header-placement": { type: "string", config: "headerPlacement" },
     // The opt-out reaches the factory through `config(host)`; a change rebuilds
@@ -111,16 +115,16 @@ const stepperSpec = {
     "aria-label": {
       type: "string",
       config: "ariaLabel",
-      update: (c, value) => c.element.setAttribute("aria-label", value === null ? "Progress" : String(value)),
+      update: (c: StepperComponent, value: StepperAttributeValue) => c.element.setAttribute("aria-label", value === null ? "Progress" : String(value)),
     },
-    disabled: { type: "boolean", config: "disabled", update: (c, value) => void (value ? c.disable() : c.enable()) },
+    disabled: { type: "boolean", config: "disabled", update: (c: StepperComponent, value: StepperAttributeValue) => void (value ? c.disable() : c.enable()) },
     display: {
       type: "string",
       config: "display",
       // Presentation changes without rebuilding: a rebuild would drop completion
       // and, in linear mode, unlock a completed no-edit step
       // A removed attribute is the default display, not "stay compact"
-      update: (c, value) => c.setDisplay(value as NonNullable<StepperConfig["display"]> | null),
+      update: (c: StepperComponent, value: StepperAttributeValue) => c.setDisplay(value as NonNullable<StepperConfig["display"]> | null),
     },
   },
   properties: {
@@ -175,15 +179,15 @@ const stepperSpec = {
     }
     return true;
   },
-  setup: (host, component) => {
+  setup: (host: ElementHost<StepperComponent>, component: StepperComponent) => {
     // The factory's cancelling beforechange becomes a cancelable DOM event
-    const onBeforeChange = (payload: unknown): void => {
+    const onBeforeChange = (payload: StepperEvents["beforechange"]): void => {
       const event = new CustomEvent("beforechange", { detail: payload, bubbles: true, composed: true, cancelable: true });
       host.dispatchEvent(event);
-      if (event.defaultPrevented) (payload as { preventDefault: () => void }).preventDefault();
+      if (event.defaultPrevented) payload.preventDefault();
     };
     // A failed validation, under a name that is not the page's error channel
-    const onError = (payload: unknown): void => {
+    const onError = (payload: StepperEvents["error"]): void => {
       host.dispatchEvent(new CustomEvent("validationerror", { detail: payload, bubbles: true, composed: true }));
     };
     component.on("beforechange", onBeforeChange);
@@ -195,13 +199,28 @@ const stepperSpec = {
   },
 } satisfies ElementSpec<StepperComponent>;
 
+export type StepperSpec = typeof stepperSpec;
 export const stepperElement = defineElement<StepperComponent>(stepperSpec);
 
 /**
  * `<m-stepper>` as a ref or a query returns it: its attributes and live
  * properties, and the factory methods it forwards.
  */
-export type StepperElement = HTMLElement & {
+export type StepperElementEventMap = {
+  [K in keyof StepperEvents as K extends "error" ? "validationerror" : K]: CustomEvent<StepperEvents[K]>;
+};
+
+export const stepperElementEventNames = [
+  "beforechange", "change", "complete", "reset", "orientationchange", "validationerror",
+] as const satisfies readonly (keyof StepperElementEventMap)[];
+
+export interface StepperElement extends HTMLElement {
+  addEventListener<K extends keyof StepperElementEventMap>(type: K, listener: (this: StepperElement, event: StepperElementEventMap[K]) => void, options?: boolean | AddEventListenerOptions): void;
+  addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, event: HTMLElementEventMap[K]) => void, options?: boolean | AddEventListenerOptions): void;
+  addEventListener(type: string, listener: EventListenerOrEventListenerObject | null, options?: boolean | AddEventListenerOptions): void;
+  removeEventListener<K extends keyof StepperElementEventMap>(type: K, listener: (this: StepperElement, event: StepperElementEventMap[K]) => void, options?: boolean | EventListenerOptions): void;
+  removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, event: HTMLElementEventMap[K]) => void, options?: boolean | EventListenerOptions): void;
+  removeEventListener(type: string, listener: EventListenerOrEventListenerObject | null, options?: boolean | EventListenerOptions): void;
   component: StepperComponent | null;
   readonly dirty: boolean;
   value: string | null;
@@ -240,7 +259,7 @@ export type StepperElement = HTMLElement & {
   enable: () => StepperComponent;
   disable: () => StepperComponent;
   isDisabled: () => boolean;
-};
+}
 
 /**
  * `<m-step>` declares one step and renders nothing itself: its children are

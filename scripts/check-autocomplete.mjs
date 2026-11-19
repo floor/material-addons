@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { createServer } from "vite";
 
-const server = await createServer({ configFile: false, server: { host: "127.0.0.1", port: 0, hmr: false } });
+const server = await createServer({
+  configFile: false,
+  optimizeDeps: { entries: ["test/browser/autocomplete.html"] },
+  server: { host: "127.0.0.1", port: 0, hmr: false },
+});
 let browser;
 try {
   await server.listen();

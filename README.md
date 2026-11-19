@@ -1,6 +1,6 @@
 # material-addons
 
-A form builder, a stepper, an autocomplete, a colour picker, a layout schema and gesture recognition for [material](https://github.com/floor/material), the Material Design 3 component library. Written in TypeScript; its only dependency is `material`, as a peer.
+A form builder, a stepper, an autocomplete, a colour picker, a layout schema and gesture recognition for [material](https://github.com/floor/material), the Material Design 3 component library. The TypeScript library requires Material as a peer. The framework adapters use optional peers.
 
 - **Form.** Builds a set of fields from a layout and keeps their data: it reads and sets it, knows when it has changed, validates it and submits it.
 - **Autocomplete.** An editable text field with a suggestion popup, keyboard navigation and optional async suggestions.
@@ -180,6 +180,25 @@ A `<m-step>` declares one step:
 | `icon` | The indicator's glyph |
 | `completed`, `error`, `optional`, `disabled` | The step's state |
 | `no-edit` | Present to bar returning once completed |
+
+### Framework adapters
+
+Install the framework you use. The factory and custom element imports work without a framework dependency.
+
+| Framework | Import | Components | Two-way state |
+| --- | --- | --- | --- |
+| React | `material-addons/react` | `Stepper`, `Step` | `value` and `onChange` |
+| Vue | `material-addons/vue` | `MStepper`, `MStep` | `v-model` or `v-model:value` |
+| Svelte 5 | `material-addons/svelte` | `Stepper`, `Step` | `bind:value` |
+| Solid | `material-addons/solid` | `Stepper`, `Step` | `value` and `onChange` |
+
+The adapters load the shadow styles and register both tags when mounted. They pass the same typed custom events as the elements. Call `preventDefault()` on the before-change event to veto navigation.
+
+| Event API | Before change | Validation failed |
+| --- | --- | --- |
+| React and Solid callbacks | `onBeforechange` | `onValidationerror` |
+| Vue listeners | `@beforechange` | `@validationerror` |
+| Svelte callbacks | `onbeforechange` | `onvalidationerror` |
 
 ### Size
 
@@ -394,6 +413,7 @@ bun run check:package       # the packed package: its files, its manifest, its e
 bun run readme:check        # this file's examples, in Chromium
 bun run check:autocomplete  # autocomplete interactions and form behavior, in Chromium
 bun run check:stepper       # stepper focus and validation, in Chromium
+bun run check:stepper-adapters # framework stepper bindings, in Chromium
 bun run link:material       # use the material checkout in ../material
 ```
 
