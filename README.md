@@ -115,6 +115,19 @@ Each callback named after an event takes its payload; the table lists them all.
 | `reset` | `reset()` ran | No |
 | `orientationchange` | An auto layout switched | No |
 
+### Compact displays
+
+A stepper can show less of each step. `display` picks how much, and defaults to `labels`.
+
+| Value | Shows |
+|-------|-------|
+| `labels` | Every step's label and indicator, as above |
+| `count` | One line, "Step 2 of 4: Shipping address" |
+| `dots` | Dots only; the headers stay clickable and keep their names |
+| `progress` | A determinate progress bar and the same line as `count` |
+
+`count` and `progress` replace the header list with a read-only status line, so the panel's action buttons move the user; `dots` keeps the headers interactive. The polite live region announces every change in all four modes.
+
 ### The element
 
 `<m-stepper>` with one `<m-step>` per step is the same component as a custom element. Its children stay in the light DOM and become the panel's content through a slot, so a form inside a step is an ordinary form.
@@ -153,6 +166,7 @@ The element takes the factory's options as attributes:
 | `no-report-validity` | Present to skip `reportValidity()` |
 | `optional-supporting-text` | The caption for optional steps |
 | `aria-label` | The group label, `Progress` by default |
+| `display` | `labels`, `count`, `dots` or `progress` |
 | `disabled` | Present to disable the whole stepper |
 
 A `<m-step>` declares one step:
@@ -172,22 +186,23 @@ Measured as standalone minified ESM bundles, gzipped, with `material` external; 
 
 | Artifact | Measured | Target |
 |----------|----------|--------|
-| `createStepper` | 6.6 KB | 2.2 KB |
+| `createStepper` | 7.1 KB | 2.2 KB |
 | `<m-stepper>` and `<m-step>` | 1.5 KB | 0.7 KB |
-| The compiled stylesheet | 1.6 KB | 1.4 KB |
+| The compiled stylesheet | 1.7 KB | 1.4 KB |
 
 The targets were estimates made before the implementation, and all three rows
 exceed them; the row records what was measured, not what was hoped for.
 
 Where the factory's bytes go, in source: the navigation, validation and
-action handling is 20 KB and the renderer 12 KB; the rest is 15 KB between
+action handling is 21 KB and the renderer 13 KB; the rest is 15 KB between
 them.
 
 The renderer builds fifteen parts and their ARIA state. The navigation runs
 the three validation stages and the completion rules.
 
 The element is 10.7 KB of source for ten attributes and the declaration
-class. The sheet is 7.3 KB minified for the token set and the layout blocks.
+class. The sheet is 8.6 KB minified for the token set, the layout blocks and the four
+displays.
 
 ## Colour picker
 

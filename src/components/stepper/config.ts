@@ -16,6 +16,7 @@ export const defaultConfig: StepperConfig = {
   reportValidity: STEPPER_DEFAULTS.REPORT_VALIDITY,
   validateOnForward: STEPPER_DEFAULTS.VALIDATE_ON_FORWARD,
   focusOnAction: STEPPER_DEFAULTS.FOCUS_ON_ACTION,
+  display: STEPPER_DEFAULTS.DISPLAY,
   optionalSupportingText: STEPPER_DEFAULTS.OPTIONAL_SUPPORTING_TEXT,
   ariaLabel: STEPPER_DEFAULTS.ARIA_LABEL,
   disabled: false,
@@ -32,6 +33,7 @@ export interface StepperSettings extends StepperConfig {
   reportValidity: boolean;
   validateOnForward: boolean;
   focusOnAction: NonNullable<StepperConfig["focusOnAction"]>;
+  display: NonNullable<StepperConfig["display"]>;
   optionalSupportingText: string;
   ariaLabel: string;
   disabled: boolean;

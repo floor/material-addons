@@ -114,6 +114,7 @@ describe("<m-stepper> and <m-step>", () => {
       "aria-label",
       "auto-breakpoint",
       "disabled",
+      "display",
       "header-placement",
       "label-placement",
       "linear",
@@ -243,6 +244,49 @@ describe("<m-stepper> and <m-step>", () => {
     await flush();
     expect(host.value).toBe("review");
     expect(shadow(host).querySelectorAll(".mtrl-stepper__header")[2]!.getAttribute("aria-current")).toBe("step");
+  });
+
+  test("the display attribute picks the compact presentation and survives a change", async () => {
+    const host = mount('display="dots"');
+    const root = () => shadow(host).querySelector(".mtrl-stepper")!;
+    expect(root().classList.contains("mtrl-stepper--display-dots")).toBe(true);
+    host.setAttribute("display", "progress");
+    await flush();
+    expect(root().classList.contains("mtrl-stepper--display-progress")).toBe(true);
+    expect(shadow(host).querySelector('[role="progressbar"]')!.getAttribute("aria-valuenow")).toBe("1");
+    expect(host.display).toBe("progress");
+  });
+
+  test("a removed display attribute returns to labels, and the method is exposed", async () => {
+    const host = mount('display="dots"');
+    const root = () => shadow(host).querySelector(".mtrl-stepper")!;
+    expect(typeof host.setDisplay).toBe("function");
+    host.removeAttribute("display");
+    await flush();
+    expect(root().classList.contains("mtrl-stepper--display-labels")).toBe(true);
+    expect(shadow(host).querySelector<HTMLOListElement>(".mtrl-stepper__list")!.hidden).toBe(false);
+    host.setDisplay("progress");
+    expect(root().classList.contains("mtrl-stepper--display-progress")).toBe(true);
+    host.setDisplay(null);
+    expect(root().classList.contains("mtrl-stepper--display-labels")).toBe(true);
+  });
+
+  test("changing display re-presents without rebuilding the step state", async () => {
+    document.body.innerHTML = `
+      <m-stepper linear>
+        <m-step value="a" label="A" no-edit><button data-stepper-next>Next</button></m-step>
+        <m-step value="b" label="B"></m-step>
+      </m-stepper>`;
+    const host = document.querySelector("m-stepper") as unknown as StepperHost;
+    expect(await host.next()).toBe(true);
+    const component = (host as unknown as { component: unknown }).component;
+    host.setAttribute("display", "dots");
+    await flush();
+    // Same component: presentation only, completion and the linear lock stay
+    expect((host as unknown as { component: unknown }).component).toBe(component);
+    expect(host.getSteps()[0]!.completed).toBe(true);
+    expect(await host.prev()).toBe(false);
+    expect(shadow(host).querySelector(".mtrl-stepper")!.classList.contains("mtrl-stepper--display-dots")).toBe(true);
   });
 
   test("no inline style.order is ever written on the consumer's steps", () => {

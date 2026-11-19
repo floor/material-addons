@@ -62,6 +62,13 @@ const withStepperCore =
       originalDestroy.call(component.lifecycle);
     };
 
+    const setDisplay = (next: NonNullable<StepperConfig["display"]> | null): void => {
+      // Presentation only: the step states stay exactly as they are. Clearing
+      // the display (a removed attribute, a null property) is the default
+      settings.display = next === "count" || next === "dots" || next === "progress" ? next : "labels";
+      sync();
+    };
+
     const setOrientation = (next: StepperOrientation): void => {
       settings.orientation = next;
       // The new axis is resolved and the classes follow it, not the old one
@@ -75,6 +82,7 @@ const withStepperCore =
       renderer,
       navigation,
       setOrientation,
+      setDisplay,
       resolved: () => orientation.resolved(),
       sync,
     };

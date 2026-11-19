@@ -1,6 +1,6 @@
 // src/components/stepper/api.ts
 
-import type { StepConfig, StepState, StepperComponent, StepperOrientation } from "./types";
+import type { StepConfig, StepState, StepperComponent, StepperConfig, StepperOrientation } from "./types";
 import type { Navigation } from "./features/navigation";
 import type { Renderer } from "./features/renderer";
 import type { StepperSettings } from "./config";
@@ -12,6 +12,7 @@ export interface StepperCore {
   renderer: Renderer;
   navigation: Navigation;
   setOrientation: (orientation: StepperOrientation) => void;
+  setDisplay: (display: NonNullable<StepperConfig["display"]> | null) => void;
   resolved: () => "horizontal" | "vertical";
   sync: () => void;
 }
@@ -94,6 +95,10 @@ export const withAPI =
       getHeaderElement: navigation.getHeaderElement,
       setOrientation: (orientation: StepperOrientation) => {
         core.setOrientation(orientation);
+        return component as unknown as StepperComponent;
+      },
+      setDisplay: (display) => {
+        core.setDisplay(display);
         return component as unknown as StepperComponent;
       },
       getResolvedOrientation: core.resolved,
