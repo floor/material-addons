@@ -371,14 +371,14 @@ The adapters register the client element and shadow styles. Each framework entry
 
 ### Size
 
-The production build measures each artifact separately at gzip level 9. Material dependencies and framework runtimes are external.
+Production CI measures each artifact separately at gzip level 9. Material dependencies and framework runtimes are external.
 
 | Artifact | Gzip | Spec estimate |
 | --- | ---: | ---: |
 | Factory | 2,592 B | 1,200 B |
-| Client element | 1,138 B | 500 B |
-| Compiled stylesheet | 1,246 B | 800 B |
-| Combined | 4,976 B | 2,500 B |
+| Client element | 1,141 B | 500 B |
+| Compiled stylesheet | 1,244 B | 800 B |
+| Combined | 4,977 B | 2,500 B |
 
 ## Layout
 
