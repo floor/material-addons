@@ -22,7 +22,7 @@
     function App() {
       const [value, setValue] = useState("one");
       return h("div", null,
-        h(Stepper, { value, onBeforechange: recordBefore, onChange: event => {
+        h(Stepper, { value, display: value === "one" ? "count" : "dots", onBeforechange: recordBefore, onChange: event => {
           recordChange(event);
           setValue(event.detail.value);
         } },
@@ -39,7 +39,8 @@
         const value = ref("one");
         return () => h("div", [
           h(MStepper, {
-            modelValue: value.value, "onUpdate:modelValue": next => { value.value = next; },
+            modelValue: value.value, display: value.value === "one" ? "count" : "dots",
+            "onUpdate:modelValue": next => { value.value = next; },
             onBeforechange: recordBefore, onChange: recordChange,
           }, () => [
             h(MStep, { value: "one", label: "One", supportingText: "First" }, () => "First panel"),
@@ -58,6 +59,7 @@
       return [
         createComponent(Stepper, {
           get value() { return value(); },
+          get display() { return value() === "one" ? "count" : "dots"; },
           onBeforechange: recordBefore,
           onChange(event) { recordChange(event); setValue(event.detail.value); },
           get children() { return [

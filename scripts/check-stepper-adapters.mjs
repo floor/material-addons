@@ -40,11 +40,15 @@ try {
         ["one", "One", "First"], ["two", "Two", undefined],
       ], framework);
       assert.ok(await stepper.evaluate(node => node.shadowRoot.adoptedStyleSheets.length > 0), framework);
+      assert.equal(await stepper.getAttribute("display"), "count", framework);
+      assert.ok(await stepper.evaluate(node => node.component.element.classList.contains("mtrl-stepper--display-count")), framework);
       assert.equal(await stepper.evaluate(node => node.goTo("two")), false, framework);
       assert.equal(await stepper.evaluate(node => node.value), "one", framework);
       await page.evaluate(() => { window.veto = false; });
       assert.equal(await stepper.evaluate(node => node.goTo("two")), true, framework);
       await page.waitForFunction(() => document.querySelector("output")?.textContent === "two");
+      assert.equal(await stepper.getAttribute("display"), "dots", framework);
+      assert.ok(await stepper.evaluate(node => node.component.element.classList.contains("mtrl-stepper--display-dots")), framework);
       assert.deepEqual(await page.evaluate(() => window.events), [
         ["beforechange", "two", true], ["beforechange", "two", true], ["change", "two"],
       ], framework);

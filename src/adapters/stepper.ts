@@ -1,17 +1,17 @@
-import { describe, describeDeclaration, getPrefix, toAttribute } from "material/elements";
+import { describe, describeDeclaration, getPrefix, toAttribute, type DefaultProps, type ElementProps } from "material/elements";
 import {
   defineStepper, stepDeclaration, stepperElement, stepperElementEventNames,
-  type StepAttributes, type StepperElement, type StepperElementEventMap,
+  type StepAttributes, type StepperElement, type StepperElementEventMap, type StepperSpec,
 } from "../elements/stepper";
 import type { StepperConfig } from "../components/stepper/types";
 
 export type StepProps = Partial<StepAttributes>;
-export type StepperProps = Pick<StepperConfig,
-  "orientation" | "autoBreakpoint" | "linear" | "labelPlacement" | "headerPlacement" |
-  "optionalSupportingText" | "disabled" | "value"> & {
-  defaultValue?: string | null;
-  noReportValidity?: boolean;
-  ariaLabel?: string;
+type ElementStepperProps = ElementProps<StepperSpec>;
+/** The element chooses the prop names. The factory narrows its option values. */
+export type StepperProps = {
+  [K in keyof ElementStepperProps]: K extends keyof StepperConfig ? StepperConfig[K] : ElementStepperProps[K];
+} & {
+  [K in keyof DefaultProps<StepperSpec>]: DefaultProps<StepperSpec>[K] | null;
 };
 export type StepperEventProps = {
   [K in keyof StepperElementEventMap as `on${Capitalize<K>}`]?: (event: StepperElementEventMap[K]) => void;

@@ -20,8 +20,6 @@ Published as `mtrl-addons` up to 0.9.x. This file has written notes from 0.8.0, 
 - The `_stepper.scss` stylesheet and its pre-upgrade rules, built from the
   `--mtrl-sys-*` tokens, forwarding through `material-addons/styles`.
 
-- Generated React, Vue, Svelte and Solid wrappers for the stepper and step elements. Framework peers are optional. Factory listeners and element events expose typed payload maps.
-
 ### Changed
 
 - Require the tested Material 3.15.1 peer for the stepper and autocomplete element contracts.
