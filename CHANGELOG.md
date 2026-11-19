@@ -2,6 +2,27 @@
 
 Published as `mtrl-addons` up to 0.9.x. This file has written notes from 0.8.0, and the commit history below for everything earlier.
 
+## [Unreleased]
+
+### Added
+
+- The stepper, planned for 3.1.0: `createStepper`, exported from the
+  package root and from `material-addons/components/stepper`, with steps,
+  linear or free progression, a three-stage validation pipeline, a
+  cancellable `beforechange`, declarative `data-stepper-*` actions and an
+  auto orientation that follows the container width.
+- `<m-stepper>` and `<m-step>`, client custom elements built on
+  `material/elements`, exported from `material-addons/elements` and
+  `material-addons/elements/stepper`. Their shadow stylesheet is
+  `material-addons/elements/css/stepper`. Server rendering is deferred.
+- The `_stepper.scss` stylesheet and its pre-upgrade rules, built from the
+  `--mtrl-sys-*` tokens, forwarding through `material-addons/styles`.
+
+### Changed
+
+- The `material` peer range is `^3.15.1`, the version the stepper is built
+  and tested against.
+
 ## [3.0.0] - 2026-10-04
 
 The first stable release for material 3, and everything since 0.9.0. There
