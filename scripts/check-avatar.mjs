@@ -1,0 +1,128 @@
+import assert from "node:assert/strict";
+import { chromium } from "playwright";
+import { compile } from "svelte/compiler";
+import { createServer } from "vite";
+
+const server = await createServer({
+  configFile: false,
+  define: {
+    __VUE_OPTIONS_API__: true,
+    __VUE_PROD_DEVTOOLS__: false,
+    __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: false,
+  },
+  resolve: { conditions: ["svelte", "module", "browser", "development"] },
+  cacheDir: "node_modules/.vite-avatar",
+  optimizeDeps: { entries: ["test/browser/avatar.html"], exclude: ["material-addons/svelte", "svelte"] },
+  server: { host: "127.0.0.1", port: 0, hmr: false },
+  plugins: [{
+    name: "compile-svelte-fixture",
+    transform(source, filename) {
+      if (filename.endsWith(".svelte")) return compile(source, { filename, generate: "client" }).js;
+    },
+  }],
+});
+
+let browser;
+try {
+  await server.listen();
+  const { port } = server.httpServer.address();
+  const fixture = `http://127.0.0.1:${port}/test/browser/avatar.html`;
+  browser = await chromium.launch();
+  const page = await browser.newPage();
+  const errors = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.goto(fixture);
+  const factory = page.getByRole("button", { name: "Account, 8", exact: true });
+  await factory.waitFor();
+  assert.equal(await factory.getAttribute("aria-describedby"), await factory.locator(".mtrl-avatar__supporting").getAttribute("id"));
+  assert.equal((await factory.boundingBox()).width >= 48, true);
+  assert.equal((await factory.boundingBox()).height, 48);
+  assert.equal((await factory.locator(".mtrl-avatar__shape").boundingBox()).width, 24);
+
+  const badge = factory.locator(".mtrl-avatar__badge");
+  const shape = factory.locator(".mtrl-avatar__shape");
+  assert.equal((await badge.boundingBox()).x > (await shape.boundingBox()).x, true);
+  await page.evaluate(() => { document.documentElement.dir = "rtl"; });
+  assert.equal((await badge.boundingBox()).x, (await shape.boundingBox()).x);
+  const shapeText = factory.locator(".mtrl-avatar__text");
+  for (const [background, foreground] of [["rgb(250, 220, 250)", "rgb(40, 20, 40)"], ["rgb(50, 30, 50)", "rgb(250, 200, 250)"]]) {
+    await page.evaluate(([background, foreground]) => {
+      document.documentElement.style.setProperty("--mtrl-sys-color-primary-container", background);
+      document.documentElement.style.setProperty("--mtrl-sys-color-on-primary-container", foreground);
+    }, [background, foreground]);
+    assert.deepEqual(await shapeText.evaluate(node => {
+      const style = getComputedStyle(node);
+      return [style.backgroundColor, style.color];
+    }), [background, foreground]);
+  }
+
+  const image = page.locator("#image img");
+  assert.equal(await image.getAttribute("alt"), "");
+  assert.equal((await image.boundingBox()).width, 30);
+  assert.equal(await image.evaluate(node => getComputedStyle(node).objectFit), "cover");
+  assert.equal(await page.locator("#image").getByRole("group", { name: "Portrait" }).count(), 1);
+  assert.equal(await page.getByRole("img", { name: "Alternate portrait" }).count(), 0);
+
+  const icon = page.getByRole("img", { name: "Account icon" });
+  const iconShape = await icon.locator(".mtrl-avatar__shape").boundingBox();
+  const glyph = await page.locator("#icon svg").boundingBox();
+  assert.equal(glyph.width, 18);
+  assert.equal(glyph.height, 18);
+  assert.equal(glyph.x - iconShape.x, 3);
+  assert.equal(glyph.y - iconShape.y, 3);
+
+  const link = page.getByRole("link", { name: "Profile" });
+  assert.equal(await link.getAttribute("aria-disabled"), "true");
+  assert.equal(await link.getAttribute("tabindex"), "-1");
+  await link.evaluate(node => node.click());
+  assert.equal(new URL(page.url()).hash, "");
+  await page.locator("#link").evaluate(node => { node.disabled = false; });
+  await link.focus();
+  await page.keyboard.press("Enter");
+  assert.equal(new URL(page.url()).hash, "#destination");
+
+  await page.emulateMedia({ forcedColors: "active" });
+  await page.keyboard.press("Shift+Tab");
+  assert.equal(await factory.evaluate(node => node.matches(":focus-visible")), true);
+  const reference = page.locator("#forced-reference");
+  assert.equal(await shape.evaluate(node => getComputedStyle(node).borderTopWidth), "1px");
+  assert.equal(await shape.evaluate(node => getComputedStyle(node).borderTopColor),
+    await reference.evaluate(node => getComputedStyle(node).borderTopColor));
+  assert.equal(await factory.evaluate(node => getComputedStyle(node).outlineColor),
+    await reference.evaluate(node => getComputedStyle(node).outlineColor));
+  await page.locator("#link").evaluate(node => { node.disabled = true; });
+  assert.equal(await link.locator(".mtrl-avatar__text").evaluate(node => getComputedStyle(node).color),
+    await reference.evaluate(node => getComputedStyle(node).color));
+  assert.deepEqual(errors, []);
+  await page.close();
+
+  for (const framework of ["react", "vue", "solid", "svelte"]) {
+    const page = await browser.newPage();
+    const errors = [];
+    page.on("pageerror", error => errors.push(error.message));
+    await page.goto(`${fixture}?framework=${framework}`);
+    const button = page.getByRole("button", { name: "Account", exact: true });
+    await button.waitFor();
+    assert.equal(await button.getAttribute("type"), "button", framework);
+    assert.equal(await button.getByText("Editor").count(), 1, framework);
+    assert.equal((await button.locator(".mtrl-avatar__shape").boundingBox()).width, 24, framework);
+    assert.equal((await button.boundingBox()).height, 48, framework);
+    await page.keyboard.press("Tab");
+    assert.equal(await button.evaluate(node => node.matches(":focus-visible")), true, framework);
+    await page.keyboard.press("Enter");
+    await page.keyboard.press("Space");
+    assert.deepEqual(await page.evaluate(() => window.avatarClicks), [["click", true], ["click", true]], framework);
+    await page.getByRole("button", { name: "Disable avatar" }).click();
+    assert.equal(await button.isDisabled(), true, framework);
+    await button.evaluate(node => node.click());
+    assert.equal(await page.evaluate(() => window.avatarClicks.length), 2, framework);
+    assert.equal(await page.getByRole("img", { name: "Presentational avatar" }).count(), 1, framework);
+    assert.deepEqual(errors, [], framework);
+    await page.close();
+    console.log(`${framework}: avatar attributes, styles, native activation and disabled state passed`);
+  }
+  console.log("Avatar crop, names, badge direction, colors, and link behavior passed");
+} finally {
+  await browser?.close();
+  await server.close();
+}

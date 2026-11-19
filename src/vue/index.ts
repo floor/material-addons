@@ -11,3 +11,8 @@ export const MAutocomplete = /*#__PURE__*/ createVueAutocomplete();
 export const MAutocompleteOption = /*#__PURE__*/ createVueAutocompleteOption();
 export type { VueAutocompleteProps, VueAutocompleteEmits } from "../adapters/autocomplete/vue";
 export type { AutocompleteElementEventMap } from "../elements/autocomplete";
+import "material-addons/elements/css/avatar";
+import { createVueAvatar } from "../adapters/avatar/vue";
+export const MAvatar = /*#__PURE__*/ createVueAvatar();
+export type { VueAvatarProps } from "../adapters/avatar/vue";
+export type { AvatarElementEventMap } from "../elements/avatar";
