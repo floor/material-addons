@@ -176,11 +176,14 @@ export function withRenderer(settings: AvatarSettings) {
       // One name rule for every variant and every path: a failed image that
       // carried the only name hands that name to the root, in the image
       // variant, beside a decorative icon, or anywhere else an img fails.
-      const failedNamedImage = images().find((img) => failedImages.has(img) && (img.getAttribute("alt") || hiddenImages.get(img)));
-      const fallen = root.classList.contains(`${AVATAR_CLASSES.ROOT}--image-fallback`) || !!failedNamedImage;
-      const fallbackName = failedNamedImage
-        ? (failedNamedImage.getAttribute("alt") || hiddenImages.get(failedNamedImage) || fallbackInitials())
-        : undefined;
+      const failedImage = images().find((img) => failedImages.has(img));
+      const fallen = root.classList.contains(`${AVATAR_CLASSES.ROOT}--image-fallback`) || !!failedImage;
+      // The fallback name: the failed image's alt when it is non-empty,
+      // else the initials. An empty or missing alt does not leave the root
+      // nameless — role img without a name would make the initials
+      // presentational too.
+      const failedAlt = failedImage ? (failedImage.getAttribute("alt") || hiddenImages.get(failedImage) || "") : "";
+      const fallbackName = fallen ? (failedAlt || fallbackInitials()) || undefined : undefined;
       const name = settings.ariaLabel ?? (settings.label || (settings.variant === "text" ? settings.text : imageLabel) || fallbackName) ?? "";
       const description = settings.supportingText;
       const announcement = badge.name();
@@ -201,7 +204,9 @@ export function withRenderer(settings: AvatarSettings) {
       // initials) — in the image variant and in the icon path, where a
       // failed slotted img hides beside an authored icon; an interactive one
       // keeps its button and its name.
-      const fallenRoot = root.localName === "div" && fallen;
+      // Never role img without a name: a nameless img makes its children
+      // presentational, hiding the initials the fallback just showed.
+      const fallenRoot = root.localName === "div" && fallen && !!name;
       const role = fallenRoot ? "img"
         : root.localName === "div" ? (namedRoot ? (first || description ? "group" : "img") : undefined)
         : root.localName === "a" && settings.disabled ? "link" : undefined;

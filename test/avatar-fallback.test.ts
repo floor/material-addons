@@ -153,6 +153,59 @@ describe("avatar image fallback", () => {
     avatar.destroy();
   });
 
+  test("alt empty with initials: role img named from the initials, never nameless", async () => {
+    const { createAvatar } = await import("../src/components/avatar");
+    const avatar = createAvatar({
+      variant: "image",
+      text: "AL",
+      content: '<img src="http://localhost/missing.png" alt="">',
+    });
+    document.body.appendChild(avatar.element);
+    const img = avatar.element.querySelector("img")!;
+    Object.defineProperty(img, "complete", { value: true, configurable: true });
+    Object.defineProperty(img, "naturalWidth", { value: 0, configurable: true });
+    img.dispatchEvent(new Event("error"));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(avatar.element.getAttribute("role")).toBe("img");
+    expect(avatar.element.getAttribute("aria-label")).toBe("AL");
+    avatar.destroy();
+  });
+
+  test("no alt at all with initials: the root is named from the initials", async () => {
+    const { createAvatar } = await import("../src/components/avatar");
+    const avatar = createAvatar({
+      variant: "image",
+      text: "AL",
+      content: '<img src="http://localhost/missing.png">',
+    });
+    document.body.appendChild(avatar.element);
+    const img = avatar.element.querySelector("img")!;
+    Object.defineProperty(img, "complete", { value: true, configurable: true });
+    Object.defineProperty(img, "naturalWidth", { value: 0, configurable: true });
+    img.dispatchEvent(new Event("error"));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(avatar.element.getAttribute("role")).toBe("img");
+    expect(avatar.element.getAttribute("aria-label")).toBe("AL");
+    avatar.destroy();
+  });
+
+  test("no alt and no initials: no nameless role img", async () => {
+    const { createAvatar } = await import("../src/components/avatar");
+    const avatar = createAvatar({
+      variant: "image",
+      content: '<img src="http://localhost/missing.png">',
+    });
+    document.body.appendChild(avatar.element);
+    const img = avatar.element.querySelector("img")!;
+    Object.defineProperty(img, "complete", { value: true, configurable: true });
+    Object.defineProperty(img, "naturalWidth", { value: 0, configurable: true });
+    img.dispatchEvent(new Event("error"));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    // Nothing names the root, so it does not become a nameless img.
+    expect(avatar.element.getAttribute("role")).not.toBe("img");
+    avatar.destroy();
+  });
+
   test("an authored icon beside the failed image keeps showing", async () => {
     const { createAvatar } = await import("../src/components/avatar");
     const avatar = createAvatar({

@@ -397,6 +397,42 @@ try {
     assert.deepEqual(errors, [], "decorative: no page errors");
     await page.close();
     console.log("Avatar decorative icon: failed img hidden, icon shows, root named from the alt");
+
+  // Never a nameless role img: with alt="" and initials AL the root is
+  // role img NAMED "AL"; with no alt and no initials it is not role img.
+  {
+    const page = await browser.newPage();
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto(`http://127.0.0.1:${port}/test/browser/avatar.html`, { waitUntil: "networkidle" });
+    await page.waitForFunction(() => !!window.createAvatar && !!window.defineAvatar);
+    const nameless = await page.evaluate(async () => {
+      const make = (content) => window.createAvatar({ variant: "image", text: "AL", content });
+      document.body.innerHTML = "";
+      const emptyAlt = make('<img src="/definitely-missing.png" alt="">');
+      document.body.appendChild(emptyAlt.element);
+      const noAlt = make('<img src="/definitely-missing.png">');
+      document.body.appendChild(noAlt.element);
+      const noInitials = window.createAvatar({ variant: "image", content: '<img src="/definitely-missing.png">' });
+      document.body.appendChild(noInitials.element);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      const read = (avatar) => ({
+        role: avatar.element.getAttribute("role"),
+        name: avatar.element.getAttribute("aria-label"),
+        initials: avatar.element.querySelector(".mtrl-avatar__shape .mtrl-avatar__text")?.textContent ?? null,
+      });
+      return { emptyAlt: read(emptyAlt), noAlt: read(noAlt), noInitials: read(noInitials) };
+    });
+    assert.equal(nameless.emptyAlt.role, "img", `alt="": role img (got ${nameless.emptyAlt.role})`);
+    assert.equal(nameless.emptyAlt.name, "AL", `alt="": named from the initials (got ${nameless.emptyAlt.name})`);
+    assert.equal(nameless.emptyAlt.initials, "AL", `alt empty: the initials are showing (got ${JSON.stringify(nameless.emptyAlt.initials)})`);
+    assert.equal(nameless.noAlt.role, "img", `no alt: role img (got ${nameless.noAlt.role})`);
+    assert.equal(nameless.noAlt.name, "AL", `no alt: named from the initials (got ${nameless.noAlt.name})`);
+    assert.notEqual(nameless.noInitials.role, "img", `no alt and no initials: no nameless role img (got ${nameless.noInitials.role})`);
+    assert.deepEqual(errors, [], "nameless: no page errors");
+    await page.close();
+    console.log('Avatar nameless guard: alt="" and no alt name the root "AL"; nothing becomes a nameless img');
+  }
   }
   }
   }
