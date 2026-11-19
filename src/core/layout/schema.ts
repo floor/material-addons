@@ -413,11 +413,16 @@ export function createSkeletonHost(
       const { layout: _layout, layoutItem: _layoutItem, ...revealOptions } = options;
       const real = createComponentInstance(Component, revealOptions);
       if (real && real.element) {
-        // No pinning: a real component wider than a pinned host is clipped
-        // forever, which is worse than a one-time shift. The real component
-        // takes its own size; the placeholder holds the layout exactly when
-        // the mapping sizes it like the real content (inlineSize/blockSize
-        // or a builtin mapping measured to match), and the README says so.
+        // No pinning, and the mapping's box leaves with the placeholder: a
+        // real component wider than a mapped host would overflow it and
+        // cover its neighbours, which is worse than a one-time shift. The
+        // width, height and flex the mapping put on the host are cleared,
+        // so the host takes the real component's own size and the layout
+        // reflows once; when the mapping matched, the sizes are the same
+        // and nothing moves.
+        host.style.width = "";
+        host.style.height = "";
+        host.style.flex = "";
         host.replaceChild(real.element, placeholder.element);
         placeholder.destroy();
         for (const key of Object.keys(real)) {
