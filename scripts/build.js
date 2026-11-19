@@ -181,7 +181,9 @@ const buildElementStyles = async () => {
   await Bun.write(join(dir, "stepper.css"), css);
   await Bun.write(
     join(dir, "stepper.js"),
-    'import { registerStyles } from "material/elements";\n' +
+    // The shadow base an element adopts first: material's ripple sheet
+    'import "material/elements/css/ripple";\n' +
+      'import { registerStyles } from "material/elements";\n' +
       `registerStyles({ stepper: ${JSON.stringify(css)} });\n`,
   );
   await Bun.write(join(dir, "stepper.d.ts"), "export {};\n");
