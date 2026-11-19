@@ -12,7 +12,7 @@ export interface StepperCore {
   renderer: Renderer;
   navigation: Navigation;
   setOrientation: (orientation: StepperOrientation) => void;
-  setDisplay: (display: NonNullable<StepperConfig["display"]>) => void;
+  setDisplay: (display: NonNullable<StepperConfig["display"]> | null) => void;
   resolved: () => "horizontal" | "vertical";
   sync: () => void;
 }

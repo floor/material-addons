@@ -62,9 +62,10 @@ const withStepperCore =
       originalDestroy.call(component.lifecycle);
     };
 
-    const setDisplay = (next: NonNullable<StepperConfig["display"]>): void => {
-      // Presentation only: the step states stay exactly as they are
-      settings.display = next;
+    const setDisplay = (next: NonNullable<StepperConfig["display"]> | null): void => {
+      // Presentation only: the step states stay exactly as they are. Clearing
+      // the display (a removed attribute, a null property) is the default
+      settings.display = next === "count" || next === "dots" || next === "progress" ? next : "labels";
       sync();
     };
 

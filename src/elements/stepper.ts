@@ -119,9 +119,8 @@ const stepperSpec = {
       config: "display",
       // Presentation changes without rebuilding: a rebuild would drop completion
       // and, in linear mode, unlock a completed no-edit step
-      update: (c, value) => {
-        if (value !== null) c.setDisplay(value as NonNullable<StepperConfig["display"]>);
-      },
+      // A removed attribute is the default display, not "stay compact"
+      update: (c, value) => c.setDisplay(value as NonNullable<StepperConfig["display"]> | null),
     },
   },
   properties: {
@@ -235,6 +234,7 @@ export type StepperElement = HTMLElement & {
   addStep: (step: StepConfig, index?: number) => StepperComponent;
   removeStep: (target: number | string) => StepperComponent;
   setOrientation: (orientation: StepperOrientation) => StepperComponent;
+  setDisplay: (display: NonNullable<StepperConfig["display"]> | null) => StepperComponent;
   getResolvedOrientation: () => "horizontal" | "vertical";
   setLinear: (linear: boolean) => StepperComponent;
   enable: () => StepperComponent;

@@ -269,13 +269,23 @@ try {
       completed: host.getSteps()[0].completed,
       prev: await host.prev(),
     };
-    return { creation, moved, reset, empty, switched };
+    // Clearing the attribute returns to labels, still without a rebuild
+    host.removeAttribute("display");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const cleared = {
+      same: host.component === component,
+      labels: host.shadowRoot.querySelector(".mtrl-stepper").classList.contains("mtrl-stepper--display-labels"),
+      listVisible: host.shadowRoot.querySelector(".mtrl-stepper__list").getBoundingClientRect().height > 0,
+      completed: host.getSteps()[0].completed,
+    };
+    return { creation, moved, reset, empty, switched, cleared };
   });
   assert.deepEqual(announce.creation, { valueText: "Step 1 of 2: First", live: "Step 1 of 2: First" });
   assert.deepEqual(announce.moved, { valueText: "Step 2 of 2: Second", live: "Step 2 of 2: Second" });
   assert.deepEqual(announce.reset, { live: "Step 1 of 2: First" });
   assert.deepEqual(announce.empty, { valueText: "", now: "0" });
   assert.deepEqual(announce.switched, { same: true, completed: true, prev: false });
+  assert.deepEqual(announce.cleared, { same: true, labels: true, listVisible: true, completed: true });
 
   assert.deepEqual(errors, []);
   console.log("Stepper passes browser focus eligibility, panel and heading fallbacks, header focus, validationerror, slotted content and the compact displays.");

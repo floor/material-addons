@@ -356,6 +356,17 @@ describe("Stepper compact displays", () => {
     stepper.destroy();
   });
 
+  test("clearing the display returns to labels, from null or an empty value", () => {
+    const stepper = mount({ display: "dots" });
+    stepper.setDisplay(null);
+    expect(stepper.element.classList.contains("mtrl-stepper--display-labels")).toBe(true);
+    expect(stepper.element.querySelector<HTMLOListElement>(".mtrl-stepper__list")!.hidden).toBe(false);
+    stepper.setDisplay("progress");
+    stepper.setDisplay("" as never);
+    expect(stepper.element.classList.contains("mtrl-stepper--display-labels")).toBe(true);
+    stepper.destroy();
+  });
+
   test("dots keeps the headers interactive with their names", async () => {
     const stepper = mount({ display: "dots" });
     expect(stepper.element.classList.contains("mtrl-stepper--display-dots")).toBe(true);

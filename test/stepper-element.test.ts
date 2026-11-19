@@ -257,6 +257,20 @@ describe("<m-stepper> and <m-step>", () => {
     expect(host.display).toBe("progress");
   });
 
+  test("a removed display attribute returns to labels, and the method is exposed", async () => {
+    const host = mount('display="dots"');
+    const root = () => shadow(host).querySelector(".mtrl-stepper")!;
+    expect(typeof host.setDisplay).toBe("function");
+    host.removeAttribute("display");
+    await flush();
+    expect(root().classList.contains("mtrl-stepper--display-labels")).toBe(true);
+    expect(shadow(host).querySelector<HTMLOListElement>(".mtrl-stepper__list")!.hidden).toBe(false);
+    host.setDisplay("progress");
+    expect(root().classList.contains("mtrl-stepper--display-progress")).toBe(true);
+    host.setDisplay(null);
+    expect(root().classList.contains("mtrl-stepper--display-labels")).toBe(true);
+  });
+
   test("changing display re-presents without rebuilding the step state", async () => {
     document.body.innerHTML = `
       <m-stepper linear>

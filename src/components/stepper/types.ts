@@ -213,8 +213,8 @@ export interface StepperComponent {
   getPanelElement: (indexOrValue: number | string) => HTMLElement | null;
   getHeaderElement: (indexOrValue: number | string) => HTMLButtonElement | null;
   setOrientation: (orientation: StepperOrientation) => StepperComponent;
-  /** Presentation only: the step states are untouched */
-  setDisplay: (display: NonNullable<StepperConfig["display"]>) => StepperComponent;
+  /** Presentation only; null returns to the default "labels" */
+  setDisplay: (display: NonNullable<StepperConfig["display"]> | null) => StepperComponent;
   getResolvedOrientation: () => StepperResolvedOrientation;
   setLinear: (linear: boolean) => StepperComponent;
   enable: () => StepperComponent;
