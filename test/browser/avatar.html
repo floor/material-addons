@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Avatar test</title>
+<div id="fixture"></div>
+<script type="module">
+  import "material/styles";
+  import "material-addons/styles";
+  const fixture = document.getElementById("fixture");
+  const framework = new URL(location.href).searchParams.get("framework");
+  window.avatarClicks = [];
+  window.recordAvatarClick = event => avatarClicks.push([event.type, event instanceof MouseEvent]);
+  const attributes = {
+    variant: "text", size: "small", text: "AL", label: "Account", supportingText: "Editor", onClick: recordAvatarClick,
+  };
+  const display = { variant: "text", text: "A", ariaLabel: "Presentational avatar" };
+
+  if (framework === "react") {
+    const { createElement: h, useState } = await import("react");
+    const { createRoot } = await import("react-dom/client");
+    const { Avatar } = await import("material-addons/react");
+    function App() {
+      const [disabled, setDisabled] = useState(false);
+      return h("div", null, h(Avatar, { ...attributes, disabled }),
+        h("button", { onClick: () => setDisabled(true) }, "Disable avatar"), h(Avatar, display));
+    }
+    createRoot(fixture).render(h(App));
+  } else if (framework === "vue") {
+    const { createApp, h, ref } = await import("vue");
+    const { MAvatar } = await import("material-addons/vue");
+    createApp({
+      setup() {
+        const disabled = ref(false);
+        return () => h("div", [h(MAvatar, { ...attributes, disabled: disabled.value }),
+          h("button", { onClick: () => { disabled.value = true; } }, "Disable avatar"), h(MAvatar, display)]);
+      },
+    }).mount(fixture);
+  } else if (framework === "solid") {
+    const { createSignal, createComponent, mergeProps } = await import("solid-js");
+    const { render, Dynamic } = await import("solid-js/web");
+    const { Avatar } = await import("material-addons/solid");
+    render(() => {
+      const [disabled, setDisabled] = createSignal(false);
+      return [
+        createComponent(Avatar, mergeProps(attributes, { get disabled() { return disabled(); } })),
+        createComponent(Dynamic, { component: "button", onClick: () => setDisabled(true), children: "Disable avatar" }),
+        createComponent(Avatar, display),
+      ];
+    }, fixture);
+  } else if (framework === "svelte") {
+    const { mount } = await import("svelte");
+    const { default: App } = await import("./AvatarSvelteFixture.svelte");
+    mount(App, { target: fixture });
+  } else {
+    const { createAvatar } = await import("material-addons/components/avatar");
+    await import("material-addons/elements/css/avatar");
+    const { defineAvatar } = await import("material-addons/elements/avatar");
+    const avatar = createAvatar({ ...attributes, badge: { variant: "large", label: 8 } });
+    avatar.element.id = "factory";
+    fixture.append(avatar.element);
+    fixture.insertAdjacentHTML("beforeend", `
+      <m-avatar id="image" size="medium" aria-label="Portrait">
+        <img alt="Alternate portrait" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='40'/%3E">
+      </m-avatar>
+      <m-avatar id="link" href="#destination" disabled variant="text" text="AL" label="Profile"></m-avatar>
+      <span id="forced-reference" style="color:GrayText;border:1px solid CanvasText;outline:2px solid Highlight;forced-color-adjust:none"></span>
+    `);
+    defineAvatar();
+  }
+</script>

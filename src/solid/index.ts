@@ -11,3 +11,8 @@ export const Autocomplete = /*#__PURE__*/ createSolidAutocomplete();
 export const AutocompleteOption = /*#__PURE__*/ createSolidAutocompleteOption();
 export type { SolidAutocompleteProps, SolidAutocompleteOptionProps } from "../adapters/autocomplete/solid";
 export type { AutocompleteElementEventMap } from "../elements/autocomplete";
+import "material-addons/elements/css/avatar";
+import { createSolidAvatar } from "../adapters/avatar/solid";
+export const Avatar = /*#__PURE__*/ createSolidAvatar();
+export type { SolidAvatarProps } from "../adapters/avatar/solid";
+export type { AvatarElementEventMap } from "../elements/avatar";

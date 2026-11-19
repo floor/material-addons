@@ -12,3 +12,8 @@ export const Autocomplete = /*#__PURE__*/ createReactAutocomplete();
 export const AutocompleteOption = /*#__PURE__*/ createReactAutocompleteOption();
 export type { ReactAutocompleteProps, ReactAutocompleteOptionProps } from "../adapters/autocomplete/react";
 export type { AutocompleteElementEventMap } from "../elements/autocomplete";
+import "material-addons/elements/css/avatar";
+import { createReactAvatar } from "../adapters/avatar/react";
+export const Avatar = /*#__PURE__*/ createReactAvatar();
+export type { ReactAvatarProps } from "../adapters/avatar/react";
+export type { AvatarElementEventMap } from "../elements/avatar";

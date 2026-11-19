@@ -323,6 +323,50 @@ Use `defaultValue` for an uncontrolled initial selection. The adapters register 
 
 The element works in the browser and submits its committed value under its name. Its definition can be imported on the server.
 
+## Avatar
+
+Use an image, a monogram, or an icon. Sizes `small`, `medium`, and `large` draw a 24, 30, or 40 px shape. A button or link has a target of at least 48 × 48 px. `supportingText` describes the avatar, and `ariaLabel` overrides its accessible name. Set `decorative` when the surrounding content already names it.
+
+<!-- example: run, shows "Ada Lovelace" -->
+```javascript
+import 'material/styles';
+import 'material-addons/styles';
+import { createAvatar } from 'material-addons/components/avatar';
+
+const avatar = createAvatar({
+  variant: 'text',
+  text: 'AL',
+  label: 'Ada Lovelace',
+  supportingText: 'Editor',
+  badge: { variant: 'large', label: 3 },
+});
+document.body.append(avatar.element);
+```
+
+Pass trusted markup or an element as factory `content`. For `<m-avatar>`, place image or icon markup in the default slot and import the avatar's shadow styles before calling `defineAvatar()`.
+
+```html
+<m-avatar variant="text" text="AL" label="Ada Lovelace" supporting-text="Editor"></m-avatar>
+```
+
+```javascript
+import 'material-addons/elements/css/avatar';
+import { defineAvatar } from 'material-addons/elements/avatar';
+
+defineAvatar();
+```
+
+Set `href` for a link. In the factory, pass `onClick` for a native button. On the element, register a direct `click` listener after `defineAvatar()` to make it a button. A disabled avatar blocks activation. The badge uses Material's badge; `placement` uses logical corners and follows writing direction.
+
+| Framework | Import | Component | Click handler |
+| --- | --- | --- | --- |
+| React | `material-addons/react` | `Avatar` | `onClick` |
+| Vue | `material-addons/vue` | `MAvatar` | `@click` |
+| Svelte 5 | `material-addons/svelte` | `Avatar` | `onclick` |
+| Solid | `material-addons/solid` | `Avatar` | `onClick` |
+
+The adapters register the client element and shadow styles. Each framework entry exports `AvatarElementEventMap`, with a native `MouseEvent` for `click`.
+
 ## Layout
 
 `createLayout` takes an array: a tag or a factory, a name when the item is to be read back, its options, then its children. It returns the root element and each named component.
@@ -384,6 +428,8 @@ The gestures:
 | Import | From |
 |--------|------|
 | The form, the stepper, the autocomplete, the colour picker, the colour conversions, plus the layout and gestures | `material-addons` |
+| The avatar factory and types | `material-addons/components/avatar` |
+| The avatar element and its shadow styles | `material-addons/elements/avatar`, `material-addons/elements/css/avatar` |
 | The autocomplete factory and types | `material-addons/components/autocomplete` |
 | The autocomplete and option elements | `material-addons/elements/autocomplete` |
 | The autocomplete's shadow styles | `material-addons/elements/css/autocomplete` |
@@ -427,6 +473,7 @@ bun run build --production  # the build a release ships
 bun run check:package       # the packed package: its files, its manifest, its entry points
 bun run readme:check        # this file's examples, in Chromium
 bun run check:autocomplete  # autocomplete interactions and form behavior, in Chromium
+bun run check:avatar        # avatar styles, native activation, and adapters, in Chromium
 bun run check:stepper       # stepper focus and validation, in Chromium
 bun run check:stepper-adapters # framework stepper bindings, in Chromium
 bun run link:material       # use the material checkout in ../material
