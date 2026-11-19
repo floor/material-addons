@@ -239,13 +239,20 @@ try {
     panelA.openPanel();
     await new Promise((resolve) => setTimeout(resolve, 320));
     const forwarded = panelA.hasAttribute("open") && vetoPanel.isOpen();
+    // A vetoed close keeps the attribute too
+    const vetoClose = (event) => event.preventDefault();
+    vetoPanel.on("beforeclose", vetoClose);
+    panelA.removeAttribute("open");
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    const closeReflected = panelA.hasAttribute("open") && vetoPanel.isOpen();
+    vetoPanel.off("beforeclose", vetoClose);
     // The open event sees the shown region
     let seen = null;
     const eventPanel = accordion.component.getPanel("b");
     eventPanel.on("open", () => { seen = { hidden: eventPanel.region.hidden, inert: eventPanel.region.inert }; });
     eventPanel.open();
     await new Promise((resolve) => setTimeout(resolve, 60));
-    return { initial, clicked, arrowNext, claimed, afterExtra, vetoReflected, forwarded, seen };
+    return { initial, clicked, arrowNext, claimed, afterExtra, vetoReflected, forwarded, closeReflected, seen };
   });
   assert.deepEqual(boundary.initial, { value: "b", open: [false, true] });
   assert.deepEqual(boundary.clicked, ["a"]);
@@ -254,6 +261,7 @@ try {
   assert.deepEqual(boundary.afterExtra, ["c"]);
   assert.equal(boundary.vetoReflected, false);
   assert.equal(boundary.forwarded, true);
+  assert.equal(boundary.closeReflected, true);
   assert.deepEqual(boundary.seen, { hidden: false, inert: false });
 
   // Forced colours keep the boundary, the focus ring and the disabled colour apart

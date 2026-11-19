@@ -122,6 +122,16 @@ describe("<m-expansion-panel> and <m-accordion>", () => {
     expect(host.hasAttribute("open")).toBe(false);
   });
 
+  test("a vetoed close keeps the open attribute", async () => {
+    const host = mountPanel('label="One" open');
+    await settle();
+    host.addEventListener("beforeclose", (event) => event.preventDefault());
+    host.removeAttribute("open");
+    await settle();
+    expect(host.hasAttribute("open")).toBe(true);
+    expect((host as unknown as { component: { isOpen: () => boolean } }).component.isOpen()).toBe(true);
+  });
+
   test("openPanel opens a closed panel", async () => {
     const host = mountPanel('label="One"');
     (host as unknown as { openPanel: () => void }).openPanel();
