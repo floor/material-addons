@@ -225,6 +225,64 @@ try {
   assert.ok(appended.second > appended.first, `the appended skeleton's delay is computed on connect (${appended.first} -> ${appended.second})`);
   console.log(`appended after creation: delays ${appended.first}ms -> ${appended.second}ms`);
 
+  // Reduced motion stops the bars of a multi-line placeholder too.
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const reducedBars = await page.evaluate(() => {
+    const { createSkeleton } = window.skeleton;
+    document.body.innerHTML = "";
+    const skeleton = createSkeleton({ variant: "text", lines: 3 });
+    document.body.appendChild(skeleton.element);
+    const bar = skeleton.element.querySelector(".mtrl-skeleton__line");
+    return getComputedStyle(bar).animationName;
+  });
+  assert.equal(reducedBars, "none", `reduced motion: the bars do not animate (got ${reducedBars})`);
+  console.log("reduced motion: the bars do not animate");
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+
+  // The pulse reaches the multi-line bars, with no position delay.
+  const pulseBars = await page.evaluate(() => {
+    const { createSkeleton } = window.skeleton;
+    document.body.innerHTML = "";
+    const skeleton = createSkeleton({ variant: "text", lines: 3, motion: "pulse" });
+    document.body.appendChild(skeleton.element);
+    const bar = skeleton.element.querySelector(".mtrl-skeleton__line");
+    const shape = skeleton.element.querySelector(".mtrl-skeleton__shape");
+    const style = getComputedStyle(bar);
+    return { name: style.animationName, delay: style.animationDelay, shape: getComputedStyle(shape).animationName };
+  });
+  assert.equal(pulseBars.name, "mtrl-skeleton-pulse", `pulse: the bars pulse (got ${pulseBars.name})`);
+  assert.equal(pulseBars.delay, "0s", `pulse: the bars carry no position delay (got ${pulseBars.delay})`);
+  console.log(`pulse: the bars pulse at ${pulseBars.delay}`);
+
+  // RTL: the wave runs from inline-start, so the band travels the other way.
+  const rtlWave = await page.evaluate(() => {
+    const { createSkeleton } = window.skeleton;
+    document.body.innerHTML = "";
+    document.documentElement.dir = "rtl";
+    const group = document.createElement("div");
+    group.setAttribute("data-mtrl-skeleton-wave", "");
+    document.body.appendChild(group);
+    const single = createSkeleton({ variant: "rect" });
+    const multi = createSkeleton({ variant: "text", lines: 3 });
+    group.appendChild(single.element);
+    group.appendChild(multi.element);
+    const shape = getComputedStyle(single.element.querySelector(".mtrl-skeleton__shape")).animationName;
+    const bar = getComputedStyle(multi.element.querySelector(".mtrl-skeleton__line")).animationName;
+    document.documentElement.dir = "ltr";
+    return { shape, bar };
+  });
+  assert.equal(rtlWave.shape, "mtrl-skeleton-wave-rtl", `rtl: the shape's wave reverses (got ${rtlWave.shape})`);
+  assert.equal(rtlWave.bar, "mtrl-skeleton-wave-rtl", `rtl: the bars' wave reverses (got ${rtlWave.bar})`);
+  const ltrWave = await page.evaluate(() => {
+    const { createSkeleton } = window.skeleton;
+    document.body.innerHTML = "";
+    const skeleton = createSkeleton({ variant: "rect" });
+    document.body.appendChild(skeleton.element);
+    return getComputedStyle(skeleton.element.querySelector(".mtrl-skeleton__shape")).animationName;
+  });
+  assert.equal(ltrWave, "mtrl-skeleton-wave", `ltr: the wave keeps its direction (got ${ltrWave})`);
+  console.log(`rtl wave: shape ${rtlWave.shape}, bar ${rtlWave.bar}; ltr stays ${ltrWave}`);
+
   // The element: attributes reach the placeholder, no-busy opts out.
   const element = await page.evaluate(() => {
     const { defineSkeleton } = window.skeleton;

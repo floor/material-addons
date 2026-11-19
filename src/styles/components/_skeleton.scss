@@ -46,6 +46,17 @@ $component: "mtrl-skeleton";
     from { background-position: -60% 0, 0 0; }
     to { background-position: 160% 0, 0 0; }
   }
+
+  // The wave travels from inline-start toward inline-end; under rtl that is
+  // right to left, so the band's positions run the other way.
+  &:dir(rtl) {
+    animation-name: #{$component}-wave-rtl;
+  }
+
+  @keyframes #{$component}-wave-rtl {
+    from { background-position: 160% 0, 0 0; }
+    to { background-position: -60% 0, 0 0; }
+  }
 }
 
 // Variant and size, from the data attributes the component writes.
@@ -98,6 +109,11 @@ $component: "mtrl-skeleton";
   animation-delay: var(--#{$component}-delay);
 }
 
+// Under rtl the bars sweep the other way too, matching the shape.
+.#{$component}:dir(rtl) .#{$component}__line {
+  animation-name: #{$component}-wave-rtl;
+}
+
 .#{$component}[data-variant="rect"] {
   --#{$component}-shape: var(--mtrl-sys-shape-corner-small);
 
@@ -106,10 +122,13 @@ $component: "mtrl-skeleton";
   &[data-size="large"] { --#{$component}-block-size: 120px; }
 }
 
-// The pulse: a contained loop, no position delay.
-.#{$component}[data-motion="pulse"] .#{$component}__shape {
+// The pulse: a contained loop, no position delay. It reaches the bars of a
+// multi-line placeholder as well as the single-line shape.
+.#{$component}[data-motion="pulse"] .#{$component}__shape,
+.#{$component}[data-motion="pulse"] .#{$component}__line {
   background: var(--#{$component}-fill, var(--mtrl-sys-color-surface-container-highest));
   animation: #{$component}-pulse var(--#{$component}-pulse-duration) ease-in-out infinite;
+  animation-delay: 0ms;
 
   @keyframes #{$component}-pulse {
     0%, 100% { opacity: 1; }
@@ -134,6 +153,7 @@ $component: "mtrl-skeleton";
 
 @media (prefers-reduced-motion: reduce) {
   .#{$component}__shape,
+  .#{$component}__line,
   .mtrl-skeleton-host > * {
     animation: none;
   }
