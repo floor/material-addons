@@ -81,6 +81,32 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
   live.setAttribute("aria-atomic", "true");
   element.appendChild(live);
 
+  // The compact read-outs are always built and shown by the `hidden`
+  // attribute: with no stylesheet at all, a hidden list is out of the tab
+  // order and out of the accessibility tree, which CSS alone cannot promise.
+  const count = document.createElement("p");
+  count.className = cls(STEPPER_CLASSES.COUNT);
+  count.hidden = true;
+  element.appendChild(count);
+
+  const progress = document.createElement("div");
+  progress.className = cls(STEPPER_CLASSES.PROGRESS);
+  progress.setAttribute("role", "progressbar");
+  progress.setAttribute("aria-label", settings.ariaLabel);
+  progress.setAttribute("aria-valuemin", "0");
+  progress.hidden = true;
+  const progressBar = document.createElement("div");
+  progressBar.className = cls(STEPPER_CLASSES.PROGRESS_BAR);
+  const progressFill = document.createElement("span");
+  progressFill.setAttribute("aria-hidden", "true");
+  progressBar.appendChild(progressFill);
+  const progressLabel = document.createElement("span");
+  progressLabel.className = cls(STEPPER_CLASSES.PROGRESS_LABEL);
+  // The bar's aria-valuetext carries the step text; the visible copy repeats it
+  progressLabel.setAttribute("aria-hidden", "true");
+  progress.append(progressBar, progressLabel);
+  element.appendChild(progress);
+
   const list = document.createElement("ol");
   list.className = cls(STEPPER_CLASSES.LIST);
   element.appendChild(list);
@@ -196,6 +222,14 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
     element.classList.toggle(cls(STEPPER_MODIFIERS.VERTICAL), vertical);
     element.classList.toggle(cls(STEPPER_MODIFIERS.HORIZONTAL), !vertical);
     element.classList.toggle(cls(STEPPER_MODIFIERS.VALIDATING), steps.some((step) => step.validating));
+    const active = steps.find((step) => step.active);
+    const readout = active ? `Step ${active.index + 1} of ${steps.length}: ${active.label}` : "";
+    count.textContent = readout;
+    progress.setAttribute("aria-valuemax", String(steps.length));
+    progress.setAttribute("aria-valuenow", String(active ? active.index + 1 : 0));
+    progress.setAttribute("aria-valuetext", readout);
+    progressLabel.textContent = readout;
+    progressFill.style.width = active ? `${((active.index + 1) / Math.max(steps.length, 1)) * 100}%` : "0%";
     // The layout options travel with the state, not only the creation classes
     element.classList.toggle(
       cls(STEPPER_MODIFIERS.LABEL_BOTTOM),
@@ -214,6 +248,14 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
       settings.headerPlacement !== "bottom",
     );
     element.classList.toggle(cls(STEPPER_MODIFIERS.AUTO), settings.orientation === "auto");
+    element.classList.toggle(cls(STEPPER_MODIFIERS.DISPLAY_LABELS), settings.display === "labels");
+    element.classList.toggle(cls(STEPPER_MODIFIERS.DISPLAY_COUNT), settings.display === "count");
+    element.classList.toggle(cls(STEPPER_MODIFIERS.DISPLAY_DOTS), settings.display === "dots");
+    element.classList.toggle(cls(STEPPER_MODIFIERS.DISPLAY_PROGRESS), settings.display === "progress");
+    const compact = settings.display === "count" || settings.display === "progress";
+    list.hidden = compact;
+    count.hidden = settings.display !== "count";
+    progress.hidden = settings.display !== "progress";
     const off = element.getAttribute("aria-disabled") === "true";
 
     steps.forEach((step, index) => {
@@ -279,9 +321,9 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
       if (wrapper) {
         wrapper.hidden = !step.active;
         // Vertical: the panel sits under its own header; horizontal: the panels
-        // share one region below the list. Moving the wrapper never touches the
-        // consumer's step elements, which carry no order of their own.
-        const parent = vertical ? item : panels;
+        // share one region below the list. In a compact display the list is
+        // hidden, so its panels stay in the shared region too.
+        const parent = vertical && !compact ? item : panels;
         if (wrapper.parentElement !== parent) parent.appendChild(wrapper);
       }
     });

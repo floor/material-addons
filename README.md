@@ -1,8 +1,9 @@
 # material-addons
 
-A form builder, a stepper, a colour picker, a layout schema and gesture recognition for [material](https://github.com/floor/material), the Material Design 3 component library. Written in TypeScript; its only dependency is `material`, as a peer.
+A form builder, a stepper, an autocomplete, a colour picker, a layout schema and gesture recognition for [material](https://github.com/floor/material), the Material Design 3 component library. The TypeScript library requires Material as a peer. The framework adapters use optional peers.
 
 - **Form.** Builds a set of fields from a layout and keeps their data: it reads and sets it, knows when it has changed, validates it and submits it.
+- **Autocomplete.** An editable text field with a suggestion popup, keyboard navigation and optional async suggestions.
 - **Stepper.** An ordered list of steps over one panel at a time, with linear or free progression and a validation pipeline.
 - **Colour picker.** An HSV area, a hue slider, swatches, a hex field and an eyedropper; inline, as a dropdown or as a dialog.
 - **Layout.** Builds a tree of elements and components from an array, and gives each named component back.
@@ -14,10 +15,10 @@ The form and the colour picker have a page with live examples on [md3.io](https:
 
 <!-- install -->
 ```bash
-npm install material-addons material
+npm install material-addons material@3.15.1
 ```
 
-This package's peer range is `material` `^3.15.1`.
+This release uses `material` 3.15.1.
 <!-- /install -->
 
 Both packages are ESM only. The examples below import stylesheets, so they need a bundler that handles CSS imports, such as Vite.
@@ -115,6 +116,19 @@ Each callback named after an event takes its payload; the table lists them all.
 | `reset` | `reset()` ran | No |
 | `orientationchange` | An auto layout switched | No |
 
+### Compact displays
+
+A stepper can show less of each step. `display` picks how much, and defaults to `labels`.
+
+| Value | Shows |
+|-------|-------|
+| `labels` | Every step's label and indicator, as above |
+| `count` | One line, "Step 2 of 4: Shipping address" |
+| `dots` | Dots only; the headers stay clickable and keep their names |
+| `progress` | A determinate progress bar and the same line as `count` |
+
+`count` and `progress` replace the header list with a read-only status line, so the panel's action buttons move the user; `dots` keeps the headers interactive. The polite live region announces every change in all four modes.
+
 ### The element
 
 `<m-stepper>` with one `<m-step>` per step is the same component as a custom element. Its children stay in the light DOM and become the panel's content through a slot, so a form inside a step is an ordinary form.
@@ -153,6 +167,7 @@ The element takes the factory's options as attributes:
 | `no-report-validity` | Present to skip `reportValidity()` |
 | `optional-supporting-text` | The caption for optional steps |
 | `aria-label` | The group label, `Progress` by default |
+| `display` | `labels`, `count`, `dots` or `progress` |
 | `disabled` | Present to disable the whole stepper |
 
 A `<m-step>` declares one step:
@@ -191,22 +206,23 @@ Measured as standalone minified ESM bundles, gzipped, with `material` external; 
 
 | Artifact | Measured | Target |
 |----------|----------|--------|
-| `createStepper` | 6.6 KB | 2.2 KB |
+| `createStepper` | 7.1 KB | 2.2 KB |
 | `<m-stepper>` and `<m-step>` | 1.5 KB | 0.7 KB |
-| The compiled stylesheet | 1.6 KB | 1.4 KB |
+| The compiled stylesheet | 1.7 KB | 1.4 KB |
 
 The targets were estimates made before the implementation, and all three rows
 exceed them; the row records what was measured, not what was hoped for.
 
 Where the factory's bytes go, in source: the navigation, validation and
-action handling is 20 KB and the renderer 12 KB; the rest is 15 KB between
+action handling is 21 KB and the renderer 13 KB; the rest is 15 KB between
 them.
 
 The renderer builds fifteen parts and their ARIA state. The navigation runs
 the three validation stages and the completion rules.
 
 The element is 10.7 KB of source for ten attributes and the declaration
-class. The sheet is 7.3 KB minified for the token set and the layout blocks.
+class. The sheet is 8.6 KB minified for the token set, the layout blocks and the four
+displays.
 
 ## Colour picker
 
@@ -251,6 +267,50 @@ document.body.append(...results.map((result) => {
   return line;
 }));
 ```
+
+## Autocomplete
+
+The factory uses Material's text field and listbox styles. Pass strings for simple suggestions or objects with a stable value and a display label.
+
+<!-- example: run, shows "France" -->
+```javascript
+import 'material/styles';
+import 'material/styles/listbox';
+import 'material-addons/styles';
+import { createAutocomplete } from 'material-addons/components/autocomplete';
+
+const country = createAutocomplete({
+  label: 'Country',
+  name: 'country',
+  strict: true,
+  options: [{ value: 'fr', text: 'France' }, { value: 'jp', text: 'Japan' }],
+  value: 'fr',
+});
+document.body.append(country.element);
+country.open();
+```
+
+With strict mode, only a suggestion can be selected. In free-form mode, blurring commits other text. For remote suggestions, supply an async source that accepts the query and an abort signal. Set `filter: false` when the source filters its own results.
+
+The custom element uses its option children as suggestions. The style module registers the shadow sheets before the element is defined.
+
+<!-- example: run, shows "Switzerland" -->
+```javascript
+import 'material/styles';
+import 'material-addons/elements/preupgrade.css';
+import 'material-addons/elements/css/autocomplete';
+import { defineAutocomplete } from 'material-addons/elements/autocomplete';
+
+document.body.innerHTML = `
+  <m-autocomplete label="Country" value="ch" strict>
+    <m-autocomplete-option value="ch">Switzerland</m-autocomplete-option>
+  </m-autocomplete>
+`;
+defineAutocomplete();
+document.querySelector('m-autocomplete').open();
+```
+
+The element works in the browser and submits its committed value under its name. Its definition can be imported on the server.
 
 ## Layout
 
@@ -312,13 +372,18 @@ The gestures:
 
 | Import | From |
 |--------|------|
-| The form, the colour picker, the colour conversions | `material-addons` |
+| Component factories and colour conversions, plus the layout and gestures | `material-addons` |
+| Autocomplete factory and types | `material-addons/components/autocomplete` |
+| Autocomplete and option elements | `material-addons/elements/autocomplete` |
+| Autocomplete shadow styles | `material-addons/elements/css/autocomplete` |
+| Autocomplete pre-upgrade styles | `material-addons/elements/preupgrade.css` |
 | The layout | `material-addons/layout` |
 | The gestures | `material-addons/gestures` |
-| The same three, without the layout and gesture exports | `material-addons/components` |
+| Component factories and colour conversions | `material-addons/components` |
+| Stepper factory and types | `material-addons/components/stepper` |
 | The stepper element | `material-addons/elements`, `material-addons/elements/stepper` |
 | The stepper's shadow styles | `material-addons/elements/css/stepper` |
-| A component's constants | `material-addons/components/form/constants`, `material-addons/components/colorpicker/constants`, `material-addons/components/stepper/constants` |
+| A component's constants | `material-addons/components/form/constants`, `material-addons/components/colorpicker/constants`, `material-addons/components/autocomplete/constants`, `material-addons/components/stepper/constants` |
 | The stylesheet | `material-addons/styles` |
 
 ## Upgrading
@@ -346,13 +411,16 @@ bun run dev                 # build into dist/, and again on each change
 bun run build --production  # the build a release ships
 bun run check:package       # the packed package: its files, its manifest, its entry points
 bun run readme:check        # this file's examples, in Chromium
+bun run check:autocomplete  # autocomplete interactions and form behavior, in Chromium
+bun run check:stepper       # stepper focus and validation, in Chromium
+bun run check:stepper-adapters # framework stepper bindings, in Chromium
 bun run link:material       # use the material checkout in ../material
 ```
 
-Three of them need something first:
+Some of them need something first.
 
 - `check:package` compares the packed files with the release's list, so it needs the production build.
-- `readme:check` needs a build, and Chromium once: `npx playwright install chromium`.
+- The browser checks need a build and Chromium. Install Chromium with `npx playwright install chromium`.
 - `link:material` needs `../material` to be built.
 
 ## Releasing
@@ -364,7 +432,7 @@ npm run release:pack
 npm publish material-addons-<version>.tgz --access public
 ```
 
-`release:pack` runs the gate first: the types, the tests, the production build, the packed package and the README's examples, so it needs Chromium once (see Development). `npm publish` tags a release `latest`; a pre-release passes `--tag next`.
+`release:pack` runs the types, tests, production build, packed package check and Chromium checks. `npm publish` tags a release `latest`. A pre-release passes `--tag next`.
 
 Tag only on main: the release workflow refuses a `v*` tag whose commit is not on `origin/main`. A `v*` tag ruleset, so only the owner creates release tags, is recommended. The workflow creates the GitHub release as well, its notes taken from the released version's `CHANGELOG.md` section.
 

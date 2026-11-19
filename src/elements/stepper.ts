@@ -114,6 +114,14 @@ const stepperSpec = {
       update: (c, value) => c.element.setAttribute("aria-label", value === null ? "Progress" : String(value)),
     },
     disabled: { type: "boolean", config: "disabled", update: (c, value) => void (value ? c.disable() : c.enable()) },
+    display: {
+      type: "string",
+      config: "display",
+      // Presentation changes without rebuilding: a rebuild would drop completion
+      // and, in linear mode, unlock a completed no-edit step
+      // A removed attribute is the default display, not "stay compact"
+      update: (c, value) => c.setDisplay(value as NonNullable<StepperConfig["display"]> | null),
+    },
   },
   properties: {
     value: { get: (c) => c.getValue(), set: (c, value) => void c.setValue(value === null || value === undefined ? null : String(value)), config: "value" },
@@ -137,6 +145,7 @@ const stepperSpec = {
     "addStep",
     "removeStep",
     "setOrientation",
+    "setDisplay",
     "getResolvedOrientation",
     "setLinear",
     "enable",
@@ -218,6 +227,7 @@ export interface StepperElement extends HTMLElement {
   noReportValidity: boolean;
   optionalSupportingText: string | null;
   disabled: boolean;
+  display: string | null;
   next: () => Promise<boolean>;
   prev: () => Promise<boolean>;
   goTo: (target: number | string) => Promise<boolean>;
@@ -238,6 +248,7 @@ export interface StepperElement extends HTMLElement {
   addStep: (step: StepConfig, index?: number) => StepperComponent;
   removeStep: (target: number | string) => StepperComponent;
   setOrientation: (orientation: StepperOrientation) => StepperComponent;
+  setDisplay: (display: NonNullable<StepperConfig["display"]> | null) => StepperComponent;
   getResolvedOrientation: () => "horizontal" | "vertical";
   setLinear: (linear: boolean) => StepperComponent;
   enable: () => StepperComponent;

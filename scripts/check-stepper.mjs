@@ -130,8 +130,169 @@ try {
   });
   assert.deepEqual(slotted, { blocked: false, moved: "address", focused: true, value: "account", field: "" });
 
+  // Compact displays: the count and progress lines are visible and the list is
+  // not; dots keep the headers interactive with the labels clipped
+  await reset();
+  const compact = await page.evaluate(async () => {
+    const mount = (display) => {
+      const stepper = window.stepper.createStepper({
+        display,
+        steps: [
+          { value: "a", label: "First", content: "one" },
+          { value: "b", label: "Second", content: `<input id="second">` },
+        ],
+      });
+      document.body.append(stepper.element);
+      return stepper;
+    };
+    const countStepper = mount("count");
+    const count = countStepper.element.querySelector(".mtrl-stepper__count");
+    const countList = countStepper.element.querySelector(".mtrl-stepper__list");
+    const countValues = {
+      countText: count.textContent,
+      countVisible: count.getBoundingClientRect().height > 0,
+      listHidden: getComputedStyle(countList).display === "none",
+    };
+    countStepper.element.remove();
+
+    const progressStepper = mount("progress");
+    const progress = progressStepper.element.querySelector('[role="progressbar"]');
+    const fill = progress.querySelector(".mtrl-stepper__progress-bar > span");
+    const progressValues = {
+      now: progress.getAttribute("aria-valuenow"),
+      max: progress.getAttribute("aria-valuemax"),
+      label: progress.querySelector(".mtrl-stepper__progress-label").textContent,
+      fill: fill.getBoundingClientRect().width,
+      listHidden: getComputedStyle(progressStepper.element.querySelector(".mtrl-stepper__list")).display === "none",
+      visible: progress.getBoundingClientRect().height > 0,
+    };
+    progressStepper.element.remove();
+
+    const dotsStepper = mount("dots");
+    const list = dotsStepper.element.querySelector(".mtrl-stepper__list");
+    const group = dotsStepper.element.querySelector(".mtrl-stepper__label-group");
+    const dots = {
+      listVisible: list.getBoundingClientRect().height > 0,
+      groupWidth: group.getBoundingClientRect().width,
+      activeDot: dotsStepper.element.querySelector(".mtrl-stepper__item--active .mtrl-stepper__indicator").getBoundingClientRect().width,
+      dot: dotsStepper.element.querySelector(".mtrl-stepper__item:not(.mtrl-stepper__item--active) .mtrl-stepper__indicator").getBoundingClientRect().width,
+    };
+    dotsStepper.getHeaderElement(1).click();
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    const dotsMoved = dotsStepper.getValue();
+    dotsStepper.element.remove();
+    return { ...countValues, progressValues, dots, dotsMoved };
+  });
+  assert.equal(compact.countText, "Step 1 of 2: First");
+  assert.equal(compact.countVisible, true);
+  assert.equal(compact.listHidden, true);
+  assert.equal(compact.progressValues.now, "1");
+  assert.equal(compact.progressValues.max, "2");
+  assert.equal(compact.progressValues.label, "Step 1 of 2: First");
+  assert.ok(compact.progressValues.fill > 0 && compact.progressValues.visible, JSON.stringify(compact.progressValues));
+  assert.equal(compact.progressValues.listHidden, true);
+  assert.equal(compact.dots.listVisible, true);
+  assert.ok(compact.dots.groupWidth <= 1, `label group clipped: ${compact.dots.groupWidth}`);
+  assert.ok(compact.dots.activeDot > compact.dots.dot, `active dot wider: ${JSON.stringify(compact.dots)}`);
+  assert.equal(compact.dotsMoved, "b");
+
+  // Vertical compact modes: the active panel and its action stay visible, and
+  // the hidden list is not a tab stop
+  await reset();
+  const vertical = await page.evaluate(async () => {
+    const results = [];
+    for (const display of ["count", "progress"]) {
+      document.body.innerHTML = "";
+      const stepper = window.stepper.createStepper({
+        orientation: "vertical",
+        display,
+        steps: [
+          { value: "a", label: "First", content: `<button type="button" data-stepper-next>Next</button>` },
+          { value: "b", label: "Second", content: `<input id="second">` },
+        ],
+      });
+      document.body.append(stepper.element);
+      const list = stepper.element.querySelector(".mtrl-stepper__list");
+      const panel = stepper.getPanelElement(0);
+      const button = stepper.element.querySelector("[data-stepper-next]");
+      results.push({
+        display,
+        listHidden: list.hidden,
+        panelVisible: panel.getBoundingClientRect().height > 0,
+        buttonVisible: button.getBoundingClientRect().height > 0,
+        headerTabStop: stepper.getHeaderElement(0).closest("[hidden]") === null,
+      });
+      stepper.element.remove();
+    }
+    return results;
+  });
+  for (const row of vertical) {
+    assert.equal(row.listHidden, true, `vertical ${row.display} list hidden`);
+    assert.equal(row.panelVisible, true, `vertical ${row.display} panel visible`);
+    assert.equal(row.buttonVisible, true, `vertical ${row.display} button visible`);
+    assert.equal(row.headerTabStop, false, `vertical ${row.display} header not a tab stop`);
+  }
+
+  // The compact status is exposed and kept current; a display change does not
+  // touch the step state
+  await reset();
+  const announce = await page.evaluate(async () => {
+    const stepper = window.stepper.createStepper({
+      display: "progress",
+      steps: [
+        { value: "a", label: "First", content: "one" },
+        { value: "b", label: "Second", content: "two" },
+      ],
+    });
+    document.body.append(stepper.element);
+    const progress = stepper.element.querySelector('[role="progressbar"]');
+    const live = stepper.element.querySelector(".mtrl-stepper__live");
+    const creation = { valueText: progress.getAttribute("aria-valuetext"), live: live.textContent };
+    await stepper.next();
+    const moved = { valueText: progress.getAttribute("aria-valuetext"), live: live.textContent };
+    stepper.reset();
+    const reset = { live: live.textContent };
+    stepper.setSteps([
+      { value: "x", label: "X", disabled: true },
+      { value: "y", label: "Y", disabled: true },
+    ]);
+    const empty = { valueText: progress.getAttribute("aria-valuetext"), now: progress.getAttribute("aria-valuenow") };
+    stepper.element.remove();
+
+    document.body.innerHTML = `<m-stepper linear display="labels">
+      <m-step value="a" label="A" no-edit><button type="button" data-stepper-next>Next</button></m-step>
+      <m-step value="b" label="B"></m-step></m-stepper>`;
+    window.stepper.defineStepper();
+    const host = document.querySelector("m-stepper");
+    await host.next();
+    const component = host.component;
+    host.setAttribute("display", "dots");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const switched = {
+      same: host.component === component,
+      completed: host.getSteps()[0].completed,
+      prev: await host.prev(),
+    };
+    // Clearing the attribute returns to labels, still without a rebuild
+    host.removeAttribute("display");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const cleared = {
+      same: host.component === component,
+      labels: host.shadowRoot.querySelector(".mtrl-stepper").classList.contains("mtrl-stepper--display-labels"),
+      listVisible: host.shadowRoot.querySelector(".mtrl-stepper__list").getBoundingClientRect().height > 0,
+      completed: host.getSteps()[0].completed,
+    };
+    return { creation, moved, reset, empty, switched, cleared };
+  });
+  assert.deepEqual(announce.creation, { valueText: "Step 1 of 2: First", live: "Step 1 of 2: First" });
+  assert.deepEqual(announce.moved, { valueText: "Step 2 of 2: Second", live: "Step 2 of 2: Second" });
+  assert.deepEqual(announce.reset, { live: "Step 1 of 2: First" });
+  assert.deepEqual(announce.empty, { valueText: "", now: "0" });
+  assert.deepEqual(announce.switched, { same: true, completed: true, prev: false });
+  assert.deepEqual(announce.cleared, { same: true, labels: true, listVisible: true, completed: true });
+
   assert.deepEqual(errors, []);
-  console.log("Stepper passes browser focus eligibility, panel and heading fallbacks, header focus, validationerror and slotted content.");
+  console.log("Stepper passes browser focus eligibility, panel and heading fallbacks, header focus, validationerror, slotted content and the compact displays.");
 } finally {
   await browser?.close();
   await server.close();

@@ -33,10 +33,12 @@ jobs:
         run: bun run build --production
       - name: Packed exports
         run: bun run check:package
-      - name: Chromium for the README's examples
+      - name: Chromium for the browser checks
         run: npx playwright install --with-deps chromium
       - name: README examples, as written, against the packed package
         run: bun run readme:check
+      - name: Autocomplete browser behavior
+        run: bun run check:autocomplete
       - name: Stepper browser behavior
         run: bun run check:stepper
       - name: Stepper adapters in Chromium

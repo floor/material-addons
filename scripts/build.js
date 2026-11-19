@@ -5,6 +5,7 @@ import { existsSync } from "fs";
 import { join, dirname, extname } from "path";
 import { fileURLToPath } from "url";
 import { watch } from "fs";
+import { readListboxStyle } from "./listbox-style.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = join(__dirname, "..");
@@ -18,6 +19,8 @@ const DIST_DIR = join(ROOT_DIR, "dist");
 const MJS_OUTPUT = join(DIST_DIR, "index.mjs");
 const CSS_OUTPUT = join(DIST_DIR, "styles.css");
 const STYLES_ENTRY = join(ROOT_DIR, "src/styles/index.scss");
+const AUTOCOMPLETE_CSS = join(DIST_DIR, "components/autocomplete/autocomplete.css");
+const PREUPGRADE_CSS = join(DIST_DIR, "elements/preupgrade.css");
 
 // Granular module entry points for tree-shaking
 // Adapter bundles import their public element entry instead of duplicating it.
@@ -46,6 +49,31 @@ const MODULES = [
     entry: "src/components/colorpicker/constants.ts",
     outDir: "dist/components/colorpicker",
     basename: "constants",
+  },
+  {
+    name: "autocomplete",
+    entry: "src/components/autocomplete/index.ts",
+    outDir: "dist/components/autocomplete",
+  },
+  {
+    name: "autocomplete constants",
+    entry: "src/components/autocomplete/constants.ts",
+    outDir: "dist/components/autocomplete",
+    basename: "constants",
+  },
+  {
+    name: "autocomplete element",
+    entry: "src/elements/autocomplete.ts",
+    outDir: "dist/elements",
+    basename: "autocomplete",
+    plugins: [{
+      name: "reuse-addon-factory",
+      setup(build) {
+        build.onResolve({ filter: /^\.\.\/components\/autocomplete$/ }, () => ({
+          path: "../components/autocomplete/index.mjs", external: true,
+        }));
+      },
+    }],
   },
   {
     name: "layout",
@@ -101,8 +129,9 @@ const buildStyles = async () => {
     // Build sass arguments
     const sassArgs = [
       "sass",
-      STYLES_ENTRY,
-      CSS_OUTPUT,
+      `${STYLES_ENTRY}:${CSS_OUTPUT}`,
+      `${join(ROOT_DIR, "src/styles/components/_autocomplete.scss")}:${AUTOCOMPLETE_CSS}`,
+      `${join(ROOT_DIR, "src/styles/elements/_autocomplete.scss")}:${PREUPGRADE_CSS}`,
       isProduction ? "--style=compressed" : "--style=expanded",
       // material's abstracts are used by @use "material/src/styles/…"; it publishes
       // src/styles for exactly this. Without a load path sass would only find
@@ -138,6 +167,16 @@ const buildStyles = async () => {
     const cssSize = existsSync(CSS_OUTPUT)
       ? (await Bun.file(CSS_OUTPUT).size) / 1024
       : 0;
+
+    const autocomplete = (await Bun.file(AUTOCOMPLETE_CSS).text()).replace(/\/\*# sourceMappingURL=.*?\*\/\s*$/, "");
+    const styles = { listbox: readListboxStyle(), autocomplete };
+    await Bun.write(join(DIST_DIR, "elements/autocomplete-css.mjs"), [
+      'import "material/elements/css/text-field";',
+      'import { registerStyles } from "material/elements";',
+      `registerStyles(${JSON.stringify(styles)});`,
+      "",
+    ].join("\n"));
+    await Bun.write(join(DIST_DIR, "elements/autocomplete-css.d.ts"), "export {};\n");
 
     console.log("✓ SCSS build successful");
     console.log(`  CSS bundle: ${cssSize.toFixed(2)} KB`);
@@ -238,7 +277,7 @@ const buildModule = async (module) => {
       entry: `${basename}.mjs`,
     },
     external: module.adapter ? ["material", "material-addons", "react", "vue", "solid-js", "svelte"] : ["material"],
-    plugins: module.adapter ? [adapterPlugin] : undefined,
+    plugins: module.adapter ? [adapterPlugin] : module.plugins,
     banner: module.name === "react" ? '"use client";' : undefined,
   });
 
