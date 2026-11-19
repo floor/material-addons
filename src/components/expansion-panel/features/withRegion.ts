@@ -139,7 +139,6 @@ export const withRegion =
       } else {
         region.inert = true;
       }
-
       const settle = (): void => {
         if (token !== settleToken) return;
         if (open) {
