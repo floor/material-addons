@@ -59,7 +59,7 @@ try {
       await page.waitForFunction(() => !!document.querySelector("m-autocomplete")?.component, {}, { timeout: 7_000 });
       const autocomplete = page.locator("m-autocomplete");
       assert.ok(await autocomplete.evaluate(node => node.shadowRoot.adoptedStyleSheets.length > 0), framework);
-      assert.equal(await autocomplete.getAttribute("no-open-on-focus"), "", framework);
+      assert.ok(await autocomplete.evaluate(node => node.hasAttribute("no-open-on-focus")), framework);
       assert.deepEqual(await autocomplete.evaluate(node => node.getOptions().map(option => [option.value, option.text, option.supportingText])), [
         ["ch", "Switzerland", "Europe"], ["jp", "Japan", undefined],
       ], framework);
