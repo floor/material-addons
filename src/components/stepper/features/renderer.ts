@@ -2,7 +2,7 @@
 
 import { setHTML } from "material/core/dom";
 import { STEPPER_CLASSES, STEPPER_ICONS, STEPPER_MODIFIERS } from "../constants";
-import type { StepperSettings } from "../config";
+import { canReach, type StepperSettings } from "../config";
 import type { StepState, StepperComponent } from "../types";
 
 /** What every feature after the renderer reads */
@@ -16,10 +16,29 @@ export interface Renderer {
   headers: HTMLButtonElement[];
   /** The wrapper holding each step's panel, by index */
   wrappers: HTMLElement[];
+  /** The `.mtrl-stepper__panel` of each step, by index */
+  panelElements: HTMLElement[];
   render: (steps: StepState[], contents?: Array<unknown>) => void;
   sync: (steps: StepState[], resolved: "horizontal" | "vertical") => void;
   destroy: () => void;
 }
+
+/**
+ * Every match of a selector in a panel, the panel's own and the content its
+ * slots assigned: a form inside a slotted `<m-step>` is the panel's content.
+ */
+export const queryPanel = <T extends Element>(panel: HTMLElement | null, selector: string): T[] => {
+  if (!panel) return [];
+  const matches = Array.from(panel.querySelectorAll<T>(selector));
+  for (const slot of Array.from(panel.querySelectorAll("slot"))) {
+    const assigned = (slot as HTMLSlotElement).assignedElements?.({ flatten: true }) ?? [];
+    for (const root of assigned) {
+      if (root.matches(selector)) matches.push(root as unknown as T);
+      matches.push(...Array.from(root.querySelectorAll<T>(selector)));
+    }
+  }
+  return matches;
+};
 
 export interface StepperHost {
   element: HTMLElement;
@@ -73,6 +92,7 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
   const bodies: HTMLElement[] = [];
   const headers: HTMLButtonElement[] = [];
   const wrappers: HTMLElement[] = [];
+  const panelElements: HTMLElement[] = [];
 
   const stepContent = (step: StepState): HTMLElement => {
     const body = document.createElement("div");
@@ -97,6 +117,7 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
     bodies.length = 0;
     headers.length = 0;
     wrappers.length = 0;
+    panelElements.length = 0;
 
     steps.forEach((step, index) => {
       const item = document.createElement("li");
@@ -154,6 +175,7 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
       panel.setAttribute("aria-labelledby", header.id);
       panel.setAttribute("role", "region");
 
+      panelElements.push(panel);
       const inner = document.createElement("div");
       inner.className = cls(STEPPER_CLASSES.PANEL_INNER);
       const body = stepContent(step);
@@ -174,6 +196,25 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
     element.classList.toggle(cls(STEPPER_MODIFIERS.VERTICAL), vertical);
     element.classList.toggle(cls(STEPPER_MODIFIERS.HORIZONTAL), !vertical);
     element.classList.toggle(cls(STEPPER_MODIFIERS.VALIDATING), steps.some((step) => step.validating));
+    // The layout options travel with the state, not only the creation classes
+    element.classList.toggle(
+      cls(STEPPER_MODIFIERS.LABEL_BOTTOM),
+      settings.labelPlacement === "bottom",
+    );
+    element.classList.toggle(
+      cls(STEPPER_MODIFIERS.LABEL_END),
+      settings.labelPlacement !== "bottom",
+    );
+    element.classList.toggle(
+      cls(STEPPER_MODIFIERS.HEADER_BOTTOM),
+      settings.headerPlacement === "bottom",
+    );
+    element.classList.toggle(
+      cls(STEPPER_MODIFIERS.HEADER_TOP),
+      settings.headerPlacement !== "bottom",
+    );
+    element.classList.toggle(cls(STEPPER_MODIFIERS.AUTO), settings.orientation === "auto");
+    const off = element.getAttribute("aria-disabled") === "true";
 
     steps.forEach((step, index) => {
       const item = list.children[index] as HTMLElement | undefined;
@@ -211,8 +252,12 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
         header.setAttribute("aria-disabled", "true");
       } else {
         header.disabled = false;
-        header.removeAttribute("aria-disabled");
+        // A linear-locked step stays in the sequence but cannot be activated
+        if (settings.linear && !canReach(steps, index, true)) header.setAttribute("aria-disabled", "true");
+        else header.removeAttribute("aria-disabled");
       }
+      // One tab stop, on the active header; a disabled stepper has none
+      header.tabIndex = !off && step.active ? 0 : -1;
       if (step.validating) header.setAttribute("aria-busy", "true");
       else header.removeAttribute("aria-busy");
 
@@ -249,6 +294,7 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
     bodies,
     headers,
     wrappers,
+    panelElements,
     render,
     sync,
     destroy: () => element.replaceChildren(),

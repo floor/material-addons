@@ -21,7 +21,7 @@ import {
   type ElementSpec,
 } from "material/elements";
 import createStepper from "../components/stepper";
-import type { StepConfig, StepperComponent, StepperConfig, StepperOrientation } from "../components/stepper/types";
+import type { StepConfig, StepState, StepperComponent, StepperConfig, StepperOrientation } from "../components/stepper/types";
 
 /** The tag of the step declaration for a stepper host: `<m-stepper>` reads `<m-step>`. */
 const stepTagOf = (host: HTMLElement): string => host.localName.replace(/stepper$/, "step");
@@ -128,6 +128,7 @@ const stepperSpec = {
     "getValue",
     "setValue",
     "getActiveStep",
+    "getActiveIndex",
     "getStep",
     "getSteps",
     "completeStep",
@@ -145,10 +146,12 @@ const stepperSpec = {
   events: {
     change: {},
     complete: {},
-    error: {},
     reset: {},
     // A layout change is a state of the element, not of its value
     orientationchange: { state: true },
+    // `error` is bridged in setup under the name `stepper-error`: any DOM event
+    // named `error`, bubbling or not, reaches every window capture listener
+    // (a page's monitoring, a dev overlay) as if the page had thrown.
   },
   config: (host: HTMLElement) => {
     const steps = declaredSteps(host);
@@ -165,14 +168,20 @@ const stepperSpec = {
   },
   setup: (host, component) => {
     // The factory's cancelling beforechange becomes a cancelable DOM event
-    const handler = (payload: unknown): void => {
+    const onBeforeChange = (payload: unknown): void => {
       const event = new CustomEvent("beforechange", { detail: payload, bubbles: true, composed: true, cancelable: true });
       host.dispatchEvent(event);
       if (event.defaultPrevented) (payload as { preventDefault: () => void }).preventDefault();
     };
-    component.on("beforechange", handler);
+    // A failed validation, under a name that is not the page's error channel
+    const onError = (payload: unknown): void => {
+      host.dispatchEvent(new CustomEvent("stepper-error", { detail: payload, composed: true }));
+    };
+    component.on("beforechange", onBeforeChange);
+    component.on("error", onError);
     return () => {
-      component.off("beforechange", handler);
+      component.off("beforechange", onBeforeChange);
+      component.off("error", onError);
     };
   },
 } satisfies ElementSpec<StepperComponent>;
@@ -201,14 +210,18 @@ export type StepperElement = HTMLElement & {
   reset: () => StepperComponent;
   validate: (target?: number | string) => Promise<boolean>;
   getValue: () => string | null;
-  setValue: (value: string | null) => Promise<boolean>;
-  getActiveStep: () => unknown;
-  getStep: (target: number | string) => unknown;
-  getSteps: () => unknown[];
+  setValue: (value: string | null) => StepperComponent;
+  getActiveStep: () => StepState | null;
+  getActiveIndex: () => number;
+  getStep: (target: number | string) => StepState | null;
+  getSteps: () => StepState[];
   completeStep: (target?: number | string, completed?: boolean) => StepperComponent;
   setError: (target: number | string, error: boolean, supportingText?: string) => StepperComponent;
-  setStepState: (target: number | string, patch: Record<string, unknown>) => StepperComponent;
-  addStep: (step: Record<string, unknown>, index?: number) => StepperComponent;
+  setStepState: (
+    target: number | string,
+    patch: Partial<Pick<StepConfig, "label" | "supportingText" | "icon" | "completed" | "editable" | "optional" | "error" | "disabled">>,
+  ) => StepperComponent;
+  addStep: (step: StepConfig, index?: number) => StepperComponent;
   removeStep: (target: number | string) => StepperComponent;
   setOrientation: (orientation: StepperOrientation) => StepperComponent;
   getResolvedOrientation: () => "horizontal" | "vertical";

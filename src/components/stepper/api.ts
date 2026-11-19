@@ -47,15 +47,19 @@ export const withAPI =
       goTo: navigation.goTo,
       reset: () => {
         navigation.reset();
-        return api;
+        return component as unknown as StepperComponent;
       },
       validate: navigation.validate,
       getValue: navigation.getValue,
-      setValue: navigation.setValue,
+      setValue: (value) => {
+        navigation.setValue(value);
+        return component as unknown as StepperComponent;
+      },
       getActiveStep: () => {
         const step = core.steps.find((candidate) => candidate.active);
         return step ? { ...step } : null;
       },
+      getActiveIndex: navigation.getActiveIndex,
       getStep: (target: number | string) => {
         const index = typeof target === "number" ? target : core.steps.findIndex((step) => step.value === target);
         const step = core.steps[index];
@@ -64,56 +68,57 @@ export const withAPI =
       getSteps: () => core.steps.map((step) => ({ ...step })),
       setSteps: (steps: StepConfig[]) => {
         navigation.setSteps(steps);
-        return api;
+        return component as unknown as StepperComponent;
       },
       addStep: (step: StepConfig, index?: number) => {
         navigation.addStep(step, index);
-        return api;
+        return component as unknown as StepperComponent;
       },
       removeStep: (target: number | string) => {
         navigation.removeStep(target);
-        return api;
+        return component as unknown as StepperComponent;
       },
       setStepState: (target: number | string, patch: Partial<StepConfig>) => {
         navigation.setStepState(target, patch);
-        return api;
+        return component as unknown as StepperComponent;
       },
       completeStep: (target?: number | string, completed = true) => {
         navigation.completeStep(target, completed);
-        return api;
+        return component as unknown as StepperComponent;
       },
       setError: (target: number | string, error: boolean, supportingText?: string) => {
         navigation.setError(target, error, supportingText);
-        return api;
+        return component as unknown as StepperComponent;
       },
       getPanelElement: navigation.getPanelElement,
       getHeaderElement: navigation.getHeaderElement,
       setOrientation: (orientation: StepperOrientation) => {
         core.setOrientation(orientation);
-        core.sync();
-        return api;
+        return component as unknown as StepperComponent;
       },
       getResolvedOrientation: core.resolved,
       setLinear: (linear: boolean) => {
         navigation.setLinear(linear);
-        return api;
+        return component as unknown as StepperComponent;
       },
       enable: () => {
         disabled.enable();
-        return api;
+        core.sync();
+        return component as unknown as StepperComponent;
       },
       disable: () => {
         disabled.disable();
-        return api;
+        core.sync();
+        return component as unknown as StepperComponent;
       },
       isDisabled: () => disabled.isDisabled(),
       on: (event, handler) => {
         on(event, handler as (...args: unknown[]) => void);
-        return api;
+        return component as unknown as StepperComponent;
       },
       off: (event, handler) => {
         off(event, handler as (...args: unknown[]) => void);
-        return api;
+        return component as unknown as StepperComponent;
       },
       destroy: () => {
         lifecycle.destroy();

@@ -8,10 +8,18 @@ import type { StepperResolvedOrientation, StepperOrientationChangeEvent } from "
  * Resolves `orientation: "auto"` from the root's own width, not the viewport:
  * a stepper in a narrow pane stays vertical in a wide window.
  */
+interface AutoOrientation {
+  resolved: () => StepperResolvedOrientation;
+  /** Re-reads the axis after `settings.orientation` changed */
+  refresh: () => void;
+  destroy: () => void;
+  onChange: (handler: () => void) => void;
+}
+
 export const withAutoOrientation = (
   component: { element: HTMLElement; emit: (event: string, data?: unknown) => void },
   settings: StepperSettings,
-): { resolved: () => StepperResolvedOrientation; destroy: () => void; onChange: (handler: () => void) => void } => {
+): AutoOrientation => {
   let current: StepperResolvedOrientation =
     settings.orientation === STEPPER_ORIENTATIONS.VERTICAL ? "vertical" : "horizontal";
   let observer: ResizeObserver | null = null;
@@ -46,8 +54,23 @@ export const withAutoOrientation = (
 
   observe();
 
+  const refresh = (): void => {
+    if (settings.orientation === STEPPER_ORIENTATIONS.AUTO) {
+      observe();
+      resolve(component.element.getBoundingClientRect().width);
+      return;
+    }
+    const next: StepperResolvedOrientation =
+      settings.orientation === STEPPER_ORIENTATIONS.VERTICAL ? "vertical" : "horizontal";
+    if (next === current) return;
+    current = next;
+    component.emit(STEPPER_EVENTS.ORIENTATION_CHANGE, { orientation: next } satisfies StepperOrientationChangeEvent);
+    notify();
+  };
+
   return {
     resolved: () => current,
+    refresh,
     destroy: () => {
       observer?.disconnect();
       observer = null;

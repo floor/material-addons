@@ -187,8 +187,10 @@ export interface StepperComponent {
   reset: () => StepperComponent;
   validate: (indexOrValue?: number | string) => Promise<boolean>;
   getValue: () => string | null;
-  setValue: (value: string | null) => Promise<boolean>;
+  setValue: (value: string | null) => StepperComponent;
   getActiveStep: () => StepState | null;
+  /** Index of the active step, -1 when none */
+  getActiveIndex: () => number;
   getStep: (indexOrValue: number | string) => StepState | null;
   getSteps: () => StepState[];
   setSteps: (steps: StepConfig[]) => StepperComponent;

@@ -322,6 +322,138 @@ describe("Stepper declarative actions, reset and events", () => {
   });
 });
 
+describe("Stepper guards, callbacks and layout", () => {
+  test("a linear-locked header is aria-disabled and pointer activation respects it", async () => {
+    const stepper = mount({ linear: true });
+    const review = stepper.getHeaderElement("review")!;
+    expect(review.getAttribute("aria-disabled")).toBe("true");
+    review.click();
+    await Promise.resolve();
+    expect(stepper.getValue()).toBe("account");
+    // An enabled header activates through the same guarded path
+    stepper.getHeaderElement("address")!.click();
+    await Promise.resolve();
+    expect(stepper.getValue()).toBe("address");
+    expect(stepper.getHeaderElement("review")!.getAttribute("aria-disabled")).toBeNull();
+    stepper.destroy();
+  });
+
+  test("a disabled stepper refuses every move and leaves its headers out of the tab order", async () => {
+    const stepper = mount({ disabled: true });
+    expect(await stepper.goTo("address")).toBe(false);
+    expect(await stepper.next()).toBe(false);
+    expect(stepper.getValue()).toBe("account");
+    expect([0, 1, 2].map((index) => stepper.getHeaderElement(index)!.tabIndex)).toEqual([-1, -1, -1]);
+    stepper.enable();
+    expect(await stepper.next()).toBe(true);
+    stepper.destroy();
+  });
+
+  test("the step validator and the config validator both run, in order", async () => {
+    const calls: string[] = [];
+    const stepper = mount({
+      linear: true,
+      validate: () => {
+        calls.push("config");
+        return { valid: false, supportingText: "Config says no" };
+      },
+      steps: [
+        {
+          value: "account",
+          label: "Account details",
+          validate: () => {
+            calls.push("step");
+            return true;
+          },
+        },
+        { value: "review", label: "Review" },
+      ],
+    });
+    expect(await stepper.next()).toBe(false);
+    expect(calls).toEqual(["step", "config"]);
+    expect(stepper.getStep("account")!.error).toBe(true);
+    stepper.destroy();
+  });
+
+  test("the configured callbacks fire beside the events", async () => {
+    const seen: string[] = [];
+    const stepper = createStepper({
+      steps: steps(),
+      linear: true,
+      onChange: (event) => seen.push(`change:${event.value}`),
+      onComplete: () => seen.push("complete"),
+      onError: () => seen.push("error"),
+      onReset: () => seen.push("reset"),
+      validate: () => ({ valid: false, supportingText: "No" }),
+    });
+    document.body.append(stepper.element);
+    stepper.getHeaderElement(1)!.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    stepper.on("change", () => seen.push("dom-change"));
+    stepper.setStepState("address", { validate: undefined });
+    stepper.destroy();
+    expect(seen).toContain("error");
+  });
+
+  test("an action button moves focus into the new panel", async () => {
+    const stepper = mount({
+      steps: [
+        { value: "account", label: "Account details", content: `<button data-stepper-next>Next</button>` },
+        { value: "address", label: "Shipping address", content: `<input id="address-input">` },
+      ],
+    });
+    stepper.getPanelElement(0)!.querySelector<HTMLButtonElement>("[data-stepper-next]")!.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(stepper.getValue()).toBe("address");
+    expect(document.activeElement).toBe(stepper.getPanelElement(1)!.querySelector("input"));
+    stepper.destroy();
+  });
+
+  test("setValue is silent: no validation, no change, chainable", async () => {
+    let validated = 0;
+    const changes: unknown[] = [];
+    const stepper = mount({
+      steps: [
+        { value: "account", label: "Account details", validate: () => { validated += 1; return false; } },
+        { value: "review", label: "Review" },
+      ],
+    });
+    stepper.on("change", (event) => changes.push(event));
+    expect(stepper.setValue("review")).toBe(stepper);
+    expect(stepper.getValue()).toBe("review");
+    expect(validated).toBe(0);
+    expect(changes).toEqual([]);
+    stepper.destroy();
+  });
+
+  test("setOrientation re-lands the layout and keeps the panels reachable", async () => {
+    const stepper = mount();
+    stepper.setOrientation("vertical");
+    expect(stepper.element.classList.contains("mtrl-stepper--vertical")).toBe(true);
+    expect(stepper.getPanelElement(1)).not.toBeNull();
+    expect(stepper.getHeaderElement(1)!.getAttribute("aria-expanded")).toBe("false");
+    stepper.setOrientation("horizontal");
+    expect(stepper.element.classList.contains("mtrl-stepper--horizontal")).toBe(true);
+    expect(stepper.getHeaderElement(1)!.hasAttribute("aria-expanded")).toBe(false);
+    stepper.destroy();
+  });
+
+  test("getActiveIndex and a declaration update keep the selection", () => {
+    const stepper = mount();
+    expect(stepper.getActiveIndex()).toBe(0);
+    stepper.setValue("address");
+    expect(stepper.getActiveIndex()).toBe(1);
+    stepper.setSteps([
+      { value: "account", label: "Account details" },
+      { value: "address", label: "Shipping address" },
+      { value: "review", label: "Review" },
+      { value: "extra", label: "Extra" },
+    ]);
+    expect(stepper.getValue()).toBe("address");
+    stepper.destroy();
+  });
+});
+
 describe("Stepper steps API", () => {
   test("setStepState updates the rendered label and state", () => {
     const stepper = mount();

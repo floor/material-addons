@@ -74,6 +74,28 @@ export const createInitialState = (
   return states;
 };
 
+/** The index of a step value, -1 when the list has none */
+export const indexOfValue = (steps: StepState[], value: string): number =>
+  steps.findIndex((step) => step.value === value);
+
+/**
+ * Whether a step may be activated: enabled, and reachable under the linear
+ * guard. The renderer marks the rest aria-disabled; navigation refuses them.
+ */
+export const canReach = (steps: StepState[], index: number, linear: boolean): boolean => {
+  const target = steps[index];
+  if (!target || target.disabled) return false;
+  if (!linear) return true;
+  const from = steps.findIndex((step) => step.active);
+  if (from < 0 || from === index) return true;
+  if (index < from) return !(target.completed && !target.editable);
+  for (let j = from + 1; j < index; j++) {
+    const step = steps[j];
+    if (step && !step.completed && !step.optional) return false;
+  }
+  return true;
+};
+
 /** The active value, or null when no step can be active */
 export const activeValueOf = (steps: StepState[]): string | null =>
   steps.find((step) => step.active)?.value ?? null;

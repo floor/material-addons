@@ -30,7 +30,15 @@ export const withKeyboard = (
     void goTo(index);
   };
 
+  const off = (): boolean => component.element.getAttribute("aria-disabled") === "true";
+
   const onTabStop = (): void => {
+    if (off()) {
+      renderer.headers.forEach((header) => {
+        header.tabIndex = -1;
+      });
+      return;
+    }
     // One header keeps the tab stop; the active step's when it has one
     const active = renderer.headers.find((header) => header.getAttribute("aria-current") === "step" && !header.disabled);
     if (active) {

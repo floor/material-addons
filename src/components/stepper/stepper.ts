@@ -2,7 +2,6 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createBase, pipe, withDisabled, withElement, withEvents, withLifecycle } from "material/core/compose";
-import { STEPPER_ORIENTATIONS } from "./constants";
 import { createBaseConfig, createInitialState, getElementConfig, type StepperSettings } from "./config";
 import { withAPI, getApiConfig, type StepperCore } from "./api";
 import { withAutoOrientation } from "./features/orientation";
@@ -65,10 +64,9 @@ const withStepperCore =
 
     const setOrientation = (next: StepperOrientation): void => {
       settings.orientation = next;
-      component.element.classList.toggle(
-        component.getClass("stepper--auto"),
-        next === STEPPER_ORIENTATIONS.AUTO,
-      );
+      // The new axis is resolved and the classes follow it, not the old one
+      orientation.refresh();
+      sync();
     };
 
     const core: StepperCore = {

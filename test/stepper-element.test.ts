@@ -108,13 +108,24 @@ describe("<m-stepper> and <m-step>", () => {
     expect(stepperSpec.model).toBe("value");
     expect(stepperSpec.styles).toEqual(["stepper"]);
     expect(hasStyles("stepper")).toBe(true);
-    // Every declared attribute is observed, so a change reaches the element
+    // The independent ten-attribute contract of <m-stepper>
     const observed = (stepperElement.element as unknown as { observedAttributes: string[] }).observedAttributes;
-    expect([...observed].sort()).toEqual(Object.keys(stepperSpec.attributes).sort());
+    expect([...observed].sort()).toEqual([
+      "aria-label",
+      "auto-breakpoint",
+      "disabled",
+      "header-placement",
+      "label-placement",
+      "linear",
+      "no-report-validity",
+      "optional-supporting-text",
+      "orientation",
+      "value",
+    ]);
     // The value property is the live one; the attribute is only its default
     expect(stepperSpec.properties.value.config).toBe("value");
     // The events re-dispatched from the host
-    expect(Object.keys(stepperSpec.events).sort()).toEqual(["change", "complete", "error", "orientationchange", "reset"]);
+    expect(Object.keys(stepperSpec.events).sort()).toEqual(["change", "complete", "orientationchange", "reset"]);
     // Registration is a no-op the second time
     expect(defineStepper()).toBe("m-stepper");
     expect(customElements.get("m-stepper")).toBe(stepperElement.element);
@@ -190,6 +201,50 @@ describe("<m-stepper> and <m-step>", () => {
     expect(shadow(host).querySelectorAll(".mtrl-stepper__item")).toHaveLength(3);
   });
 
+  test("a slotted form blocks a linear move and reset clears it", async () => {
+    document.body.innerHTML = `
+      <m-stepper linear>
+        <m-step value="account" label="Account details">
+          <form><input id="name" required value=""></form>
+        </m-step>
+        <m-step value="address" label="Shipping address"></m-step>
+      </m-stepper>`;
+    const host = document.querySelector("m-stepper") as unknown as StepperHost;
+    const input = host.querySelector<HTMLInputElement>("#name")!;
+    expect(await host.next()).toBe(false);
+    expect(host.value).toBe("account");
+    input.value = "Ada";
+    expect(await host.next()).toBe(true);
+    expect(host.value).toBe("address");
+    input.value = "Grace";
+    host.reset();
+    expect(host.value).toBe("account");
+    // form.reset() puts the field back to its default, as a native form does
+    expect(input.value).toBe("");
+  });
+
+  test("editing an inactive step keeps the selected value", async () => {
+    const host = mount();
+    host.value = "address";
+    await flush();
+    expect(host.value).toBe("address");
+    steps(host)[0]!.setAttribute("label", "Account");
+    await flush();
+    expect(host.value).toBe("address");
+    expect(shadow(host).querySelectorAll(".mtrl-stepper__label")[0]!.textContent).toBe("Account");
+  });
+
+  test("assigning the value property moves the step, and a placement reaches the class list", async () => {
+    const host = mount('label-placement="bottom" header-placement="bottom"');
+    const root = shadow(host).querySelector(".mtrl-stepper")!;
+    expect(root.classList.contains("mtrl-stepper--label-bottom")).toBe(true);
+    expect(root.classList.contains("mtrl-stepper--header-bottom")).toBe(true);
+    host.value = "review";
+    await flush();
+    expect(host.value).toBe("review");
+    expect(shadow(host).querySelectorAll(".mtrl-stepper__header")[2]!.getAttribute("aria-current")).toBe("step");
+  });
+
   test("no inline style.order is ever written on the consumer's steps", () => {
     const host = mount();
     const before = steps(host).map((step) => step.getAttribute("style"));
@@ -197,6 +252,25 @@ describe("<m-stepper> and <m-step>", () => {
     const after = steps(host).map((step) => step.getAttribute("style"));
     expect(before.every((value) => value === null)).toBe(true);
     expect(after).toEqual(before);
+  });
+
+  test("a failed validation is stepper-error on the host, never a DOM error", async () => {
+    document.body.innerHTML = `
+      <m-stepper linear>
+        <m-step value="account" label="Account details"><form><input required></form></m-step>
+        <m-step value="address" label="Address"></m-step>
+      </m-stepper>`;
+    const host = document.querySelector("m-stepper") as unknown as StepperHost;
+    const seen: unknown[] = [];
+    let atDocument = 0;
+    host.addEventListener("stepper-error", (event) => seen.push((event as CustomEvent).detail));
+    const onDocument = (): void => { atDocument += 1; };
+    document.addEventListener("error", onDocument);
+    expect(await host.next()).toBe(false);
+    document.removeEventListener("error", onDocument);
+    expect(seen).toHaveLength(1);
+    expect((seen[0] as { value: string }).value).toBe("account");
+    expect(atDocument).toBe(0);
   });
 
   test("beforechange is a cancelable DOM event on the host", async () => {

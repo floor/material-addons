@@ -1,12 +1,13 @@
 // src/components/stepper/features/navigation.ts
 
-import { STEPPER_ACTIONS, STEPPER_EVENTS } from "../constants";
+import { STEPPER_ACTIONS, STEPPER_CLASSES, STEPPER_EVENTS } from "../constants";
 import type { StepperSettings } from "../config";
-import { activeValueOf, createStepState } from "../config";
+import { activeValueOf, canReach, createStepState, indexOfValue } from "../config";
 import type {
   StepConfig,
   StepValidationContext,
   StepValidationResult,
+  StepValidator,
   StepState,
   StepperBeforeChangeEvent,
   StepperChangeEvent,
@@ -14,7 +15,7 @@ import type {
   StepperErrorEvent,
   StepperResetEvent,
 } from "../types";
-import type { Renderer, StepperHost } from "./renderer";
+import { queryPanel, type Renderer, type StepperHost } from "./renderer";
 
 /** What navigation, rendering and the API share */
 export interface StepperContext {
@@ -27,9 +28,6 @@ export interface StepperContext {
   component: StepperHost & { config?: StepperSettings };
 }
 
-const indexOfValue = (steps: StepState[], value: string): number =>
-  steps.findIndex((step) => step.value === value);
-
 const resolveTarget = (steps: StepState[], target: number | string): number => {
   if (typeof target === "number") return target;
   return indexOfValue(steps, target);
@@ -38,12 +36,10 @@ const resolveTarget = (steps: StepState[], target: number | string): number => {
 /** Stage 1 of the pipeline: native constraint validation across the panel's forms and controls */
 const nativeValid = (panel: HTMLElement | null, report: boolean): boolean => {
   if (!panel) return true;
-  const controls = [
-    ...Array.from(panel.querySelectorAll<HTMLFormElement>("form")),
-    ...Array.from(panel.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
-      "input, select, textarea, [data-mtrl-form-control]",
-    )),
-  ].filter((control) => typeof (control as HTMLFormElement).checkValidity === "function");
+  const controls = queryPanel<HTMLElement>(
+    panel,
+    "form, input, select, textarea, [data-mtrl-form-control]",
+  ).filter((control) => typeof (control as HTMLFormElement).checkValidity === "function");
   for (const control of controls) {
     const check = control as HTMLFormElement;
     const valid = check.checkValidity();
@@ -58,7 +54,7 @@ const nativeValid = (panel: HTMLElement | null, report: boolean): boolean => {
 /** What this navigation layer exposes to the API */
 export interface Navigation {
   getValue: () => string | null;
-  setValue: (value: string | null) => Promise<boolean>;
+  setValue: (value: string | null) => boolean;
   next: () => Promise<boolean>;
   prev: () => Promise<boolean>;
   goTo: (target: number | string) => Promise<boolean>;
@@ -73,7 +69,7 @@ export interface Navigation {
   setLinear: (linear: boolean) => void;
   getPanelElement: (target: number | string) => HTMLElement | null;
   getHeaderElement: (target: number | string) => HTMLButtonElement | null;
-  focusedIndex: () => number;
+  getActiveIndex: () => number;
   destroy: () => void;
 }
 
@@ -94,8 +90,25 @@ export const withNavigation = (
     renderer.live.textContent = `Step ${step.index + 1} of ${ctx.steps.length}: ${step.label}`;
   };
 
+  /** The whole stepper is off: configured so, or disabled since creation */
+  // withDisabled sets the aria state at creation and on every enable()/disable(),
+  // so it is the one record: the configured `disabled` is only its start
+  const off = (): boolean => component.element.getAttribute("aria-disabled") === "true";
+
+  const cls = (name: string): string => component.getClass(name);
+
+  /** The configured callbacks for the events they shadow */
+  const callbacks: Record<string, ((event: never) => void) | undefined> = {
+    [STEPPER_EVENTS.CHANGE]: settings.onChange,
+    [STEPPER_EVENTS.COMPLETE]: settings.onComplete,
+    [STEPPER_EVENTS.ERROR]: settings.onError,
+    [STEPPER_EVENTS.RESET]: settings.onReset,
+  };
+
+  /** The configured callback for an event, beside the DOM event */
   const emit = <T>(name: string, payload: T): T => {
     component.emit(name, payload as unknown as Record<string, unknown>);
+    (callbacks[name] as ((event: T) => void) | undefined)?.(payload);
     return payload;
   };
 
@@ -126,11 +139,14 @@ export const withNavigation = (
     const step = ctx.steps[index];
     if (!step) return { valid: true };
     const declaration = ctx.declarations[index];
-    const panel = ctx.renderer.bodies[index]?.parentElement?.parentElement as HTMLElement | null;
+    const panel = ctx.renderer.panelElements[index] ?? null;
     if (!nativeValid(panel, settings.reportValidity)) return { valid: false };
 
-    const validator = declaration?.validate ?? settings.validate;
-    if (!validator) return { valid: true };
+    // The step's own validator first, then the stepper's, both required (§6)
+    const validators = [declaration?.validate, settings.validate].filter(
+      (candidate): candidate is StepValidator => typeof candidate === "function",
+    );
+    if (!validators.length) return { valid: true };
 
     const context: StepValidationContext = {
       value: step.value,
@@ -143,29 +159,31 @@ export const withNavigation = (
     const apply = (result: boolean | StepValidationResult): { valid: boolean; supportingText?: string } =>
       typeof result === "boolean" ? { valid: result } : { valid: result.valid, supportingText: result.supportingText };
 
-    let outcome: boolean | StepValidationResult | Promise<boolean | StepValidationResult>;
-    try {
-      outcome = validator({ ...step }, context);
-    } catch (error) {
-      return { valid: false, supportingText: error instanceof Error ? error.message : undefined };
-    }
-
-    if (outcome instanceof Promise) {
-      ctx.validating = true;
-      step.validating = true;
-      sync();
+    for (const validator of validators) {
+      let outcome: boolean | StepValidationResult | Promise<boolean | StepValidationResult>;
       try {
-        const settled = apply(await outcome);
-        return settled;
+        outcome = validator({ ...step }, context);
       } catch (error) {
         return { valid: false, supportingText: error instanceof Error ? error.message : undefined };
-      } finally {
-        ctx.validating = false;
-        step.validating = false;
-        sync();
       }
+      if (outcome instanceof Promise) {
+        ctx.validating = true;
+        step.validating = true;
+        sync();
+        try {
+          outcome = apply(await outcome);
+        } catch (error) {
+          return { valid: false, supportingText: error instanceof Error ? error.message : undefined };
+        } finally {
+          ctx.validating = false;
+          step.validating = false;
+          sync();
+        }
+      }
+      const settled = apply(outcome);
+      if (!settled.valid) return settled;
     }
-    return apply(outcome);
+    return { valid: true };
   };
 
   /** The copy the author declared for a step: what an error copy goes back to */
@@ -208,6 +226,7 @@ export const withNavigation = (
 
   /** The one place the active step changes */
   const commit = async (index: number): Promise<boolean> => {
+    if (off()) return false;
     const from = activeIndex();
     if (from === index) return false;
     const fromStep = from >= 0 ? ctx.steps[from] : null;
@@ -263,20 +282,8 @@ export const withNavigation = (
   };
 
   /** The guard that decides whether a move is possible at all */
-  const allowed = (index: number): boolean => {
-    if (ctx.validating) return false;
-    const target = ctx.steps[index];
-    if (!target || target.disabled) return false;
-    const from = activeIndex();
-    if (from < 0) return true;
-    if (!settings.linear) return true;
-    if (index < from) return !(ctx.steps[index].completed && !ctx.steps[index].editable);
-    for (let j = from + 1; j < index; j++) {
-      const step = ctx.steps[j];
-      if (step && !step.completed && !step.optional) return false;
-    }
-    return true;
-  };
+  const allowed = (index: number): boolean =>
+    !ctx.validating && !off() && canReach(ctx.steps, index, settings.linear);
 
   const goTo = async (target: number | string): Promise<boolean> => {
     if (destroyed) return false;
@@ -342,9 +349,8 @@ export const withNavigation = (
     const from = activeIndex();
     const headers = renderer.headers;
     headers.forEach((_header, index) => {
-      const body = renderer.bodies[index];
-      const forms = body?.querySelectorAll("form");
-      forms?.forEach((form) => form.reset());
+      const body = renderer.bodies[index] ?? null;
+      queryPanel<HTMLFormElement>(body, "form").forEach((form) => form.reset());
       const step = ctx.steps[index];
       step.completed = false;
       step.error = false;
@@ -399,9 +405,12 @@ export const withNavigation = (
   };
 
   const setSteps = (steps: StepConfig[]): void => {
+    const previous = activeValueOf(ctx.steps);
     ctx.declarations = steps;
     const states = steps.map(createStepState);
-    const current = states[0];
+    // The selection survives a declaration update: the same value stays active
+    const kept = previous === null ? -1 : indexOfValue(states, previous);
+    const current = states[kept >= 0 && !states[kept]?.disabled ? kept : 0];
     if (current) current.active = true;
     // The list is shared with every reader (the API holds the same array)
     ctx.steps.splice(0, ctx.steps.length, ...states);
@@ -418,37 +427,52 @@ export const withNavigation = (
   const removeStep = (target: number | string): void => {
     const index = resolveTarget(ctx.steps, target);
     if (index < 0) return;
-    const wasActive = ctx.steps[index]?.active;
     ctx.declarations = ctx.declarations.filter((_step, i) => i !== index);
     setSteps(ctx.declarations);
-    if (wasActive && ctx.steps[0]) {
-      ctx.steps.forEach((step) => {
-        step.active = false;
-      });
-      ctx.steps[0].active = true;
-      sync();
+  };
+
+  /** Focus where the next step's work starts, when an action moved */
+  const focusPanel = (): void => {
+    const index = activeIndex();
+    const panel = renderer.panelElements[index];
+    if (!panel) return;
+    const target = panel.querySelector<HTMLElement>(
+      "input, select, textarea, button, [href], [tabindex]",
+    );
+    if (target) target.focus({ preventScroll: true });
+    else {
+      panel.tabIndex = -1;
+      panel.focus({ preventScroll: true });
     }
   };
 
-  const focusedIndex = (): number => {
-    const active = document.activeElement;
-    return renderer.headers.findIndex((header) => header === active);
+  const afterAction = (moved: Promise<boolean>): void => {
+    void moved.then((did) => {
+      if (did && settings.focusPanelOnAction) focusPanel();
+    });
   };
 
   const onActionClick = (event: MouseEvent): void => {
-    const target = event.target as Element | null;
-    if (!target) return;
-    const nextButton = target.closest(`[${STEPPER_ACTIONS.NEXT}]`);
-    if (nextButton) return void next();
-    const prevButton = target.closest(`[${STEPPER_ACTIONS.PREV}]`);
-    if (prevButton) return void prev();
-    const resetButton = target.closest(`[${STEPPER_ACTIONS.RESET}]`);
-    if (resetButton) return reset();
-    const gotoButton = target.closest<HTMLElement>(`[${STEPPER_ACTIONS.GOTO}]`);
-    if (gotoButton) {
-      const raw = gotoButton.getAttribute(STEPPER_ACTIONS.GOTO) ?? "";
-      const asIndex = Number(raw);
-      return void goTo(Number.isInteger(asIndex) ? asIndex : raw);
+    // The composed path spans the light and shadow trees, so a header inside
+    // the shadow and an action button slotted from a step both resolve here
+    const path = event.composedPath();
+    for (const node of path) {
+      if (node instanceof HTMLElement && node.classList.contains(cls(STEPPER_CLASSES.HEADER))) {
+        const index = Number(node.dataset.stepIndex);
+        void goTo(Number.isInteger(index) ? index : 0);
+        return;
+      }
+    }
+    for (const node of path) {
+      if (!(node instanceof HTMLElement)) continue;
+      if (node.hasAttribute(STEPPER_ACTIONS.NEXT)) return afterAction(next());
+      if (node.hasAttribute(STEPPER_ACTIONS.PREV)) return afterAction(prev());
+      if (node.hasAttribute(STEPPER_ACTIONS.RESET)) return reset();
+      if (node.hasAttribute(STEPPER_ACTIONS.GOTO)) {
+        const raw = node.getAttribute(STEPPER_ACTIONS.GOTO) ?? "";
+        const asIndex = Number(raw);
+        return afterAction(goTo(Number.isInteger(asIndex) ? asIndex : raw));
+      }
     }
   };
 
@@ -456,12 +480,19 @@ export const withNavigation = (
 
   return {
     getValue: () => activeValueOf(ctx.steps),
-    setValue: async (value: string | null) => {
-      if (value === null) {
-        const first = ctx.steps.findIndex((step) => !step.disabled);
-        return first >= 0 ? goTo(first) : false;
-      }
-      return goTo(value);
+    // Silent, as a model setter: no validation, no change, no veto
+    setValue: (value: string | null): boolean => {
+      const index = value === null
+        ? ctx.steps.findIndex((step) => !step.disabled)
+        : indexOfValue(ctx.steps, value);
+      const target = ctx.steps[index];
+      if (!target || target.disabled) return false;
+      ctx.steps.forEach((step) => {
+        step.active = step === target;
+      });
+      sync();
+      live(target);
+      return true;
     },
     next,
     prev,
@@ -480,13 +511,13 @@ export const withNavigation = (
     },
     getPanelElement: (target: number | string) => {
       const index = resolveTarget(ctx.steps, target);
-      return (renderer.panels.children[index]?.firstElementChild as HTMLElement) ?? null;
+      return renderer.panelElements[index] ?? null;
     },
     getHeaderElement: (target: number | string) => {
       const index = resolveTarget(ctx.steps, target);
       return renderer.headers[index] ?? null;
     },
-    focusedIndex,
+    getActiveIndex: activeIndex,
     destroy: () => {
       destroyed = true;
       component.element.removeEventListener("click", onActionClick);

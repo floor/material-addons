@@ -111,9 +111,9 @@ export const STEPPER_DEFAULTS = {
 /** Indicator glyphs, inline so the component needs no asset request */
 export const STEPPER_ICONS = {
   CHECK:
-    '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M9.55 17.6 4.9 12.95l1.4-1.4 3.25 3.25 8.15-8.15 1.4 1.4z"/></svg>',
+    '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9.55 17.6 4.9 12.95l1.4-1.4 3.25 3.25 8.15-8.15 1.4 1.4z"/></svg>',
   EDIT:
-    '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M3 17.25V21h3.75L17.8 9.95l-3.75-3.75zM20.7 7.05a1 1 0 0 0 0-1.4l-2.35-2.35a1 1 0 0 0-1.4 0l-1.85 1.85 3.75 3.75z"/></svg>',
+    '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 17.25V21h3.75L17.8 9.95l-3.75-3.75zM20.7 7.05a1 1 0 0 0 0-1.4l-2.35-2.35a1 1 0 0 0-1.4 0l-1.85 1.85 3.75 3.75z"/></svg>',
   ERROR:
-    '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M12 2 1 21h22zm1 15h-2v2h2zm0-6h-2v4h2z"/></svg>',
+    '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2 1 21h22zm1 15h-2v2h2zm0-6h-2v4h2z"/></svg>',
 } as const;
