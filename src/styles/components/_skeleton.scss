@@ -152,16 +152,23 @@ $component: "mtrl-skeleton";
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .#{$component}__shape,
-  .#{$component}__line,
+  // The attribute-scoped selectors match the wave and pulse rules'
+  // specificity, and these come later in the sheet: reduced motion wins
+  // over both motions whatever the placeholder is configured for.
+  .#{$component} .#{$component}__shape,
+  .#{$component}[data-motion] .#{$component}__shape,
+  .#{$component} .#{$component}__line,
+  .#{$component}[data-motion] .#{$component}__line,
   .mtrl-skeleton-host > * {
     animation: none;
   }
 }
 
 @media (forced-colors: active) {
-  .#{$component}__shape,
-  .#{$component}__line {
+  .#{$component} .#{$component}__shape,
+  .#{$component}[data-motion] .#{$component}__shape,
+  .#{$component} .#{$component}__line,
+  .#{$component}[data-motion] .#{$component}__line {
     background: Canvas;
     border: 1px solid CanvasText;
     animation: none;

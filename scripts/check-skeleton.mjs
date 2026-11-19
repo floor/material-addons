@@ -121,7 +121,15 @@ try {
   });
   assert.equal(forced.animation, "none", "forced colors: no animation");
   assert.notEqual(forced.border.trim(), "", "forced colors: the CanvasText border is drawn");
-  console.log(`forced colors: border ${forced.border}, no animation`);
+  const forcedPulse = await page.evaluate(() => {
+    const { createSkeleton } = window.skeleton;
+    const pulse = createSkeleton({ variant: "rect", motion: "pulse" });
+    document.body.appendChild(pulse.element);
+    const shape = pulse.element.querySelector(".mtrl-skeleton__shape");
+    return { animation: getComputedStyle(shape).animationName, background: getComputedStyle(shape).backgroundColor };
+  });
+  assert.equal(forcedPulse.animation, "none", `forced colors outrank pulse (got ${forcedPulse.animation})`);
+  console.log(`forced colors: border ${forced.border}, no animation, pulse included`);
   await page.emulateMedia({ forcedColors: "none", reducedMotion: "no-preference" });
 
   // The reveal swap holds the host's box: a circle mapped to the avatar's
@@ -225,18 +233,26 @@ try {
   assert.ok(appended.second > appended.first, `the appended skeleton's delay is computed on connect (${appended.first} -> ${appended.second})`);
   console.log(`appended after creation: delays ${appended.first}ms -> ${appended.second}ms`);
 
-  // Reduced motion stops the bars of a multi-line placeholder too.
+  // Reduced motion stops the bars of a multi-line placeholder too, and it
+  // outranks the pulse: a pulsed placeholder is equally still.
   await page.emulateMedia({ reducedMotion: "reduce" });
   const reducedBars = await page.evaluate(() => {
     const { createSkeleton } = window.skeleton;
     document.body.innerHTML = "";
-    const skeleton = createSkeleton({ variant: "text", lines: 3 });
-    document.body.appendChild(skeleton.element);
-    const bar = skeleton.element.querySelector(".mtrl-skeleton__line");
-    return getComputedStyle(bar).animationName;
+    const wave = createSkeleton({ variant: "text", lines: 3 });
+    const pulse = createSkeleton({ variant: "text", lines: 3, motion: "pulse" });
+    document.body.append(wave.element, pulse.element);
+    const barOf = (skeleton) => skeleton.element.querySelector(".mtrl-skeleton__line");
+    return {
+      wave: getComputedStyle(barOf(wave)).animationName,
+      pulseBar: getComputedStyle(barOf(pulse)).animationName,
+      pulseShape: getComputedStyle(pulse.element.querySelector(".mtrl-skeleton__shape")).animationName,
+    };
   });
-  assert.equal(reducedBars, "none", `reduced motion: the bars do not animate (got ${reducedBars})`);
-  console.log("reduced motion: the bars do not animate");
+  assert.equal(reducedBars.wave, "none", `reduced motion: the wave bars do not animate (got ${reducedBars.wave})`);
+  assert.equal(reducedBars.pulseBar, "none", `reduced motion outranks pulse on the bars (got ${reducedBars.pulseBar})`);
+  assert.equal(reducedBars.pulseShape, "none", `reduced motion outranks pulse on the shape (got ${reducedBars.pulseShape})`);
+  console.log("reduced motion: wave and pulse are both still");
   await page.emulateMedia({ reducedMotion: "no-preference" });
 
   // The pulse reaches the multi-line bars, with no position delay.
