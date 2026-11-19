@@ -23,6 +23,8 @@ jobs:
       # Match the npm CLI used by trusted publishing in release.yml.
       - run: npm install -g npm@latest
       - run: bun install --frozen-lockfile
+      - name: Generated adapters
+        run: bun run adapters:check
       - name: Types
         run: bun run ts:check
       - name: Tests
@@ -39,3 +41,5 @@ jobs:
         run: bun run check:autocomplete
       - name: Stepper browser behavior
         run: bun run check:stepper
+      - name: Stepper adapters in Chromium
+        run: bun run check:stepper-adapters
