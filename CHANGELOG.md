@@ -21,8 +21,9 @@ Published as `mtrl-addons` up to 0.9.x. This file has written notes from 0.8.0, 
   `--mtrl-sys-*` tokens, forwarding through `material-addons/styles`.
 - Add an autocomplete factory and client custom elements with keyboard
   selection, free-form or strict values, and optional async suggestions.
-- Adapters (placeholder): this line is replaced with the adapter notes
-  before the tag, when that work has merged.
+- Generated React, Vue, Svelte and Solid wrappers for the stepper and step
+  elements, with typed event maps derived from the element contract; the
+  framework peers are optional.
 
 ### Changed
 

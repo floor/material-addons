@@ -381,6 +381,10 @@ The gestures:
 | The layout | `material-addons/layout` |
 | The gestures | `material-addons/gestures` |
 | The same components, without the layout and gesture exports | `material-addons/components` |
+| The React adapter | `material-addons/react` |
+| The Vue adapter | `material-addons/vue` |
+| The Solid adapter | `material-addons/solid` |
+| The Svelte 5 adapter | `material-addons/svelte` |
 | The stepper element | `material-addons/elements`, `material-addons/elements/stepper` |
 | The stepper's shadow styles | `material-addons/elements/css/stepper` |
 | A component's constants | `material-addons/components/form/constants`, `material-addons/components/colorpicker/constants`, `material-addons/components/autocomplete/constants`, `material-addons/components/stepper/constants` |
