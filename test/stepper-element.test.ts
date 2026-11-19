@@ -254,7 +254,7 @@ describe("<m-stepper> and <m-step>", () => {
     expect(after).toEqual(before);
   });
 
-  test("a failed validation is stepper-error on the host, never a DOM error", async () => {
+  test("a failed validation is a bubbling validationerror, never a DOM error", async () => {
     document.body.innerHTML = `
       <m-stepper linear>
         <m-step value="account" label="Account details"><form><input required></form></m-step>
@@ -262,15 +262,39 @@ describe("<m-stepper> and <m-step>", () => {
       </m-stepper>`;
     const host = document.querySelector("m-stepper") as unknown as StepperHost;
     const seen: unknown[] = [];
+    let atAncestor = 0;
     let atDocument = 0;
-    host.addEventListener("stepper-error", (event) => seen.push((event as CustomEvent).detail));
+    const wrapper = document.createElement("div");
+    document.body.append(wrapper);
+    wrapper.append(host);
+    host.addEventListener("validationerror", (event) => seen.push((event as CustomEvent).detail));
+    const onAncestor = (): void => { atAncestor += 1; };
     const onDocument = (): void => { atDocument += 1; };
+    wrapper.addEventListener("validationerror", onAncestor);
     document.addEventListener("error", onDocument);
     expect(await host.next()).toBe(false);
     document.removeEventListener("error", onDocument);
     expect(seen).toHaveLength(1);
     expect((seen[0] as { value: string }).value).toBe("account");
+    expect(atAncestor).toBe(1);
     expect(atDocument).toBe(0);
+  });
+
+  test("an action that moves focuses a slotted control in the new panel", async () => {
+    document.body.innerHTML = `
+      <m-stepper>
+        <m-step value="account" label="Account details">
+          <button data-stepper-next>Next</button>
+        </m-step>
+        <m-step value="address" label="Shipping address">
+          <input id="slotted-input">
+        </m-step>
+      </m-stepper>`;
+    const host = document.querySelector("m-stepper") as unknown as StepperHost;
+    host.querySelector<HTMLButtonElement>("[data-stepper-next]")!.click();
+    await flush();
+    expect(host.value).toBe("address");
+    expect(document.activeElement).toBe(host.querySelector("#slotted-input"));
   });
 
   test("beforechange is a cancelable DOM event on the host", async () => {

@@ -156,7 +156,8 @@ export interface StepperConfig {
   /** Run validation on forward moves even when linear is false */
   validateOnForward?: boolean;
   /** Move focus into the newly shown panel after an action button */
-  focusPanelOnAction?: boolean;
+  /** Where focus goes after a panel action changes the step (default: "panel") */
+  focusOnAction?: "none" | "panel" | "heading";
   /** Supporting text a step shows when it is optional and has none of its own */
   optionalSupportingText?: string;
   /** The root's accessible name */

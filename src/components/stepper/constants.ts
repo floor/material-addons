@@ -101,7 +101,7 @@ export const STEPPER_DEFAULTS = {
   HEADER_PLACEMENT: STEPPER_HEADER_PLACEMENTS.TOP,
   REPORT_VALIDITY: true,
   VALIDATE_ON_FORWARD: true,
-  FOCUS_PANEL_ON_ACTION: true,
+  FOCUS_ON_ACTION: "panel",
   OPTIONAL_SUPPORTING_TEXT: "Optional",
   ARIA_LABEL: "Progress",
   COMPONENT_NAME: "stepper",
@@ -109,6 +109,15 @@ export const STEPPER_DEFAULTS = {
 } as const;
 
 /** Indicator glyphs, inline so the component needs no asset request */
+/** Where focus goes after a panel action changes the step (spec §7) */
+export const STEPPER_FOCUS_TARGETS = {
+  NONE: "none",
+  PANEL: "panel",
+  HEADING: "heading",
+} as const;
+
+export type StepperFocusTarget = (typeof STEPPER_FOCUS_TARGETS)[keyof typeof STEPPER_FOCUS_TARGETS];
+
 export const STEPPER_ICONS = {
   CHECK:
     '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9.55 17.6 4.9 12.95l1.4-1.4 3.25 3.25 8.15-8.15 1.4 1.4z"/></svg>',

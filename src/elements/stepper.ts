@@ -149,9 +149,9 @@ const stepperSpec = {
     reset: {},
     // A layout change is a state of the element, not of its value
     orientationchange: { state: true },
-    // `error` is bridged in setup under the name `stepper-error`: any DOM event
-    // named `error`, bubbling or not, reaches every window capture listener
-    // (a page's monitoring, a dev overlay) as if the page had thrown.
+    // `error` is bridged in setup as `validationerror`: any DOM event named
+    // `error`, bubbling or not, reaches every window capture listener (a page's
+    // monitoring, a dev overlay) as if the page had thrown.
   },
   config: (host: HTMLElement) => {
     const steps = declaredSteps(host);
@@ -175,7 +175,7 @@ const stepperSpec = {
     };
     // A failed validation, under a name that is not the page's error channel
     const onError = (payload: unknown): void => {
-      host.dispatchEvent(new CustomEvent("stepper-error", { detail: payload, composed: true }));
+      host.dispatchEvent(new CustomEvent("validationerror", { detail: payload, bubbles: true, composed: true }));
     };
     component.on("beforechange", onBeforeChange);
     component.on("error", onError);

@@ -438,6 +438,78 @@ describe("Stepper guards, callbacks and layout", () => {
     stepper.destroy();
   });
 
+  test("the final step does not bypass the disabled or in-flight guards", async () => {
+    let validated = 0;
+    let release: (valid: boolean) => void = () => undefined;
+    const stepper = mount({
+      steps: [
+        {
+          value: "only",
+          label: "Only",
+          validate: () => {
+            validated += 1;
+            return new Promise<boolean>((resolve) => { release = resolve; });
+          },
+        },
+      ],
+    });
+    const first = stepper.next();
+    await Promise.resolve();
+    expect(await stepper.next()).toBe(false);
+    expect(validated).toBe(1);
+    release(true);
+    expect(await first).toBe(true);
+    stepper.disable();
+    expect(await stepper.next()).toBe(false);
+    expect(validated).toBe(1);
+    stepper.destroy();
+  });
+
+  test("a replacement step list selects an eligible step, or none", () => {
+    const stepper = mount();
+    stepper.setSteps([
+      { value: "account", label: "Account", disabled: true },
+      { value: "address", label: "Address" },
+    ]);
+    expect(stepper.getValue()).toBe("address");
+    stepper.setSteps([
+      { value: "one", label: "One", disabled: true },
+      { value: "two", label: "Two", disabled: true },
+    ]);
+    expect(stepper.getValue()).toBeNull();
+    stepper.destroy();
+  });
+
+  test("focusOnAction: none leaves focus where it was", async () => {
+    const stepper = mount({
+      focusOnAction: "none",
+      steps: [
+        { value: "account", label: "Account details", content: `<button data-stepper-next>Next</button>` },
+        { value: "address", label: "Shipping address", content: `<input id="address-input">` },
+      ],
+    });
+    stepper.getPanelElement(0)!.querySelector<HTMLButtonElement>("[data-stepper-next]")!.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(stepper.getValue()).toBe("address");
+    expect(document.activeElement).not.toBe(stepper.getPanelElement(1)!.querySelector("input"));
+    stepper.destroy();
+  });
+
+  test("focusOnAction: heading lands on the new panel's heading", async () => {
+    const stepper = mount({
+      focusOnAction: "heading",
+      steps: [
+        { value: "account", label: "Account details", content: `<button data-stepper-next>Next</button>` },
+        { value: "address", label: "Shipping address", content: `<h2 id="address-heading">Address</h2><input id="address-input">` },
+      ],
+    });
+    stepper.getPanelElement(0)!.querySelector<HTMLButtonElement>("[data-stepper-next]")!.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(stepper.getValue()).toBe("address");
+    expect(document.activeElement).toBe(stepper.getPanelElement(1)!.querySelector("#address-heading"));
+    stepper.destroy();
+  });
+
   test("getActiveIndex and a declaration update keep the selection", () => {
     const stepper = mount();
     expect(stepper.getActiveIndex()).toBe(0);

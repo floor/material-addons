@@ -15,7 +15,7 @@ export const defaultConfig: StepperConfig = {
   headerPlacement: STEPPER_DEFAULTS.HEADER_PLACEMENT,
   reportValidity: STEPPER_DEFAULTS.REPORT_VALIDITY,
   validateOnForward: STEPPER_DEFAULTS.VALIDATE_ON_FORWARD,
-  focusPanelOnAction: STEPPER_DEFAULTS.FOCUS_PANEL_ON_ACTION,
+  focusOnAction: STEPPER_DEFAULTS.FOCUS_ON_ACTION,
   optionalSupportingText: STEPPER_DEFAULTS.OPTIONAL_SUPPORTING_TEXT,
   ariaLabel: STEPPER_DEFAULTS.ARIA_LABEL,
   disabled: false,
@@ -31,7 +31,7 @@ export interface StepperSettings extends StepperConfig {
   headerPlacement: NonNullable<StepperConfig["headerPlacement"]>;
   reportValidity: boolean;
   validateOnForward: boolean;
-  focusPanelOnAction: boolean;
+  focusOnAction: NonNullable<StepperConfig["focusOnAction"]>;
   optionalSupportingText: string;
   ariaLabel: string;
   disabled: boolean;

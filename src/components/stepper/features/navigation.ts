@@ -310,7 +310,7 @@ export const withNavigation = (
 
   const next = async (): Promise<boolean> => {
     const from = activeIndex();
-    if (from < 0) return false;
+    if (from < 0 || off() || ctx.validating) return false;
     if (from === ctx.steps.length - 1) return finish(from);
     // The next enabled step only: a veto or a guard on it does not fall through
     // to a later one
@@ -410,8 +410,12 @@ export const withNavigation = (
     const states = steps.map(createStepState);
     // The selection survives a declaration update: the same value stays active
     const kept = previous === null ? -1 : indexOfValue(states, previous);
-    const current = states[kept >= 0 && !states[kept]?.disabled ? kept : 0];
-    if (current) current.active = true;
+    // The same rule as creation: an eligible kept value, else the first enabled
+    // step, else none at all
+    const chosen = kept >= 0 && !states[kept]?.disabled
+      ? kept
+      : states.findIndex((state) => !state.disabled);
+    if (chosen >= 0) states[chosen]!.active = true;
     // The list is shared with every reader (the API holds the same array)
     ctx.steps.splice(0, ctx.steps.length, ...states);
     renderer.render(ctx.steps, steps.map((declaration) => declaration.content));
@@ -431,15 +435,27 @@ export const withNavigation = (
     setSteps(ctx.declarations);
   };
 
-  /** Focus where the next step's work starts, when an action moved */
+  /**
+   * Focus where the next step's work starts, after a panel action moved.
+   * "panel": the first eligible control, then the panel itself; "heading": the
+   * panel's heading, then the same. Header navigation never calls this: focus
+   * stays on the header it was on.
+   */
   const focusPanel = (): void => {
-    const index = activeIndex();
-    const panel = renderer.panelElements[index];
+    const panel = renderer.panelElements[activeIndex()];
     if (!panel) return;
-    const target = panel.querySelector<HTMLElement>(
+    const heading = queryPanel<HTMLElement>(panel, "h1, h2, h3, h4, h5, h6, [role='heading']")[0];
+    const control = queryPanel<HTMLElement>(
+      panel,
       "input, select, textarea, button, [href], [tabindex]",
-    );
-    if (target) target.focus({ preventScroll: true });
+    ).find((candidate) => !candidate.hasAttribute("disabled") && !candidate.closest("[hidden]"));
+    const target =
+      settings.focusOnAction === "heading" ? heading ?? control : control;
+    if (target) {
+      // A heading is not focusable on its own: give it a temporary tab stop
+      if (target.tabIndex < 0 && !target.hasAttribute("tabindex")) target.tabIndex = -1;
+      target.focus({ preventScroll: true });
+    }
     else {
       panel.tabIndex = -1;
       panel.focus({ preventScroll: true });
@@ -448,7 +464,7 @@ export const withNavigation = (
 
   const afterAction = (moved: Promise<boolean>): void => {
     void moved.then((did) => {
-      if (did && settings.focusPanelOnAction) focusPanel();
+      if (did && settings.focusOnAction !== "none") focusPanel();
     });
   };
 
