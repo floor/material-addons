@@ -26,8 +26,10 @@ export interface PanelCore {
   attach: (component: ExpansionPanelComponent) => void;
   /** Runs the vetoable transition; resolves true when the panel changed */
   request: (open: boolean) => Promise<boolean>;
-  /** Applies a state without events */
+  /** Applies a state without user events */
   silent: (open: boolean) => Promise<void>;
+  /** Every committed state change, silent ones included, for the element */
+  stateListeners: Array<(open: boolean) => void>;
   syncHeader: () => void;
   getValue: () => string;
   setValue: (value: string) => void;
@@ -98,10 +100,14 @@ const withPanelCore =
       header.sync({ open: state.open, error: state.error, disabled: state.disabled });
     };
 
+    const stateListeners: Array<(open: boolean) => void> = [];
+    const committed = (open: boolean): void => stateListeners.forEach((listener) => listener(open));
+
     const silent = async (open: boolean): Promise<void> => {
       if (state.open !== open) {
         state.open = open;
         syncHeader();
+        committed(open);
         await region.apply(open, true);
         return;
       }
@@ -114,6 +120,7 @@ const withPanelCore =
       if (open && !guards.every((guard) => guard(true))) return false;
       state.open = open;
       syncHeader();
+      committed(open);
       // The region is in its new state before the event describes it: an
       // `open` listener sees the content, not a hidden inert region
       const settled = region.apply(open);
@@ -122,8 +129,10 @@ const withPanelCore =
       const done = payload();
       emit(open ? EXPANSION_PANEL_EVENTS.OPEN : EXPANSION_PANEL_EVENTS.CLOSE, payload());
       emit(EXPANSION_PANEL_EVENTS.CHANGE, payload());
-      void settled.then(() => {
-        emit(open ? EXPANSION_PANEL_EVENTS.AFTER_OPEN : EXPANSION_PANEL_EVENTS.AFTER_CLOSE, done);
+      // Only the transition that actually settles completes: a newer one
+      // discards this settle, and its own after-event speaks for it
+      void settled.then((applied) => {
+        if (applied) emit(open ? EXPANSION_PANEL_EVENTS.AFTER_OPEN : EXPANSION_PANEL_EVENTS.AFTER_CLOSE, done);
       });
       return true;
     };
@@ -158,6 +167,7 @@ const withPanelCore =
       setValue: (next) => {
         value = next;
       },
+      stateListeners,
       guards,
     };
 

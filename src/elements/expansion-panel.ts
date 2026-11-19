@@ -73,11 +73,6 @@ const claimPanels = (host: HTMLElement, component: AccordionComponent): void => 
     claims.delete(panel);
     component.removePanel(component.getPanels().indexOf(panel));
   }
-  // Registration reconciles one selection; the reflected attributes follow
-  for (const child of Array.from(host.children)) {
-    const panel = (child as unknown as { component: ExpansionPanelComponent | null }).component;
-    if (panel) child.toggleAttribute("open", panel.isOpen());
-  }
 };
 
 const panelSpec = {
@@ -189,12 +184,14 @@ const panelSpec = {
       configurable: true,
       value: () => component.open(),
     });
-    // The factory's state drives the host's `open` attribute, as `<details>`
+    // The factory's state drives the host's `open` attribute, as `<details>`;
+    // every committed state is reflected, silent ones included
     const reflect = (): void => void host.toggleAttribute("open", component.isOpen());
-    const onOpen = (): void => reflect();
-    const onClose = (): void => reflect();
-    component.on(EXPANSION_PANEL_EVENTS.OPEN, onOpen);
-    component.on(EXPANSION_PANEL_EVENTS.CLOSE, onClose);
+    const stateListeners = (component as unknown as {
+      panel?: { stateListeners: Array<(open: boolean) => void> };
+    }).panel?.stateListeners;
+    stateListeners?.push(reflect);
+    reflect();
     // Vetoable open and close become cancelable DOM events on the host
     const bridge = (name: "beforeopen" | "beforeclose") => (payload: unknown) => {
       const event = new CustomEvent(name, { detail: { value: (payload as { value: string }).value }, bubbles: true, composed: true, cancelable: true });
@@ -206,8 +203,8 @@ const panelSpec = {
     component.on(EXPANSION_PANEL_EVENTS.BEFORE_OPEN, beforeOpen as never);
     component.on(EXPANSION_PANEL_EVENTS.BEFORE_CLOSE, beforeClose as never);
     return () => {
-      component.off(EXPANSION_PANEL_EVENTS.OPEN, onOpen);
-      component.off(EXPANSION_PANEL_EVENTS.CLOSE, onClose);
+      const at = stateListeners?.indexOf(reflect) ?? -1;
+      if (stateListeners && at !== -1) stateListeners.splice(at, 1);
       component.off(EXPANSION_PANEL_EVENTS.BEFORE_OPEN, beforeOpen as never);
       component.off(EXPANSION_PANEL_EVENTS.BEFORE_CLOSE, beforeClose as never);
     };

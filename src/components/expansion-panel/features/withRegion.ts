@@ -20,7 +20,7 @@ export interface RegionFeature {
   setContent: (content: ExpansionPanelContent | undefined) => void;
   setActions: (actions: ExpansionPanelActions | undefined) => void;
   /** Applies the open state's DOM and resolves once the transition settled */
-  apply: (open: boolean, immediate?: boolean) => Promise<void>;
+  apply: (open: boolean, immediate?: boolean) => Promise<boolean>;
 }
 
 interface RegionHost {
@@ -130,7 +130,7 @@ export const withRegion =
     setActions(settings.actions);
 
     let settleToken = 0;
-    const apply = (open: boolean, immediate = false): Promise<void> => {
+    const apply = (open: boolean, immediate = false): Promise<boolean> => {
       const token = ++settleToken;
       if (open) {
         render();
@@ -150,7 +150,7 @@ export const withRegion =
       };
       if (immediate) {
         settle();
-        return Promise.resolve();
+        return Promise.resolve(true);
       }
       return new Promise((resolve) => {
         let done = false;
@@ -158,8 +158,10 @@ export const withRegion =
           if (done) return;
           done = true;
           inner.removeEventListener("transitionend", onEnd);
+          // A newer transition discards this one: it never settles
+          const current = token === settleToken;
           settle();
-          resolve();
+          resolve(current);
         };
         const onEnd = (event: TransitionEvent): void => {
           if (event.target === inner) finish();
