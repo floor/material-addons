@@ -176,7 +176,17 @@ Measured as standalone minified ESM bundles, gzipped, with `material` external; 
 | `<m-stepper>` and `<m-step>` | 1.5 KB | 0.7 KB |
 | The compiled stylesheet | 1.6 KB | 1.4 KB |
 
-The targets were estimates made before the implementation; the measured sizes exceed all three. The excess is the whole public surface the spec asks for: every factory method, the three validation stages, the renderer, the element's ten attributes and its declaration class.
+The targets were estimates made before the implementation, and all three rows
+exceed them; the row records what was measured, not what was hoped for.
+
+Where the factory's bytes go, in source: the navigation and validation
+pipeline is 17 KB and the renderer 10 KB; the rest is 16 KB between them.
+
+The renderer builds fifteen parts and their ARIA state. The navigation runs
+the three validation stages and the completion rules.
+
+The element is 10.7 KB of source for ten attributes and the declaration
+class. The sheet is 7.3 KB minified for the token set and the layout blocks.
 
 ## Colour picker
 
