@@ -86,6 +86,73 @@ describe("avatar image fallback", () => {
     avatar.destroy();
   });
 
+  test("an author's inline display survives failure and recovery, priority included", async () => {
+    const { createAvatar } = await import("../src/components/avatar");
+    const avatar = createAvatar({
+      variant: "image",
+      text: "Ada Lovelace",
+      content: '<img src="http://localhost/missing.png" alt="Ada">',
+    });
+    document.body.appendChild(avatar.element);
+    const img = avatar.element.querySelector("img")!;
+    img.style.setProperty("display", "inline-block", "important");
+    Object.defineProperty(img, "complete", { value: true, configurable: true });
+    Object.defineProperty(img, "naturalWidth", { value: 0, configurable: true });
+    img.dispatchEvent(new Event("error"));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(img.style.display).toBe("none");
+    expect(img.style.getPropertyPriority("display")).toBe("important");
+    // Recovery restores the author's exact declaration.
+    Object.defineProperty(img, "naturalWidth", { value: 80, configurable: true });
+    img.setAttribute("src", "http://localhost/ada.png");
+    img.dispatchEvent(new Event("load"));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(img.style.display).toBe("inline-block");
+    expect(img.style.getPropertyPriority("display")).toBe("important");
+    avatar.destroy();
+  });
+
+  test("destroy restores a still-hidden author display", async () => {
+    const { createAvatar } = await import("../src/components/avatar");
+    const avatar = createAvatar({
+      variant: "image",
+      text: "Ada",
+      content: '<img src="http://localhost/missing.png" alt="Ada">',
+    });
+    document.body.appendChild(avatar.element);
+    const img = avatar.element.querySelector("img")!;
+    img.style.display = "block";
+    Object.defineProperty(img, "complete", { value: true, configurable: true });
+    Object.defineProperty(img, "naturalWidth", { value: 0, configurable: true });
+    img.dispatchEvent(new Event("error"));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(img.style.display).toBe("none");
+    avatar.destroy();
+    expect(img.style.display).toBe("block");
+    expect(img.classList.contains("mtrl-avatar__img--failed")).toBe(false);
+  });
+
+  test("variant=image with a decorative icon: the failed img's alt names the root", async () => {
+    const { createAvatar } = await import("../src/components/avatar");
+    const avatar = createAvatar({
+      variant: "image",
+      content: '<img src="http://localhost/missing.png" alt="Portrait of Ada"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle></svg>',
+    });
+    document.body.appendChild(avatar.element);
+    const img = avatar.element.querySelector("img")!;
+    Object.defineProperty(img, "complete", { value: true, configurable: true });
+    Object.defineProperty(img, "naturalWidth", { value: 0, configurable: true });
+    img.dispatchEvent(new Event("error"));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    // The icon keeps the shape (content not blank), yet the failed img
+    // carried the only name: the root takes role img with that alt.
+    expect(img.classList.contains("mtrl-avatar__img--failed")).toBe(true);
+    expect(avatar.element.querySelector("svg")).toBeTruthy();
+    expect(avatar.element.getAttribute("role")).toBe("img");
+    expect(avatar.element.getAttribute("aria-label")).toBe("Portrait of Ada");
+    avatar.destroy();
+  });
+
   test("an authored icon beside the failed image keeps showing", async () => {
     const { createAvatar } = await import("../src/components/avatar");
     const avatar = createAvatar({

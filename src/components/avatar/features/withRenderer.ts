@@ -62,14 +62,40 @@ export function withRenderer(settings: AvatarSettings) {
     // nothing readable remains the initials take the shape instead.
     const failedImages = new Set<HTMLImageElement>();
 
+    // The author's inline display, value and priority, saved before the
+    // failure hides the image: recovery and destroy restore exactly it.
+    const savedDisplay = new Map<HTMLImageElement, { value: string; priority: string }>();
+
+    function hideImage(img: HTMLImageElement): void {
+      if (!savedDisplay.has(img)) {
+        savedDisplay.set(img, {
+          value: img.style.getPropertyValue("display"),
+          priority: img.style.getPropertyPriority("display"),
+        });
+      }
+      // Inline and important, not just the class: a document reset like
+      // img{display:block} outranks a ::slotted rule in the cascade for
+      // slotted content, and the reset outranks a plain inline none.
+      img.style.setProperty("display", "none", "important");
+    }
+
+    function unhideImage(img: HTMLImageElement): void {
+      const saved = savedDisplay.get(img);
+      if (saved) {
+        if (saved.value === "" && saved.priority === "") img.style.removeProperty("display");
+        else img.style.setProperty("display", saved.value, saved.priority as never);
+        savedDisplay.delete(img);
+      } else {
+        img.style.removeProperty("display");
+      }
+    }
+
     function imageFailed(img: HTMLImageElement): void {
       if (failedImages.has(img)) return;
       failedImages.add(img);
       img.classList.add(`${AVATAR_CLASSES.ROOT}__img--failed`);
       img.setAttribute("aria-hidden", "true");
-      // Inline, not just the class: a document reset like img{display:block}
-      // can outrank a ::slotted rule in the cascade for slotted content.
-      img.style.display = "none";
+      hideImage(img);
       syncFallback();
       // The name may now come from the root: a hidden image cannot name
       // itself in the image variant or beside an authored icon.
@@ -80,7 +106,7 @@ export function withRenderer(settings: AvatarSettings) {
       if (!failedImages.delete(img)) return;
       img.classList.remove(`${AVATAR_CLASSES.ROOT}__img--failed`);
       img.removeAttribute("aria-hidden");
-      img.style.display = "";
+      unhideImage(img);
       syncFallback();
       updateName();
     }
@@ -147,11 +173,14 @@ export function withRenderer(settings: AvatarSettings) {
       // Any named image that failed and is now hidden leaves its name
       // unreachable — the initials fallback in the image variant, or a
       // failed img beside an authored icon.
+      // One name rule for every variant and every path: a failed image that
+      // carried the only name hands that name to the root, in the image
+      // variant, beside a decorative icon, or anywhere else an img fails.
       const failedNamedImage = images().find((img) => failedImages.has(img) && (img.getAttribute("alt") || hiddenImages.get(img)));
-      const fallen = root.classList.contains(`${AVATAR_CLASSES.ROOT}--image-fallback`) ||
-        (settings.variant === "icon" && !!failedNamedImage);
-      const failedAlt = failedNamedImage && (failedNamedImage.getAttribute("alt") || hiddenImages.get(failedNamedImage));
-      const fallbackName = fallen ? (failedAlt || imageLabel || fallbackInitials()) : undefined;
+      const fallen = root.classList.contains(`${AVATAR_CLASSES.ROOT}--image-fallback`) || !!failedNamedImage;
+      const fallbackName = failedNamedImage
+        ? (failedNamedImage.getAttribute("alt") || hiddenImages.get(failedNamedImage) || fallbackInitials())
+        : undefined;
       const name = settings.ariaLabel ?? (settings.label || (settings.variant === "text" ? settings.text : imageLabel) || fallbackName) ?? "";
       const description = settings.supportingText;
       const announcement = badge.name();
@@ -312,6 +341,11 @@ export function withRenderer(settings: AvatarSettings) {
         imageObserver.disconnect();
         unbindRootListeners();
         slot?.removeEventListener("slotchange", observeImages);
+        for (const img of failedImages) {
+          img.classList.remove(`${AVATAR_CLASSES.ROOT}__img--failed`);
+          img.removeAttribute("aria-hidden");
+          unhideImage(img);
+        }
         for (const [img, original] of hiddenImages) restoreImage(img, original);
         root.removeEventListener("click", click);
         badge.destroy();

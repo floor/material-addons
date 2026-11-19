@@ -329,6 +329,75 @@ try {
     assert.deepEqual(errors, [], "icon path: no page errors");
     await page.close();
     console.log("Avatar icon path: failed img hidden, icon shows, root named role img");
+
+  // An author's inline display (priority included) survives failure and
+  // recovery; a still-hidden one is restored at destroy.
+  {
+    const page = await browser.newPage();
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto(`http://127.0.0.1:${port}/test/browser/avatar.html`, { waitUntil: "networkidle" });
+    await page.waitForFunction(() => !!window.createAvatar && !!window.defineAvatar);
+    const display = await page.evaluate(async () => {
+      document.body.innerHTML = "";
+      const avatar = window.createAvatar({
+        variant: "image",
+        text: "Ada Lovelace",
+        content: '<img src="/definitely-missing.png" alt="Ada">',
+      });
+      document.body.appendChild(avatar.element);
+      const img = avatar.element.querySelector("img");
+      img.style.setProperty("display", "inline-block", "important");
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      const failedDisplay = img.style.display;
+      const failedPriority = img.style.getPropertyPriority("display");
+      const failedComputed = getComputedStyle(img).display;
+      img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='40'%3E%3Ccircle cx='20' cy='20' r='16' fill='%236750a4'/%3E%3C/svg%3E";
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      const recoveredDisplay = img.style.display;
+      const recoveredPriority = img.style.getPropertyPriority("display");
+      return { failedDisplay, failedPriority, failedComputed, recoveredDisplay, recoveredPriority };
+    });
+    assert.equal(display.failedComputed, "none", `the failure hides the img in the computed style (got ${display.failedComputed})`);
+    assert.equal(display.failedDisplay, "none", "the failure's inline none is in place");
+    assert.equal(display.recoveredDisplay, "inline-block", `recovery restores the author's value (got ${display.recoveredDisplay})`);
+    assert.equal(display.recoveredPriority, "important", `recovery restores the author's priority (got ${display.recoveredPriority})`);
+    assert.deepEqual(errors, [], "display: no page errors");
+    await page.close();
+    console.log("Avatar display save/restore: inline-block !important survives the whole cycle");
+  }
+
+  // variant=image with a decorative icon: the failed img's alt still names
+  // the root.
+  {
+    const page = await browser.newPage();
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto(`http://127.0.0.1:${port}/test/browser/avatar.html`, { waitUntil: "networkidle" });
+    await page.waitForFunction(() => !!window.createAvatar && !!window.defineAvatar);
+    const decorative = await page.evaluate(async () => {
+      document.body.innerHTML = "";
+      const avatar = window.createAvatar({
+        variant: "image",
+        content: '<img src="/definitely-missing.png" alt="Portrait of Ada"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle></svg>',
+      });
+      document.body.appendChild(avatar.element);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      return {
+        role: avatar.element.getAttribute("role"),
+        name: avatar.element.getAttribute("aria-label"),
+        iconVisible: !!avatar.element.querySelector("svg"),
+        imgHidden: getComputedStyle(avatar.element.querySelector("img")).display === "none",
+      };
+    });
+    assert.equal(decorative.imgHidden, true, "the failed img is hidden");
+    assert.equal(decorative.iconVisible, true, "the decorative icon shows");
+    assert.equal(decorative.role, "img", `the root takes role img (got ${decorative.role})`);
+    assert.equal(decorative.name, "Portrait of Ada", `the failed img's alt names the root (got ${decorative.name})`);
+    assert.deepEqual(errors, [], "decorative: no page errors");
+    await page.close();
+    console.log("Avatar decorative icon: failed img hidden, icon shows, root named from the alt");
+  }
   }
   }
   }
