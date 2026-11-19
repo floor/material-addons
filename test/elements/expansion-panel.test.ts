@@ -193,6 +193,34 @@ describe("<m-expansion-panel> and <m-accordion>", () => {
     expect(first.hasAttribute("open")).toBe(false);
   });
 
+  test("a silent change still reflects on the host", async () => {
+    document.body.innerHTML = `
+      <m-accordion value="b">
+        <m-expansion-panel value="a" label="A" open></m-expansion-panel>
+        <m-expansion-panel value="b" label="B"></m-expansion-panel>
+      </m-accordion>`;
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    const accordion = document.querySelector("m-accordion") as unknown as HTMLElement & {
+      closeAll: () => unknown;
+    };
+    const a = document.querySelector("m-expansion-panel[value='a']") as unknown as PanelHost;
+    const b = document.querySelector("m-expansion-panel[value='b']") as unknown as PanelHost;
+    // The authored value wins silently: the attribute follows, without events
+    expect(a.open).toBe(false);
+    expect(a.hasAttribute("open")).toBe(false);
+    expect(b.open).toBe(true);
+    expect(b.hasAttribute("open")).toBe(true);
+    // A direct silent setter reflects too
+    a.component!.setOpen(true);
+    expect(a.open).toBe(true);
+    expect(a.hasAttribute("open")).toBe(true);
+    // And so does the group's silent close
+    accordion.closeAll();
+    expect(a.open).toBe(false);
+    expect(a.hasAttribute("open")).toBe(false);
+    expect(b.hasAttribute("open")).toBe(false);
+  });
+
   test("a removed panel child leaves the group", async () => {
     document.body.innerHTML = `
       <m-accordion>

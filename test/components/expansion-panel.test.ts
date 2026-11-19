@@ -309,10 +309,8 @@ describe("Accordion one-open invariant", () => {
     panel.open();
     panel.close();
     await settle();
-    expect(after).toEqual([
-      { name: "afteropen", open: true },
-      { name: "afterclose", open: false },
-    ]);
+    // The opening is superseded before it settles: only the close completes
+    expect(after).toEqual([{ name: "afterclose", open: false }]);
     panel.destroy();
   });
 

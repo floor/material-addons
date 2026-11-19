@@ -313,7 +313,7 @@ try {
   });
   assert.deepEqual(switching.vetoed, { opened: 0, values: ["a"], b: false });
   assert.deepEqual(switching.destination, { a: true, c: false, values: ["a"] });
-  assert.deepEqual(switching.after, [["afteropen", true], ["afterclose", false]]);
+  assert.deepEqual(switching.after, [["afterclose", false]]);
   assert.deepEqual(switching.openAll, ["a"]);
   assert.equal(switching.panels, 2);
 
@@ -332,6 +332,30 @@ try {
     return { values: accordion.component.getValues(), a: accordion.component.getPanel("a").isOpen(), b: second.isOpen() };
   });
   assert.deepEqual(initial, { values: ["a"], a: true, b: false });
+
+  // Silent changes reflect: the authored value, a direct setter and closeAll
+  await reset();
+  const reflection = await page.evaluate(async () => {
+    document.body.innerHTML = `<m-accordion value="b">
+      <m-expansion-panel value="a" label="A" open></m-expansion-panel>
+      <m-expansion-panel value="b" label="B"></m-expansion-panel>
+    </m-accordion>`;
+    window.expansion.defineExpansionPanel();
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    const accordion = document.querySelector("m-accordion");
+    const [a, b] = [...document.querySelectorAll("m-expansion-panel")];
+    const initial = { a: { open: a.open, attr: a.hasAttribute("open") }, b: { open: b.open, attr: b.hasAttribute("open") } };
+    a.setOpen(true);
+    const setOpen = { open: a.open, attr: a.hasAttribute("open") };
+    accordion.component.closeAll();
+    const closeAll = { a: a.hasAttribute("open"), b: b.hasAttribute("open") };
+    return { initial, setOpen, closeAll };
+  });
+  assert.deepEqual(reflection, {
+    initial: { a: { open: false, attr: false }, b: { open: true, attr: true } },
+    setOpen: { open: true, attr: true },
+    closeAll: { a: false, b: false },
+  });
 
   // Forced colours keep the boundary, the focus ring and the disabled colour apart
   await reset();
