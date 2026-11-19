@@ -153,7 +153,12 @@ export function withRenderer(settings: AvatarSettings) {
         if (current !== "") img.alt = "";
       }
 
-      const role = root.localName === "div" ? (namedRoot ? (first || description ? "group" : "img") : undefined)
+      // On the fallback a hidden image cannot name itself: a non-interactive
+      // avatar becomes role img carrying the name (the alt, else the
+      // initials); an interactive one keeps its button and its name.
+      const fallenRoot = root.localName === "div" && fallen;
+      const role = fallenRoot ? "img"
+        : root.localName === "div" ? (namedRoot ? (first || description ? "group" : "img") : undefined)
         : root.localName === "a" && settings.disabled ? "link" : undefined;
       const fullName = [name, announcement].filter(Boolean).join(", ");
       setAttribute(root, "role", role);

@@ -151,11 +151,15 @@ try {
         after: { width: after.width, height: after.height, below: below.getBoundingClientRect().top },
         failedClass: img?.classList.contains("mtrl-avatar__img--failed") ?? false,
         initials: avatar.element.querySelector(".mtrl-avatar__shape .mtrl-avatar__text")?.textContent ?? null,
+        role: avatar.element.getAttribute("role"),
+        name: avatar.element.getAttribute("aria-label"),
         imgDisplayed: img ? img.isConnected && getComputedStyle(img).display !== "none" : false,
       };
     });
     assert.equal(fallback.failedClass, true, `the broken image is marked failed (got ${fallback.failedClass})`);
     assert.equal(fallback.initials, "Ad", `the initials take the shape (got ${fallback.initials})`);
+    assert.equal(fallback.role, "img", `a non-interactive fallback is role img (got ${fallback.role})`);
+    assert.equal(fallback.name, "Ada", `role img carries the alt name (got ${fallback.name})`);
     assert.equal(fallback.imgDisplayed, false, "the broken image is not displayed");
     assert.equal(fallback.after.width, fallback.before.width, `no layout shift in width (got ${fallback.before.width} -> ${fallback.after.width})`);
     assert.equal(fallback.after.height, fallback.before.height, `no layout shift in height (got ${fallback.before.height} -> ${fallback.after.height})`);
@@ -163,6 +167,40 @@ try {
     assert.deepEqual(errors, [], "fallback: no page errors");
     await page.close();
     console.log("Avatar image fallback: broken src hidden, initials shown, no layout shift");
+
+  // An interactive avatar keeps its button and its name across the fallback.
+  {
+    const page = await browser.newPage();
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto(`http://127.0.0.1:${port}/test/browser/avatar.html`, { waitUntil: "networkidle" });
+    await page.waitForFunction(() => !!window.createAvatar && !!window.defineAvatar);
+    const interactive = await page.evaluate(async () => {
+      document.body.innerHTML = "";
+      const avatar = window.createAvatar({
+        variant: "image",
+        text: "Ada Lovelace",
+        label: "Ada",
+        onClick: () => {},
+        content: '<img src="/definitely-missing.png" alt="Ada">',
+      });
+      document.body.appendChild(avatar.element);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      return {
+        tag: avatar.element.localName,
+        role: avatar.element.getAttribute("role"),
+        name: avatar.element.getAttribute("aria-label"),
+        fallback: avatar.element.classList.contains("mtrl-avatar--image-fallback"),
+      };
+    });
+    assert.equal(interactive.tag, "button", `the interactive avatar stays a button (got ${interactive.tag})`);
+    assert.equal(interactive.role, null, `no role override on a button (got ${interactive.role})`);
+    assert.equal(interactive.name, "Ada", `the button keeps its name (got ${interactive.name})`);
+    assert.equal(interactive.fallback, true, "the fallback engages on the interactive avatar too");
+    assert.deepEqual(errors, [], "interactive: no page errors");
+    await page.close();
+    console.log("Avatar interactive fallback: button kept, name kept");
+  }
 
   // Recovery: the same img's src changes to a valid URL; the picture
   // returns and the initials leave.
@@ -184,7 +222,7 @@ try {
       await new Promise((resolve) => setTimeout(resolve, 250));
       const fallen = avatar.element.classList.contains("mtrl-avatar--image-fallback");
       const initialsShown = !!avatar.element.querySelector(".mtrl-avatar__shape .mtrl-avatar__text");
-      img.src = "/@fs" + "/Users/jvial/Code/floor/worktrees/material-addons/seat-implementer-glm/test/browser/valid.svg";
+      img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='40'%3E%3Ccircle cx='20' cy='20' r='16' fill='%236750a4'/%3E%3C/svg%3E";
       await new Promise((resolve) => setTimeout(resolve, 400));
       return {
         fallen,
@@ -233,7 +271,7 @@ try {
         initials: inner?.querySelector(".mtrl-avatar__shape .mtrl-avatar__text")?.textContent ?? null,
         name: inner?.getAttribute("aria-label") ?? host.getAttribute("aria-label") ?? null,
       };
-      broken.src = "/@fs/Users/jvial/Code/floor/worktrees/material-addons/seat-implementer-glm/test/browser/valid.svg";
+      broken.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='40'%3E%3Ccircle cx='20' cy='20' r='16' fill='%236750a4'/%3E%3C/svg%3E";
       await new Promise((resolve) => setTimeout(resolve, 400));
       const recoveredState = {
         fallbackClass: inner?.classList.contains("mtrl-avatar--image-fallback") ?? true,

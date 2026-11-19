@@ -62,7 +62,7 @@ describe("avatar image fallback", () => {
     Object.defineProperty(img, "naturalWidth", { value: 0, configurable: true });
     img.dispatchEvent(new Event("error"));
     await new Promise((resolve) => setTimeout(resolve, 20));
-    expect(avatar.element.getAttribute("role")).toBe("group");
+    expect(avatar.element.getAttribute("role")).toBe("img");
     expect(avatar.element.getAttribute("aria-label")).toBe("Ada photograph");
     avatar.destroy();
   });
