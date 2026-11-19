@@ -11,6 +11,11 @@ import { releasePack } from "./release-pack.mjs";
 const EXPECTED_PATHS = [
   "LICENSE",
   "README.md",
+  "dist/adapters/autocomplete/contract.d.ts",
+  "dist/adapters/autocomplete/react.d.ts",
+  "dist/adapters/autocomplete/solid.d.ts",
+  "dist/adapters/autocomplete/svelte.d.ts",
+  "dist/adapters/autocomplete/vue.d.ts",
   "dist/adapters/react.d.ts",
   "dist/adapters/solid.d.ts",
   "dist/adapters/stepper.d.ts",
@@ -118,6 +123,11 @@ const EXPECTED_PATHS = [
   "dist/solid/index.d.ts",
   "dist/solid/index.mjs",
   "dist/styles.css",
+  "dist/svelte/Autocomplete.svelte",
+  "dist/svelte/Autocomplete.svelte.d.ts",
+  "dist/svelte/AutocompleteOption.svelte",
+  "dist/svelte/AutocompleteOption.svelte.d.ts",
+  "dist/svelte/autocomplete-runtime.mjs",
   "dist/svelte/Step.svelte",
   "dist/svelte/Step.svelte.d.ts",
   "dist/svelte/Stepper.svelte",
@@ -225,10 +235,12 @@ try {
     symlinkSync(resolve(root, "node_modules", peer), join(modules, peer), "junction");
     const name = entry === "./vue" ? "MStepper" : "Stepper";
     const child = entry === "./vue" ? "MStep" : "Step";
+    const prefix = entry === "./vue" ? "M" : "";
     run(process.execPath, ["--input-type=module", "-e", `
       import assert from 'node:assert/strict';
       const adapter = await import(${JSON.stringify(pkg.name + entry.slice(1))});
       assert.ok(adapter.${name} && adapter.${child});
+      assert.ok(adapter.${prefix}Autocomplete && adapter.${prefix}AutocompleteOption);
     `], fixture);
   }
   assert.match(readFileSync(join(addon, "dist/react/index.mjs"), "utf8"), /^"use client";/);
