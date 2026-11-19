@@ -340,4 +340,40 @@ export const withFields = (config: FormConfig) => {
   };
 };
 
+/**
+ * Re-register the fields after a skeleton reveal.
+ *
+ * In skeleton mode the layout's component slots hold placeholders, so the
+ * compose-time extraction found no field shapes. reveal() forwards those
+ * same slot objects to the real components; re-extracting into the same
+ * maps keeps every holder — the closures, the tracker, submit — pointed at
+ * the registry that now holds the real fields.
+ */
+export const reregisterFields = (component: {
+  ui?: Record<string, unknown>;
+  fields?: FormFieldRegistry;
+  files?: FormFieldRegistry;
+  config?: FormConfig;
+  emit?: (event: string, data?: unknown) => void;
+  _fieldValueTracker?: Map<string, FieldValue>;
+}): void => {
+  if (!component.fields || !component.files) return;
+  const { fields, files } = extractFields(component.ui || {}, component.config ?? ({} as FormConfig));
+  component.fields.clear();
+  for (const [name, field] of fields) component.fields.set(name, field);
+  component.files.clear();
+  for (const [name, field] of files) component.files.set(name, field);
+  if (component.emit) {
+    const tracker = component._fieldValueTracker ?? new Map<string, FieldValue>();
+    bindFieldEvents(component.fields, (name, value) => {
+      component.emit?.("field:change", { name, value });
+      component.emit?.("change", { name, value });
+    }, tracker);
+    bindFieldEvents(component.files, (name, value) => {
+      component.emit?.("file:change", { name, value });
+      component.emit?.("change", { name, value });
+    }, tracker);
+  }
+};
+
 export default withFields;

@@ -20,6 +20,7 @@ import type {
   FieldValue,
 } from "../types";
 import { FORM_EVENTS } from "../constants";
+import { reregisterFields } from "./fields";
 import type { EventCallback } from "material/core/state";
 
 /**
@@ -405,6 +406,10 @@ export const withAPI = (config: FormConfig) => {
        */
       reveal(): void {
         component.reveal?.();
+        // The skeleton slots now forward to the real components: the field
+        // registry re-registers so getData, submit and change events see
+        // the real fields, not the placeholders that held their boxes.
+        reregisterFields(component as Parameters<typeof reregisterFields>[0]);
       },
 
       destroy(): void {

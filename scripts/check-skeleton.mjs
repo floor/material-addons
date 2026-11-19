@@ -375,13 +375,52 @@ try {
   assert.equal(zeroShift.after.below, zeroShift.before.below, `the page below does not move (got ${zeroShift.before.below} -> ${zeroShift.after.below})`);
   console.log(`documented reveal: 56px -> 56px, the paragraph below stays at ${zeroShift.after.below}px`);
 
+  // The reveal reserves the exact box: a fractional difference between the
+  // mapped placeholder and the real component must not move the page.
+  await reset("light");
+  const fractional = await page.evaluate(() => {
+    const { createLayout, registerSkeleton } = window.skeleton;
+    document.body.innerHTML = "";
+    const createOdd = (options) => {
+      const element = document.createElement("div");
+      element.style.height = "56.4px";
+      element.textContent = options.label ?? "";
+      return { element, destroy: () => element.remove() };
+    };
+    registerSkeleton(createOdd, () => ({ variant: "rect", blockSize: "56px" }));
+    const below = document.createElement("p");
+    below.textContent = "after";
+    const region = document.createElement("div");
+    document.body.append(region, below);
+    const result = createLayout(["div", { layout: { type: "row" } }, [createOdd, "odd", {}]], region, { skeleton: true });
+    const before = { below: below.getBoundingClientRect().top, host: result.get("odd").element.getBoundingClientRect().height };
+    result.reveal();
+    const after = { below: below.getBoundingClientRect().top, host: result.get("odd").element.getBoundingClientRect().height };
+    result.destroy();
+    return { before, after };
+  });
+  assert.equal(fractional.after.below, fractional.before.below, `a 0.4px difference moves nothing (got ${fractional.before.below} -> ${fractional.after.below})`);
+  console.log(`exact box: the page below stays at ${fractional.after.below}px across a 56 -> 56.4px swap`);
+
   // The form's public reveal(): placeholders stand in, reveal swaps them in
   // and clears the busy flag.
   const formReveal = await page.evaluate(async () => {
     const { createForm } = window.skeleton;
     document.body.innerHTML = "";
+    // A real field creator: the placeholder stands in first, reveal() must
+    // make THIS component the registered, reading-and-writing field.
+    const createNameField = (options) => {
+      const element = document.createElement("input");
+      element.value = "Ada";
+      return {
+        element,
+        destroy: () => element.remove(),
+        getValue: () => element.value,
+        setValue: (value) => { element.value = String(value); },
+      };
+    };
     const form = createForm({
-      layout: [["div", { textContent: "field" }]],
+      layout: [[createNameField, "info.name", { label: "Name" }]],
       skeleton: true,
     });
     document.body.appendChild(form.element);
@@ -391,13 +430,25 @@ try {
     if (hasReveal) form.reveal();
     await new Promise((resolve) => setTimeout(resolve, 50));
     const busyAfter = form.element.hasAttribute("aria-busy") || !!form.form?.hasAttribute?.("aria-busy");
+    const field = typeof form.getField === "function" ? form.getField("name") : undefined;
+    const registered = !!field && typeof field.getValue === "function";
+    const read = registered ? field.getValue() : null;
+    if (registered) field.setValue("Grace");
+    const reread = registered ? field.getValue() : null;
+    const input = form.element.querySelector("input");
     form.destroy?.();
-    return { hadPlaceholder, hasReveal, busyBefore, busyAfter };
+    return { hadPlaceholder, hasReveal, busyBefore, busyAfter, registered, read, reread, inputPresent: !!input, inputValue: input?.value ?? null };
   });
+  assert.equal(formReveal.hadPlaceholder, true, "skeleton mode renders placeholders");
   assert.equal(formReveal.hasReveal, true, "the form exposes a public reveal()");
   assert.equal(formReveal.busyBefore, true, "the form region is busy in skeleton mode");
   assert.equal(formReveal.busyAfter, false, "reveal() clears the busy flag");
-  console.log("form: public reveal() clears the busy flag");
+  assert.equal(formReveal.registered, true, "reveal() registers the real field");
+  assert.equal(formReveal.read, "Ada", `the registered field reads the real value (got ${formReveal.read})`);
+  assert.equal(formReveal.reread, "Grace", "the registered field writes and reads back");
+  assert.equal(formReveal.inputPresent, true, "the real input is in the form");
+  assert.equal(formReveal.inputValue, "Grace", `the write reached the real element (got ${formReveal.inputValue})`);
+  console.log("form: reveal() registers the real field, reads Ada, writes Grace");
 
   assert.deepEqual(errors, [], "no page errors");
   console.log("Passed skeleton browser checks.");

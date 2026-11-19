@@ -383,7 +383,7 @@ function hasClass(element: HTMLElement, className: string): boolean {
 export function createSkeletonHost(
   Component: Function,
   options: Record<string, any> = {},
-): { element: HTMLDivElement; reveal: () => any; destroy: () => void } {
+): { element: HTMLElement; reveal: () => any; destroy: () => void } {
   const { layout: layoutConfig, layoutItem: layoutItemConfig, ...skeletonOptions } = options;
   const host = document.createElement("div");
   host.className = "mtrl-skeleton-host";
@@ -391,14 +391,35 @@ export function createSkeletonHost(
   if (layoutItemConfig) applyLayoutItemClasses(host, layoutItemConfig);
   const placeholder = createSkeleton({ ...skeletonFor(Component, skeletonOptions), busy: false });
   host.appendChild(placeholder.element);
-  return {
+  // The component slot: until reveal it is the placeholder's host, and every
+  // holder of this object — a layout's component map, a form's field
+  // registry — sees the placeholder. reveal() swaps the real component in
+  // and forwards this object to it, so those same holders see the real
+  // component's element and API from then on, with nothing re-registered.
+  const slot: { element: HTMLElement; reveal: () => any; destroy: () => void; [key: string]: any } = {
     element: host,
     reveal(): any {
       const { layout: _layout, layoutItem: _layoutItem, ...revealOptions } = options;
       const real = createComponentInstance(Component, revealOptions);
       if (real && real.element) {
+        // Reserve the exact box: sub-pixel differences between the mapped
+        // placeholder and the real component must not move the page, so the
+        // host keeps the height it was laid out at.
+        const reserved = host.offsetHeight;
+        if (reserved > 0) host.style.height = `${reserved}px`;
         host.replaceChild(real.element, placeholder.element);
         placeholder.destroy();
+        for (const key of Object.keys(real)) {
+          if (key !== "destroy") slot[key] = (real as Record<string, unknown>)[key];
+        }
+        slot.element = real.element as HTMLElement;
+        if (typeof real.destroy === "function") {
+          const destroyReal = real.destroy.bind(real);
+          slot.destroy = (): void => {
+            destroyReal();
+            host.remove();
+          };
+        }
       }
       return real;
     },
@@ -407,6 +428,7 @@ export function createSkeletonHost(
       host.remove();
     },
   };
+  return slot;
 }
 
 /**
