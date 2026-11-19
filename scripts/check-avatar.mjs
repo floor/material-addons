@@ -127,8 +127,8 @@ try {
     const page = await browser.newPage();
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
-    await page.goto(`http://127.0.0.1:${port}/test/browser/avatar.html`);
-    await page.waitForFunction(() => !!window.createAvatar);
+    await page.goto(`http://127.0.0.1:${port}/test/browser/avatar.html`, { waitUntil: "networkidle" });
+    await page.waitForFunction(() => !!window.createAvatar && !!window.defineAvatar);
     const fallback = await page.evaluate(async () => {
       document.body.innerHTML = "";
       const below = document.createElement("p");
@@ -170,8 +170,8 @@ try {
     const page = await browser.newPage();
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
-    await page.goto(`http://127.0.0.1:${port}/test/browser/avatar.html`);
-    await page.waitForFunction(() => !!window.createAvatar);
+    await page.goto(`http://127.0.0.1:${port}/test/browser/avatar.html`, { waitUntil: "networkidle" });
+    await page.waitForFunction(() => !!window.createAvatar && !!window.defineAvatar);
     const recovery = await page.evaluate(async () => {
       document.body.innerHTML = "";
       const avatar = window.createAvatar({
@@ -212,10 +212,9 @@ try {
     const page = await browser.newPage();
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
-    await page.goto(`http://127.0.0.1:${port}/test/browser/avatar.html`);
-    await page.waitForFunction(() => !!window.createAvatar);
+    await page.goto(`http://127.0.0.1:${port}/test/browser/avatar.html`, { waitUntil: "networkidle" });
+    await page.waitForFunction(() => !!window.createAvatar && !!window.defineAvatar);
     const element = await page.evaluate(async () => {
-      await import("material-addons/elements/css/avatar");
       window.defineAvatar();
       document.body.innerHTML = "";
       const host = document.createElement("m-avatar");
