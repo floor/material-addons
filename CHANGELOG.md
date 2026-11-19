@@ -17,12 +17,6 @@ Published as `mtrl-addons` up to 0.9.x. This file has written notes from 0.8.0, 
   `material-addons/elements/css/stepper`. Server rendering is deferred.
 - The `_stepper.scss` stylesheet and its pre-upgrade rules, built from the
   `--mtrl-sys-*` tokens, forwarding through `material-addons/styles`.
-- Compact stepper displays: `display: "labels" | "count" | "dots" |
-  "progress"` on the factory and `display` on `<m-stepper>`. `count` and
-  `progress` replace the header list with a read-only status line; `dots`
-  keeps the headers interactive.
-- `<m-stepper>` reports a failed validation as a bubbling `validationerror`,
-  so a page's error listeners never see a native `error`.
 
 ### Changed
 

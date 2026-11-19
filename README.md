@@ -188,7 +188,7 @@ Measured as standalone minified ESM bundles, gzipped, with `material` external; 
 |----------|----------|--------|
 | `createStepper` | 7.1 KB | 2.2 KB |
 | `<m-stepper>` and `<m-step>` | 1.5 KB | 0.7 KB |
-| The compiled stylesheet | 1.8 KB | 1.4 KB |
+| The compiled stylesheet | 1.7 KB | 1.4 KB |
 
 The targets were estimates made before the implementation, and all three rows
 exceed them; the row records what was measured, not what was hoped for.
@@ -201,7 +201,7 @@ The renderer builds fifteen parts and their ARIA state. The navigation runs
 the three validation stages and the completion rules.
 
 The element is 10.7 KB of source for ten attributes and the declaration
-class. The sheet is 8.7 KB minified for the token set, the layout blocks and the four
+class. The sheet is 8.6 KB minified for the token set, the layout blocks and the four
 displays.
 
 ## Colour picker
