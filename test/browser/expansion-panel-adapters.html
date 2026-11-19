@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en" data-theme="baseline">
+<meta charset="utf-8">
+<title>Expansion panel adapter fixture</title>
+<div id="fixture"></div>
+<script type="module">
+  import 'material/styles';
+  import 'material-addons/styles';
+  const mount = document.getElementById('fixture');
+  const framework = new URL(location.href).searchParams.get('framework');
+  window.events = [];
+  window.veto = true;
+  window.recordBefore = (event) => {
+    window.events.push([event.type, event.detail.value, event.cancelable]);
+    if (window.veto) event.preventDefault();
+  };
+  window.recordChange = (event) => window.events.push([event.type, event.detail.value, event.detail.open]);
+  if (framework === 'react') {
+    const { createElement: h, useState } = await import('react');
+    const { createRoot } = await import('react-dom/client');
+    const { Accordion, ExpansionPanel } = await import('material-addons/react');
+    function App() {
+      const [value, setValue] = useState('one');
+      return h('div', null,
+        h(Accordion, { value, onUpdateValue: setValue, onChange: recordChange },
+          h(ExpansionPanel, { value: 'one', label: 'One', onBeforeopen: recordBefore, onChange: recordChange }, 'First body'),
+          h(ExpansionPanel, { value: 'two', label: 'Two' }, 'Second body')),
+        h('output', null, value));
+    }
+    createRoot(mount).render(h(App));
+  } else if (framework === 'vue') {
+    const { createApp, h, ref } = await import('vue');
+    const { MAccordion, MExpansionPanel } = await import('material-addons/vue');
+    createApp({
+      setup() {
+        const value = ref('one');
+        return () => h('div', [
+          h(MAccordion, { modelValue: value.value, 'onUpdate:modelValue': (next) => { value.value = next; }, onChange: recordChange }, () => [
+            h(MExpansionPanel, { value: 'one', label: 'One', onBeforeopen: recordBefore, onChange: recordChange }, () => 'First body'),
+            h(MExpansionPanel, { value: 'two', label: 'Two' }, () => 'Second body'),
+          ]),
+          h('output', value.value),
+        ]);
+      },
+    }).mount(mount);
+  } else if (framework === 'solid') {
+    const { createSignal, createComponent } = await import('solid-js');
+    const { render, Dynamic } = await import('solid-js/web');
+    const { Accordion, ExpansionPanel } = await import('material-addons/solid');
+    render(() => {
+      const [value, setValue] = createSignal('one');
+      return [
+        createComponent(Accordion, {
+          get value() { return value(); },
+          onUpdateValue: setValue,
+          onChange: recordChange,
+          get children() { return [
+            createComponent(ExpansionPanel, { value: 'one', label: 'One', onBeforeopen: recordBefore, onChange: recordChange, children: 'First body' }),
+            createComponent(ExpansionPanel, { value: 'two', label: 'Two', children: 'Second body' }),
+          ]; },
+        }),
+        createComponent(Dynamic, { component: 'output', get children() { return value(); } }),
+      ];
+    }, mount);
+  } else if (framework === 'svelte') {
+    const { mount: render } = await import('svelte');
+    const { default: App } = await import('./ExpansionPanelSvelteFixture.svelte');
+    render(App, { target: mount });
+  }
+</script>
