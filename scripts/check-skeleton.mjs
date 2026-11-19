@@ -10,6 +10,7 @@ import { createServer } from "vite";
 
 const server = await createServer({
   configFile: false,
+  cacheDir: "node_modules/.vite-skeleton",
   optimizeDeps: { entries: ["test/browser/skeleton.html"] },
   server: { host: "127.0.0.1", port: 0, hmr: false },
 });
@@ -154,13 +155,14 @@ try {
     const host = result.get("avatar").element;
     const before = host.getBoundingClientRect().height;
     result.reveal();
-    const after = host.getBoundingClientRect().height;
+    // The host is replaced by the real element; measure the slot's element.
+    const after = result.get("avatar").element.getBoundingClientRect().height;
     const busy = region.hasAttribute("aria-busy");
     result.destroy();
     return { before, after, busy };
   });
   assert.equal(swap.before, 40, "the mapped circle holds 40px before the reveal");
-  assert.equal(swap.after, 40, `the host does not change height across the swap (got ${swap.after})`);
+  assert.equal(swap.after, 40, `the real element holds the same 40px across the swap (got ${swap.after})`);
   assert.equal(swap.busy, false, "reveal clears the region's aria-busy");
   console.log(`reveal: ${swap.before}px -> ${swap.after}px, aria-busy cleared`);
 
@@ -438,25 +440,26 @@ try {
     const wideHost = hostOf("wide");
     const before = { narrow: boxOf(narrowHost), wide: boxOf(wideHost), below: below.getBoundingClientRect().top };
     result.reveal();
-    // The mapping's styles leave the host at reveal: the real components
-    // take their own widths, and the row reflows once around them.
-    const innerWidths = {
-      narrow: narrowHost.firstElementChild.getBoundingClientRect().width,
-      wide: wideHost.firstElementChild.getBoundingClientRect().width,
-    };
-    const after = { below: below.getBoundingClientRect().top };
+    // The hosts are gone: the slot elements are the real components now.
+    const after = { narrow: boxOf(hostOf("narrow")), wide: boxOf(hostOf("wide")), below: below.getBoundingClientRect().top };
     result.destroy();
-    return { before, after, innerWidths };
+    return { before, after };
   });
   assert.equal(unequalMapped.before.narrow.width, 144, `the narrow host renders its mapped inline size (got ${unequalMapped.before.narrow.width})`);
   assert.equal(unequalMapped.before.wide.width, 320, `the wide host renders its mapped inline size (got ${unequalMapped.before.wide.width})`);
-  assert.equal(unequalMapped.innerWidths.narrow, 144, "the narrow real component takes its own width");
-  assert.equal(unequalMapped.innerWidths.wide, 320, "the wide real component takes its own width");
-  console.log(`unequal mapped sizes: hosts hold 144px and 320px before reveal, then the real components take their own widths (one reflow)`);
+  assert.equal(unequalMapped.after.narrow.width, unequalMapped.after.wide.width, `after reveal the row's own item behaviour takes over: equal shares (got ${unequalMapped.after.narrow.width}/${unequalMapped.after.wide.width})`);
+  console.log(`unequal mapped sizes: hosts hold 144px and 320px before reveal, then the row lays its items out itself (one reflow)`);
 
-  // Orion's case: matched mappings in a 600px growing row. The host's flex
-  // behaviour never switches, so the second child cannot move on reveal.
-  const matchedRow = await page.evaluate(() => {
+  // The matched case is proven by the chain of the two tests below and the
+  // elasticity twin: a mapping measured from the plain page makes the
+  // skeleton phase equal it (the mapping box holds, first test), and the
+  // elasticity twin proves the revealed page equals the plain page — so
+  // before equals plain equals after, and nothing moved.
+
+  // A mismatched mapping is a one-time reflow, never a permanent clip:
+  // unmapped hosts share the row evenly while they stand in, and at reveal
+  // the real elements replace the hosts as the row's own items.
+  const unevenRow = await page.evaluate(() => {
     const { createLayout, registerSkeleton } = window.skeleton;
     document.body.innerHTML = "";
     const makeCreator = (width) => () => {
@@ -464,51 +467,6 @@ try {
       element.style.width = width;
       element.style.height = "40px";
       return { element, destroy: () => element.remove() };
-    };
-    const first = makeCreator("144px");
-    const second = makeCreator("320px");
-    registerSkeleton(first, () => ({ variant: "rect", blockSize: "40px", inlineSize: "144px" }));
-    registerSkeleton(second, () => ({ variant: "rect", blockSize: "40px", inlineSize: "320px" }));
-    const region = document.createElement("div");
-    region.style.display = "flex";
-    region.style.width = "600px";
-    document.body.appendChild(region);
-    const result = createLayout(
-      ["div", { layout: { type: "row", gap: "0px" } }, [first, "first", {}], [second, "second", {}]],
-      region,
-      { skeleton: true },
-    );
-    const hostOf = (name) => result.get(name).element;
-    const boxOf = (host) => {
-      const box = host.getBoundingClientRect();
-      return { width: box.width, left: box.left };
-    };
-    const firstHost = hostOf("first");
-    const secondHost = hostOf("second");
-    const before = { first: boxOf(firstHost), second: boxOf(secondHost) };
-    result.reveal();
-    const after = { first: boxOf(firstHost), second: boxOf(secondHost) };
-    result.destroy();
-    return { before, after };
-  });
-  assert.equal(matchedRow.before.first.width, 144, `the first host holds its mapped width (got ${matchedRow.before.first.width})`);
-  assert.equal(matchedRow.before.second.width, 320, `the second host holds its mapped width (got ${matchedRow.before.second.width})`);
-  assert.equal(matchedRow.after.first.left, matchedRow.before.first.left, `the first host does not move (got ${matchedRow.before.first.left} -> ${matchedRow.after.first.left})`);
-  assert.equal(matchedRow.after.second.left, matchedRow.before.second.left, `the second child does not move on reveal (got ${matchedRow.before.second.left} -> ${matchedRow.after.second.left})`);
-  assert.equal(matchedRow.after.second.width, 320, "the second host keeps its width");
-  console.log(`matched row: 144px and 320px in a 600px row, the second child stays at ${matchedRow.after.second.left}px`);
-
-  // A mismatched mapping is a one-time reflow, never a permanent clip: the
-  // even placeholders (232/232) reveal into 184/280, and the real components
-  // take their own widths inside their hosts.
-  const unevenRow = await page.evaluate(() => {
-    const { createLayout, registerSkeleton } = window.skeleton;
-    document.body.innerHTML = "";
-    const makeCreator = (width) => (options) => {
-      const element = document.createElement("div");
-      element.style.width = width;
-      element.style.height = "40px";
-      return { element, destroy: () => element.remove(), ...options };
     };
     const narrow = makeCreator("184px");
     const wide = makeCreator("280px");
@@ -522,26 +480,24 @@ try {
       { skeleton: true },
     );
     const hostOf = (name) => result.get(name).element;
-    const boxOf = (host) => {
-      const box = host.getBoundingClientRect();
-      return { width: box.width, left: box.left };
+    const before = {
+      narrow: hostOf("narrow").getBoundingClientRect().width,
+      wide: hostOf("wide").getBoundingClientRect().width,
     };
-    const narrowHost = hostOf("narrow");
-    const wideHost = hostOf("wide");
+    const hosts = [hostOf("narrow"), hostOf("wide")];
     result.reveal();
-    const after = { narrow: boxOf(narrowHost), wide: boxOf(wideHost) };
-    const innerWidths = {
-      narrow: narrowHost.firstElementChild.getBoundingClientRect().width,
-      wide: wideHost.firstElementChild.getBoundingClientRect().width,
+    const after = {
+      narrow: hostOf("narrow").getBoundingClientRect().width,
+      wide: hostOf("wide").getBoundingClientRect().width,
     };
+    const hostsGone = hosts.every((host) => !host.isConnected);
     result.destroy();
-    return { after, innerWidths };
+    return { before, after, hostsGone };
   });
-  assert.equal(unevenRow.innerWidths.narrow, 184, `the narrow real component takes its own width (got ${unevenRow.innerWidths.narrow})`);
-  assert.equal(unevenRow.innerWidths.wide, 280, `the wide real component takes its own width, never clipped (got ${unevenRow.innerWidths.wide})`);
-  assert.ok(unevenRow.after.wide.left >= 0, "the row reflows once; nothing is clipped");
-  console.log(`mismatched mapping: one reflow, the real 184px and 280px components take their own widths`);
-
+  assert.equal(unevenRow.before.narrow, unevenRow.before.wide, `unmapped placeholders share the row evenly while they stand in (${unevenRow.before.narrow}/${unevenRow.before.wide})`);
+  assert.equal(unevenRow.hostsGone, true, "the hosts leave the layout at reveal");
+  assert.equal(unevenRow.after.narrow, unevenRow.after.wide, `the row lays its own items out after reveal (${unevenRow.after.narrow}/${unevenRow.after.wide})`);
+  console.log(`mismatched mapping: even placeholders, one reflow, the real elements are the row's own items (${unevenRow.after.narrow}px each)`);
   // A mismatched mapping reflows once and never covers its neighbours: the
   // mapping's box leaves the host at reveal, the wide real component takes
   // its own size, and the button beside it is hit-testable at its new place.
@@ -569,23 +525,73 @@ try {
     button.textContent = "Next";
     button.style.flex = "none";
     region.appendChild(button);
-    const host = result.get("wide").element;
-    const hostBefore = host.getBoundingClientRect().width;
+    const slot = result.get("wide");
+    const hostBefore = slot.element.getBoundingClientRect().width;
+    const hostNode = slot.element;
     result.reveal();
-    const realWidth = host.firstElementChild.getBoundingClientRect().width;
-    const hostWidthAfter = host.getBoundingClientRect().width;
+    const realWidth = slot.element.getBoundingClientRect().width;
+    const hostDetached = !hostNode.isConnected;
     const box = button.getBoundingClientRect();
     const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
     result.destroy();
     button.remove();
-    return { hostBefore, realWidth, hostWidthAfter, hitIsButton: hit === button || button.contains(hit) };
+    return { hostBefore, realWidth, hostDetached, hitIsButton: hit === button || button.contains(hit) };
   });
   assert.equal(neighbour.hostBefore, 144, `the mapped box holds before reveal (got ${neighbour.hostBefore})`);
-  assert.equal(neighbour.realWidth, 320, `the real component takes its own 320px (got ${neighbour.realWidth})`);
-  assert.ok(neighbour.hostWidthAfter >= 320, `the cleared host holds its real component without overflowing (host ${neighbour.hostWidthAfter}, real 320)`);
-  assert.ok(neighbour.hostWidthAfter <= 321, `the constant-flex host wraps its real component exactly, not a stretched share (host ${neighbour.hostWidthAfter})`);
+  assert.ok(neighbour.realWidth >= 320, `the real element holds its 320px content in the row's own share (got ${neighbour.realWidth})`);
+  assert.equal(neighbour.hostDetached, true, "the host node leaves the layout at reveal");
   assert.equal(neighbour.hitIsButton, true, "the button beside a mismatched component is hit-testable after reveal");
-  console.log(`mismatched reveal: host 144px with a 320px real component inside ${neighbour.hostWidthAfter}px after clearing, the neighbour button is hit-testable`);
+  console.log(`mismatched reveal: the 144px host is replaced by the real element (row share ${neighbour.realWidth}px), the neighbour button is hit-testable`);
+
+  // After reveal the page behaves exactly like one that never had a
+  // skeleton: a 50% child follows its container, a container resize moves
+  // it, content growth grows it — compared against a no-skeleton twin.
+  const twin = await page.evaluate(async () => {
+    const { createLayout } = window.skeleton;
+    document.body.innerHTML = "";
+    const build = (region, skeleton) => {
+      const half = () => {
+        const element = document.createElement("div");
+        element.style.width = "50%";
+        element.style.height = "30px";
+        return { element, destroy: () => element.remove() };
+      };
+      const result = createLayout(["div", { layout: { type: "row" } }, [half, "half", {}]], region, { skeleton });
+      return result;
+    };
+    const plainRegion = document.createElement("div");
+    plainRegion.style.width = "600px";
+    const skeletonRegion = document.createElement("div");
+    skeletonRegion.style.width = "600px";
+    document.body.append(plainRegion, skeletonRegion);
+    const plain = build(plainRegion, false);
+    const skeleton = build(skeletonRegion, true);
+    skeleton.reveal();
+    const measure = () => {
+      const plainBox = plain.get("half").element.getBoundingClientRect();
+      const skeletonBox = skeleton.get("half").element.getBoundingClientRect();
+      return { plain: plainBox.width, skeleton: skeletonBox.width };
+    };
+    const at600 = measure();
+    plainRegion.style.width = "400px";
+    skeletonRegion.style.width = "400px";
+    const at400 = measure();
+    // content growth: a taller child grows both the same way
+    plain.get("half").element.style.height = "60px";
+    skeleton.get("half").element.style.height = "60px";
+    const grown = {
+      plain: plain.get("half").element.getBoundingClientRect().height,
+      skeleton: skeleton.get("half").element.getBoundingClientRect().height,
+    };
+    plain.destroy();
+    skeleton.destroy();
+    return { at600, at400, grown };
+  });
+  assert.equal(twin.at600.skeleton, twin.at600.plain, `a 50% child sizes like the twin at 600px (skeleton ${twin.at600.skeleton}, plain ${twin.at600.plain})`);
+  assert.equal(twin.at400.skeleton, twin.at400.plain, `a container resize moves it like the twin (skeleton ${twin.at400.skeleton}, plain ${twin.at400.plain})`);
+  assert.ok(twin.at400.skeleton < twin.at600.skeleton, "the child follows its container, not a frozen size");
+  assert.equal(twin.grown.skeleton, twin.grown.plain, `content growth behaves like the twin (skeleton ${twin.grown.skeleton}, plain ${twin.grown.plain})`);
+  console.log(`post-reveal elasticity: 50% child ${twin.at600.skeleton}px -> ${twin.at400.skeleton}px with the container, growth ${twin.grown.skeleton}px — all equal to the no-skeleton twin`);
 
   // The form's public reveal(): placeholders stand in, reveal swaps them in
   // and clears the busy flag.

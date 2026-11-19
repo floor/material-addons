@@ -416,19 +416,19 @@ export function createSkeletonHost(
       const { layout: _layout, layoutItem: _layoutItem, ...revealOptions } = options;
       const real = createComponentInstance(Component, revealOptions);
       if (real && real.element) {
-        // The mapping's placeholder box is replaced by the real component's
-        // measured box, measured after the swap when the real element is in
-        // the document. The host always carries an explicit inline size and
-        // one flex behaviour, so no container — flex, grid, stack — can
-        // reinterpret the item between the two phases: a matched mapping
-        // writes the same numbers and nothing moves; a mismatch reflows
-        // once, to the real component's own size, covering nothing.
-        host.replaceChild(real.element, placeholder.element);
-        const realBox = (real.element as HTMLElement);
-        const realWidth = realBox.offsetWidth;
-        if (realWidth > 0) host.style.width = `${realWidth}px`;
-        const realHeight = realBox.offsetHeight;
-        if (realHeight > 0) host.style.height = `${realHeight}px`;
+        // The host leaves the layout: the real element takes its place,
+        // wearing the same layout classes, with none of the host's sizes or
+        // flex — the real component is an ordinary item of the container
+        // and sizes itself for its whole life, so a 50% child, a resized
+        // container or viewport, and content growth all behave exactly as
+        // on a page that never had a skeleton. Zero shift holds when the
+        // mapping matched what the real component lays out to in that
+        // container; a mismatch reflows once.
+        const realElement = real.element as HTMLElement;
+        const carriedClasses = host.className.split(/\s+/).filter((name) => name && name !== "mtrl-skeleton-host");
+        if (carriedClasses.length) realElement.classList.add(...carriedClasses);
+        host.replaceWith(realElement);
+        placeholder.destroy();
         placeholder.destroy();
         for (const key of Object.keys(real)) {
           if (key !== "destroy") slot[key] = (real as Record<string, unknown>)[key];
@@ -436,10 +436,7 @@ export function createSkeletonHost(
         slot.element = real.element as HTMLElement;
         if (typeof real.destroy === "function") {
           const destroyReal = real.destroy.bind(real);
-          slot.destroy = (): void => {
-            destroyReal();
-            host.remove();
-          };
+          slot.destroy = (): void => destroyReal();
         }
       }
       return real;
