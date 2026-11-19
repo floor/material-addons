@@ -118,7 +118,8 @@ for (const link of links) {
 // While material 3 is a pre-release it installs from the `next` tag; once
 // package.json's peer range no longer names a pre-release, the tag goes.
 const peer = manifest.peerDependencies.material;
-const install = /-/.test(peer) ? "npm install material-addons material@next" : "npm install material-addons material";
+const tag = /^\d+\.\d+\.\d+$/.test(peer) ? `@${peer}` : /-/.test(peer) ? "@next" : "";
+const install = `npm install material-addons material${tag}`;
 const installed = text.split("<!-- install -->")[1]?.split("<!-- /install -->")[0]?.split("\n").filter((line) => line.startsWith("npm install"));
 if (!installed || installed.length !== 1 || installed[0] !== install) {
   fail(`the install line is ${JSON.stringify(installed)}; the peer range is ${peer}, so it is "${install}"`);
@@ -191,20 +192,20 @@ try {
     page.on("console", (message) => { if (["error", "warning"].includes(message.type())) reported.push(`${message.type()}: ${message.text()}`); });
     try {
       await page.goto(`http://127.0.0.1:${port}/readme-${index}.html`, { waitUntil: "load" });
-      await page.getByText(example.shows, { exact: true }).first().waitFor({ state: "visible", timeout: 10_000 });
-      const state = await page.evaluate(() => ({
-        drawn: [...document.querySelectorAll('[class*="mtrl-"]')].filter((element) => {
-          const rect = element.getBoundingClientRect();
-          return rect.width > 0 && rect.height > 0;
-        }).length,
-        theme: getComputedStyle(document.documentElement).getPropertyValue("--mtrl-sys-color-primary").trim(),
-      }));
+      await page.getByText(example.shows, { exact: true }).filter({ visible: true }).first()
+        .waitFor({ state: "visible", timeout: 10_000 });
+      const drawn = await page.locator('[class*="mtrl-"]').evaluateAll(elements => elements.filter(element => {
+        const rect = element.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+      }).length);
+      const theme = await page.evaluate(() =>
+        getComputedStyle(document.documentElement).getPropertyValue("--mtrl-sys-color-primary").trim());
       if (/['"]material(?:-addons)?\/styles/.test(example.code)) {
-        if (!state.theme) fail(`${where}: the example imports a stylesheet and the page has no theme`);
-        if (!state.drawn) fail(`${where}: the example imports a stylesheet and nothing of the library has a box`);
+        if (!theme) fail(`${where}: the example imports a stylesheet and the page has no theme`);
+        if (!drawn) fail(`${where}: the example imports a stylesheet and nothing of the library has a box`);
       }
       if (reported.length) fail(`${where}: the page reported:\n  ${reported.join("\n  ")}`);
-      console.log(`${where}: "${example.shows}" visible, ${state.drawn} drawn${state.theme ? `, primary ${state.theme}` : ""}`);
+      console.log(`${where}: "${example.shows}" visible, ${drawn} drawn${theme ? `, primary ${theme}` : ""}`);
     } catch (error) {
       fail(`${where}: ${String(error).split("\n")[0]}${reported.length ? `\n  ${reported.join("\n  ")}` : ""}`);
     } finally {

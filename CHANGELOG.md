@@ -6,6 +6,8 @@ Published as `mtrl-addons` up to 0.9.x. This file has written notes from 0.8.0, 
 
 ### Added
 
+- Add an autocomplete factory and client custom elements with keyboard selection, free-form or strict values, and optional async suggestions.
+
 - The stepper, planned for 3.1.0: `createStepper`, exported from the
   package root and from `material-addons/components/stepper`, with steps,
   linear or free progression, a three-stage validation pipeline, a
@@ -20,8 +22,7 @@ Published as `mtrl-addons` up to 0.9.x. This file has written notes from 0.8.0, 
 
 ### Changed
 
-- The `material` peer range is `^3.15.1`, the version the stepper is built
-  and tested against.
+- Require the tested Material 3.15.1 peer for the stepper and autocomplete element contracts.
 
 ## [3.0.0] - 2026-10-04
 
