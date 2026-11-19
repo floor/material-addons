@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Accordion, ExpansionPanel } from "material-addons/svelte";
-  let value = $state("one");
+  let value = $state(null);
 </script>
 
 <Accordion bind:value onchange={window.recordChange}>

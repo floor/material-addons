@@ -20,7 +20,7 @@
     const { createRoot } = await import('react-dom/client');
     const { Accordion, ExpansionPanel } = await import('material-addons/react');
     function App() {
-      const [value, setValue] = useState('one');
+      const [value, setValue] = useState(null);
       return h('div', null,
         h(Accordion, { value, onUpdateValue: setValue, onChange: recordChange },
           h(ExpansionPanel, { value: 'one', label: 'One', onBeforeopen: recordBefore, onChange: recordChange }, 'First body'),
@@ -33,7 +33,7 @@
     const { MAccordion, MExpansionPanel } = await import('material-addons/vue');
     createApp({
       setup() {
-        const value = ref('one');
+        const value = ref(null);
         return () => h('div', [
           h(MAccordion, { modelValue: value.value, 'onUpdate:modelValue': (next) => { value.value = next; }, onChange: recordChange }, () => [
             h(MExpansionPanel, { value: 'one', label: 'One', onBeforeopen: recordBefore, onChange: recordChange }, () => 'First body'),
@@ -48,7 +48,7 @@
     const { render, Dynamic } = await import('solid-js/web');
     const { Accordion, ExpansionPanel } = await import('material-addons/solid');
     render(() => {
-      const [value, setValue] = createSignal('one');
+      const [value, setValue] = createSignal(null);
       return [
         createComponent(Accordion, {
           get value() { return value(); },

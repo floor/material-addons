@@ -328,6 +328,8 @@ try {
       });
       await adapterPage.waitForTimeout(340);
       assert.equal(await adapterPage.evaluate(() => document.querySelector("m-expansion-panel").isOpen()), false, framework);
+      // The vetoed click left the bound model alone
+      assert.equal(await adapterPage.evaluate(() => document.querySelector("output")?.textContent), "", `${framework} model unchanged by a veto`);
       await adapterPage.evaluate(() => { window.veto = false; });
       await adapterPage.evaluate(() => {
         const header = document.querySelector("m-expansion-panel").shadowRoot.querySelector(".mtrl-expansion-panel__header");
@@ -336,6 +338,29 @@ try {
       await adapterPage.waitForTimeout(340);
       assert.equal(await adapterPage.evaluate(() => document.querySelector("m-expansion-panel").isOpen()), true, framework);
       await adapterPage.waitForFunction(() => document.querySelector("output")?.textContent === "one");
+      // ArrowDown reaches the next header through the panels' shadow roots
+      const arrow = await adapterPage.evaluate(() => {
+        const [first, second] = document.querySelector("m-accordion").component.getPanels().map((panel) => panel.header);
+        first.focus();
+        first.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, composed: true, cancelable: true }));
+        let active = document.activeElement;
+        while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+        return active === second;
+      });
+      assert.equal(arrow, true, `${framework} ArrowDown reaches the next header`);
+      // Single selection: opening the second panel closes the first, and the
+      // bound model follows
+      await adapterPage.evaluate(() => {
+        const panel = document.querySelectorAll("m-expansion-panel")[1];
+        panel.shadowRoot.querySelector(".mtrl-expansion-panel__header").click();
+      });
+      await adapterPage.waitForTimeout(340);
+      assert.equal(
+        await adapterPage.evaluate(() => document.querySelector("m-accordion").component.getValues().join(",")),
+        "two",
+        `${framework} keeps one panel open`,
+      );
+      await adapterPage.waitForFunction(() => document.querySelector("output")?.textContent === "two");
       assert.deepEqual(adapterErrors, [], framework);
       console.log(`${framework}: panel and accordion mount, veto and model pass`);
     } finally {
