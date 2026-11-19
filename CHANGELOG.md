@@ -2,6 +2,43 @@
 
 Published as `mtrl-addons` up to 0.9.x. This file has written notes from 0.8.0, and the commit history below for everything earlier.
 
+## [3.2.0] - 2026-11-19
+
+### Added
+
+- The expansion panel and the accordion: `createExpansionPanel` and
+  `createAccordion`, exported from the package root and from
+  `material-addons/components/expansion-panel`, with the outlined, elevated
+  and filled variants, density and logical placement, a `value` model, the
+  cancellable before-events, lazy content and footer actions, and a group
+  that keeps one panel open unless `multiSelect` is set, with arrow, Home
+  and End navigation.
+- `<m-expansion-panel>` and `<m-accordion>`, client custom elements whose
+  authored value is applied once their children are claimed, with
+  cancelable `beforeopen` and `beforeclose` events on the host and the
+  `open` attribute following the committed state, silent updates included.
+  Their shadow stylesheet is
+  `material-addons/elements/css/expansion-panel`.
+- The avatar: `createAvatar`, with an image or initials, the sizes and
+  shapes, the badge and click behaviour, and `<m-avatar>` with its shadow
+  stylesheet.
+- The skeleton: `createSkeleton` and its creator map, with text, circle and
+  rectangle placeholders that fill a layout's real hosts and are replaced in
+  place by `reveal()`, the layout and form integration, and `<m-skeleton>`
+  with its shadow stylesheet.
+- Generated React, Vue, Svelte and Solid wrappers for the autocomplete and
+  its option, beside the stepper's; the expansion panel, the accordion, the
+  avatar and the skeleton use the same generator, with typed event maps
+  derived from the element contracts.
+
+### Changed
+
+- The `./svelte` export condition names the built entry at
+  `dist/svelte/index.js`, so a Svelte-aware bundler resolves the module the
+  package documents.
+- The solid-js peer is `>=1.8 <2`, the tested range, rather than an open
+  range that would claim a Solid 2 the package was not tested against.
+
 ## [3.1.0] - 2026-11-19
 
 ### Added
