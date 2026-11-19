@@ -27,6 +27,29 @@ export type {
   CancelHandler,
 } from "./form/types";
 
+// Stepper component
+export { createStepper } from "./stepper";
+export type {
+  StepConfig,
+  StepState,
+  StepValidator,
+  StepValidationContext,
+  StepValidationResult,
+  StepperBeforeChangeEvent,
+  StepperChangeEvent,
+  StepperCompleteEvent,
+  StepperComponent,
+  StepperConfig,
+  StepperErrorEvent,
+  StepperEventName,
+  StepperHeaderPlacement,
+  StepperLabelPlacement,
+  StepperOrientation,
+  StepperOrientationChangeEvent,
+  StepperResetEvent,
+  StepperResolvedOrientation,
+} from "./stepper/types";
+
 // ColorPicker component
 export { createColorPicker } from "./colorpicker";
 export type {
