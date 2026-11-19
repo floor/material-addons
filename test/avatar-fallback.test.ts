@@ -67,6 +67,25 @@ describe("avatar image fallback", () => {
     avatar.destroy();
   });
 
+  test("the icon path: failed img hidden, icon shows, root takes role img and the alt name", async () => {
+    const { createAvatar } = await import("../src/components/avatar");
+    const avatar = createAvatar({
+      variant: "icon",
+      content: '<img src="http://localhost/missing.png" alt="Account photo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle></svg>',
+    });
+    document.body.appendChild(avatar.element);
+    const img = avatar.element.querySelector("img")!;
+    Object.defineProperty(img, "complete", { value: true, configurable: true });
+    Object.defineProperty(img, "naturalWidth", { value: 0, configurable: true });
+    img.dispatchEvent(new Event("error"));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(img.classList.contains("mtrl-avatar__img--failed")).toBe(true);
+    expect(avatar.element.querySelector("svg")).toBeTruthy();
+    expect(avatar.element.getAttribute("role")).toBe("img");
+    expect(avatar.element.getAttribute("aria-label")).toBe("Account photo");
+    avatar.destroy();
+  });
+
   test("an authored icon beside the failed image keeps showing", async () => {
     const { createAvatar } = await import("../src/components/avatar");
     const avatar = createAvatar({

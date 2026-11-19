@@ -67,14 +67,22 @@ export function withRenderer(settings: AvatarSettings) {
       failedImages.add(img);
       img.classList.add(`${AVATAR_CLASSES.ROOT}__img--failed`);
       img.setAttribute("aria-hidden", "true");
+      // Inline, not just the class: a document reset like img{display:block}
+      // can outrank a ::slotted rule in the cascade for slotted content.
+      img.style.display = "none";
       syncFallback();
+      // The name may now come from the root: a hidden image cannot name
+      // itself in the image variant or beside an authored icon.
+      updateName();
     }
 
     function imageRecovered(img: HTMLImageElement): void {
       if (!failedImages.delete(img)) return;
       img.classList.remove(`${AVATAR_CLASSES.ROOT}__img--failed`);
       img.removeAttribute("aria-hidden");
+      img.style.display = "";
       syncFallback();
+      updateName();
     }
 
     /** Every image failed, and nothing else in the content is showing. */
@@ -136,8 +144,14 @@ export function withRenderer(settings: AvatarSettings) {
       // On the initials fallback the image is hidden, so its own alt cannot
       // name anything: the root takes the name — the alt when there is one,
       // else the initials.
-      const fallen = root.classList.contains(`${AVATAR_CLASSES.ROOT}--image-fallback`);
-      const fallbackName = fallen ? (imageLabel || fallbackInitials()) : undefined;
+      // Any named image that failed and is now hidden leaves its name
+      // unreachable — the initials fallback in the image variant, or a
+      // failed img beside an authored icon.
+      const failedNamedImage = images().find((img) => failedImages.has(img) && (img.getAttribute("alt") || hiddenImages.get(img)));
+      const fallen = root.classList.contains(`${AVATAR_CLASSES.ROOT}--image-fallback`) ||
+        (settings.variant === "icon" && !!failedNamedImage);
+      const failedAlt = failedNamedImage && (failedNamedImage.getAttribute("alt") || hiddenImages.get(failedNamedImage));
+      const fallbackName = fallen ? (failedAlt || imageLabel || fallbackInitials()) : undefined;
       const name = settings.ariaLabel ?? (settings.label || (settings.variant === "text" ? settings.text : imageLabel) || fallbackName) ?? "";
       const description = settings.supportingText;
       const announcement = badge.name();
@@ -155,7 +169,9 @@ export function withRenderer(settings: AvatarSettings) {
 
       // On the fallback a hidden image cannot name itself: a non-interactive
       // avatar becomes role img carrying the name (the alt, else the
-      // initials); an interactive one keeps its button and its name.
+      // initials) — in the image variant and in the icon path, where a
+      // failed slotted img hides beside an authored icon; an interactive one
+      // keeps its button and its name.
       const fallenRoot = root.localName === "div" && fallen;
       const role = fallenRoot ? "img"
         : root.localName === "div" ? (namedRoot ? (first || description ? "group" : "img") : undefined)

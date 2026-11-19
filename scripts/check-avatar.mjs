@@ -289,6 +289,47 @@ try {
     assert.deepEqual(errors, [], "element: no page errors");
     await page.close();
     console.log("Avatar element fallback: slotted broken image falls back and recovers");
+
+  // The icon path: a failed img beside an authored icon hides (no clipping),
+  // the icon shows, and the root takes role img with the alt name.
+  {
+    const page = await browser.newPage();
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto(`http://127.0.0.1:${port}/test/browser/avatar.html`, { waitUntil: "networkidle" });
+    await page.waitForFunction(() => !!window.createAvatar && !!window.defineAvatar);
+    const iconPath = await page.evaluate(async () => {
+      document.body.innerHTML = "";
+      const host = document.createElement("m-avatar");
+      host.setAttribute("variant", "icon");
+      const img = document.createElement("img");
+      img.src = "/definitely-missing.png";
+      img.alt = "Account photo";
+      host.appendChild(img);
+      const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      icon.setAttribute("viewBox", "0 0 24 24");
+      icon.innerHTML = '<circle cx="12" cy="12" r="10"></circle>';
+      host.appendChild(icon);
+      document.body.appendChild(host);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      const inner = host.shadowRoot?.querySelector(".mtrl-avatar") ?? null;
+      return {
+        failedClass: img.classList.contains("mtrl-avatar__img--failed"),
+        imgDisplay: getComputedStyle(img).display,
+        iconVisible: !!(inner && icon.isConnected && getComputedStyle(icon).display !== "none"),
+        role: inner?.getAttribute("role") ?? null,
+        name: inner?.getAttribute("aria-label") ?? null,
+      };
+    });
+    assert.equal(iconPath.failedClass, true, `icon path: the failed img is marked (got ${iconPath.failedClass})`);
+    assert.equal(iconPath.imgDisplay, "none", `icon path: the failed img is display none, no clipping (got ${iconPath.imgDisplay})`);
+    assert.equal(iconPath.iconVisible, true, "icon path: the authored icon shows");
+    assert.equal(iconPath.role, "img", `icon path: the root takes role img (got ${iconPath.role})`);
+    assert.equal(iconPath.name, "Account photo", `icon path: the alt names the root (got ${iconPath.name})`);
+    assert.deepEqual(errors, [], "icon path: no page errors");
+    await page.close();
+    console.log("Avatar icon path: failed img hidden, icon shows, root named role img");
+  }
   }
   }
 
