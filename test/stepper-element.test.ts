@@ -114,6 +114,7 @@ describe("<m-stepper> and <m-step>", () => {
       "aria-label",
       "auto-breakpoint",
       "disabled",
+      "display",
       "header-placement",
       "label-placement",
       "linear",
@@ -243,6 +244,17 @@ describe("<m-stepper> and <m-step>", () => {
     await flush();
     expect(host.value).toBe("review");
     expect(shadow(host).querySelectorAll(".mtrl-stepper__header")[2]!.getAttribute("aria-current")).toBe("step");
+  });
+
+  test("the display attribute picks the compact presentation and survives a change", async () => {
+    const host = mount('display="dots"');
+    const root = () => shadow(host).querySelector(".mtrl-stepper")!;
+    expect(root().classList.contains("mtrl-stepper--display-dots")).toBe(true);
+    host.setAttribute("display", "progress");
+    await flush();
+    expect(root().classList.contains("mtrl-stepper--display-progress")).toBe(true);
+    expect(shadow(host).querySelector('[role="progressbar"]')!.getAttribute("aria-valuenow")).toBe("1");
+    expect(host.display).toBe("progress");
   });
 
   test("no inline style.order is ever written on the consumer's steps", () => {

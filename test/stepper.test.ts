@@ -266,6 +266,53 @@ describe("Stepper validation pipeline", () => {
   });
 });
 
+describe("Stepper compact displays", () => {
+  test("labels is the default and renders no compact status line", () => {
+    const stepper = mount();
+    expect(stepper.element.classList.contains("mtrl-stepper--display-labels")).toBe(true);
+    expect(stepper.element.querySelector(".mtrl-stepper__count")).toBeNull();
+    expect(stepper.element.querySelector(".mtrl-stepper__progress")).toBeNull();
+    stepper.destroy();
+  });
+
+  test("count shows Step n of N with the active label and follows the step", async () => {
+    const stepper = mount({ display: "count" });
+    const count = () => stepper.element.querySelector(".mtrl-stepper__count")!;
+    expect(stepper.element.classList.contains("mtrl-stepper--display-count")).toBe(true);
+    expect(count().textContent).toBe("Step 1 of 3: Account details");
+    await stepper.next();
+    expect(count().textContent).toBe("Step 2 of 3: Shipping address");
+    stepper.destroy();
+  });
+
+  test("progress is a determinate progressbar that follows the step", async () => {
+    const stepper = mount({ display: "progress" });
+    const progress = stepper.element.querySelector(".mtrl-stepper__progress")!;
+    expect(stepper.element.classList.contains("mtrl-stepper--display-progress")).toBe(true);
+    expect(progress.getAttribute("role")).toBe("progressbar");
+    expect(progress.getAttribute("aria-valuemax")).toBe("3");
+    expect(progress.getAttribute("aria-valuenow")).toBe("1");
+    expect(progress.querySelector(".mtrl-stepper__progress-label")!.textContent).toBe("Step 1 of 3: Account details");
+    expect((progress.querySelector<HTMLElement>(".mtrl-stepper__progress-bar > span")!).style.width).toBe("33.33333333333333%");
+    await stepper.next();
+    expect(progress.getAttribute("aria-valuenow")).toBe("2");
+    stepper.destroy();
+  });
+
+  test("dots keeps the headers interactive with their names", async () => {
+    const stepper = mount({ display: "dots" });
+    expect(stepper.element.classList.contains("mtrl-stepper--display-dots")).toBe(true);
+    expect(stepper.element.querySelector(".mtrl-stepper__count")).toBeNull();
+    const header = stepper.getHeaderElement(1)!;
+    expect(header.querySelector(".mtrl-stepper__label")!.textContent).toBe("Shipping address");
+    header.focus();
+    header.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    await Promise.resolve();
+    expect(stepper.getValue()).toBe("address");
+    stepper.destroy();
+  });
+});
+
 describe("Stepper keyboard", () => {
   test("arrows move focus without activating; Enter activates the focused step", async () => {
     const stepper = mount();
