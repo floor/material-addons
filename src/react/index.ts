@@ -23,3 +23,8 @@ export const ExpansionPanel = /*#__PURE__*/ createReactExpansionPanel();
 export const Accordion = /*#__PURE__*/ createReactAccordion();
 export type { ReactExpansionPanelProps, ReactAccordionProps } from "../adapters/react-expansion";
 export type { ExpansionPanelElementEventMap } from "../elements/expansion-panel";
+import "material-addons/elements/css/skeleton";
+import { createReactSkeleton } from "../adapters/skeleton/react";
+export const Skeleton = /*#__PURE__*/ createReactSkeleton();
+export type { ReactSkeletonProps } from "../adapters/skeleton/react";
+export type { SkeletonElementEventMap } from "../elements/skeleton";

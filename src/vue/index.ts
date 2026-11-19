@@ -22,3 +22,8 @@ export const MExpansionPanel = /*#__PURE__*/ createVueExpansionPanel();
 export const MAccordion = /*#__PURE__*/ createVueAccordion();
 export type { VueExpansionPanelProps, VueAccordionProps } from "../adapters/vue-expansion";
 export type { ExpansionPanelElementEventMap } from "../elements/expansion-panel";
+import "material-addons/elements/css/skeleton";
+import { createVueSkeleton } from "../adapters/skeleton/vue";
+export const MSkeleton = /*#__PURE__*/ createVueSkeleton();
+export type { VueSkeletonProps } from "../adapters/skeleton/vue";
+export type { SkeletonElementEventMap } from "../elements/skeleton";

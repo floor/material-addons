@@ -9,6 +9,27 @@ import { releasePack } from "./release-pack.mjs";
 // Recorded before the first commit on this branch, from
 // `fnm exec --using=22 -- npm pack --dry-run --json` after a production build.
 const EXPECTED_PATHS = [
+  "dist/adapters/skeleton/contract.d.ts",
+  "dist/adapters/skeleton/react.d.ts",
+  "dist/adapters/skeleton/solid.d.ts",
+  "dist/adapters/skeleton/svelte.d.ts",
+  "dist/adapters/skeleton/vue.d.ts",
+  "dist/svelte/skeleton-runtime.mjs",
+  "dist/components/skeleton/constants.d.ts",
+  "dist/components/skeleton/constants.mjs",
+  "dist/components/skeleton/index.d.ts",
+  "dist/components/skeleton/index.mjs",
+  "dist/components/skeleton/map.d.ts",
+  "dist/components/skeleton/skeleton.d.ts",
+  "dist/components/skeleton/types.d.ts",
+  "dist/elements/css/skeleton.css",
+  "dist/elements/css/skeleton.d.ts",
+  "dist/elements/css/skeleton.js",
+  "dist/elements/skeleton.d.ts",
+  "dist/elements/skeleton.mjs",
+  "dist/svelte/Skeleton.svelte",
+  "dist/svelte/Skeleton.svelte.d.ts",
+  "src/styles/components/_skeleton.scss",
   "LICENSE",
   "README.md",
   "dist/adapters/autocomplete/contract.d.ts",
@@ -271,7 +292,7 @@ try {
       }
     }
   }
-  assert.equal(specifiers.length, 23);
+  assert.equal(specifiers.length, 27);
   run(process.execPath, ["--input-type=module", "-e", `
     import assert from 'node:assert/strict';
     import { createRequire } from 'node:module';

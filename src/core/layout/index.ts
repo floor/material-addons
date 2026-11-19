@@ -130,6 +130,19 @@ export function stack(options: Record<string, any> = {}): any {
 }
 
 /**
+ * Creates a layout whose component leaves are skeleton placeholders.
+ *
+ * The same schema the real layout uses, rendered as placeholders: the stack,
+ * row or grid is real, the component leaves stand in as their mapped shapes,
+ * and the result's `reveal()` swaps the real components in without moving
+ * the layout classes. Argument 2 stays the parent element; the skeleton mode
+ * is an option, not an overload of `createLayout`.
+ */
+export function skeleton(schema: any, parent?: HTMLElement | null): any {
+  return createLayout(schema, parent ?? null, { skeleton: true });
+}
+
+/**
  * Creates a layout from a template function
  * Useful for dynamic layouts
  */

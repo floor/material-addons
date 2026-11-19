@@ -1,0 +1,183 @@
+// src/styles/components/_skeleton.scss
+//
+// The skeleton placeholder. M3 assigns no skeleton role, corner or duration;
+// fill and highlight are tone-based surface roles and the sweep follows the
+// transitions page's direction (reading-order origin toward the far corner),
+// on logical directions so RTL starts where reading starts. Every number the
+// spec note fixes is a token (skeleton-spec.md, 2026-11-19).
+
+$component: "mtrl-skeleton";
+
+.#{$component} {
+  // One loop of the wave or the pulse. A library default: M3 publishes none.
+  --#{$component}-pulse-duration: 2000ms;
+  // The wave writes this after mount, from the group's geometry.
+  --#{$component}-delay: 0ms;
+  // The reveal fade is the effects spring: no overshoot, fast.
+  --#{$component}-reveal-duration: var(--mtrl-sys-motion-spring-fast-effects-duration, 200ms);
+  --#{$component}-reveal-easing: var(--mtrl-sys-motion-spring-fast-effects-easing, cubic-bezier(0.2, 0, 0, 1));
+
+  position: relative;
+  display: block;
+  inline-size: var(--#{$component}-inline-size, 100%);
+  block-size: var(--#{$component}-block-size, 1.5rem);
+}
+
+.#{$component}__shape {
+  display: flex;
+  flex-direction: column;
+  gap: var(--#{$component}-line-gap, 8px);
+  inline-size: 100%;
+  block-size: 100%;
+  border-radius: var(--#{$component}-shape, 4px);
+  background:
+    linear-gradient(
+      100deg,
+      transparent 20%,
+      var(--#{$component}-highlight, var(--mtrl-sys-color-surface-container-low)) 45%,
+      transparent 70%
+    ) no-repeat,
+    var(--#{$component}-fill, var(--mtrl-sys-color-surface-container-highest));
+  background-size: 60% 100%, 100% 100%;
+  animation: #{$component}-wave var(--#{$component}-pulse-duration) linear infinite;
+  animation-delay: var(--#{$component}-delay);
+
+  @keyframes #{$component}-wave {
+    from { background-position: -60% 0, 0 0; }
+    to { background-position: 160% 0, 0 0; }
+  }
+
+  // The wave travels from inline-start toward inline-end; under rtl that is
+  // right to left, so the band's positions run the other way.
+  &:dir(rtl) {
+    animation-name: #{$component}-wave-rtl;
+  }
+
+  @keyframes #{$component}-wave-rtl {
+    from { background-position: 160% 0, 0 0; }
+    to { background-position: -60% 0, 0 0; }
+  }
+}
+
+// Variant and size, from the data attributes the component writes.
+.#{$component}[data-variant="circle"] {
+  --#{$component}-shape: var(--mtrl-sys-shape-corner-full);
+  --#{$component}-inline-size: var(--#{$component}-block-size);
+
+  &[data-size="small"] { --#{$component}-block-size: 24px; }
+  &[data-size="medium"] { --#{$component}-block-size: 30px; }
+  &[data-size="large"] { --#{$component}-block-size: 40px; }
+}
+
+.#{$component}[data-variant="text"] {
+  --#{$component}-shape: 4px;
+
+  &[data-size="small"] { --#{$component}-block-size: var(--mtrl-sys-typescale-body-small-line-height, 1rem); }
+  &[data-size="medium"] { --#{$component}-block-size: var(--mtrl-sys-typescale-body-medium-line-height, 1.5rem); }
+  &[data-size="large"] { --#{$component}-block-size: var(--mtrl-sys-typescale-body-large-line-height, 1.75rem); }
+
+  // The root holds every line: lines * the line height plus the gaps
+  // between them, so nothing overflows the box the real text will take.
+  block-size: calc(
+    (var(--#{$component}-block-size) + var(--#{$component}-line-gap, 8px)) *
+    var(--#{$component}-line-count, 1) - var(--#{$component}-line-gap, 8px)
+  );
+}
+
+// One line is the shape itself, painted by the shape's own rule. More lines
+// are bars the shape lays out; the shape stops painting and each bar carries
+// the same fill and sweep, on the group's one delay.
+.#{$component}[data-variant="text"][data-lines="multi"] .#{$component}__shape {
+  background: none;
+  animation: none;
+}
+
+.#{$component}__line {
+  flex: none;
+  block-size: var(--#{$component}-block-size);
+  border-radius: var(--#{$component}-shape, 4px);
+  background:
+    linear-gradient(
+      100deg,
+      transparent 20%,
+      var(--#{$component}-highlight, var(--mtrl-sys-color-surface-container-low)) 45%,
+      transparent 70%
+    ) no-repeat,
+    var(--#{$component}-fill, var(--mtrl-sys-color-surface-container-highest));
+  background-size: 60% 100%, 100% 100%;
+  animation: #{$component}-wave var(--#{$component}-pulse-duration) linear infinite;
+  animation-delay: var(--#{$component}-delay);
+}
+
+// Under rtl the bars sweep the other way too, matching the shape.
+.#{$component}:dir(rtl) .#{$component}__line {
+  animation-name: #{$component}-wave-rtl;
+}
+
+.#{$component}[data-variant="rect"] {
+  --#{$component}-shape: var(--mtrl-sys-shape-corner-small);
+
+  &[data-size="small"] { --#{$component}-block-size: 40px; }
+  &[data-size="medium"] { --#{$component}-block-size: 80px; }
+  &[data-size="large"] { --#{$component}-block-size: 120px; }
+}
+
+// The pulse: a contained loop, no position delay. It reaches the bars of a
+// multi-line placeholder as well as the single-line shape.
+.#{$component}[data-motion="pulse"] .#{$component}__shape,
+.#{$component}[data-motion="pulse"] .#{$component}__line {
+  background: var(--#{$component}-fill, var(--mtrl-sys-color-surface-container-highest));
+  animation: #{$component}-pulse var(--#{$component}-pulse-duration) ease-in-out infinite;
+  animation-delay: 0ms;
+
+  @keyframes #{$component}-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+  }
+}
+
+// The swap rules. The placeholder fills the host the mapping sized; the
+// real component that replaces it sizes ITSELF — a 100% fill on it would
+// collapse an auto-sized host around it (host from content, content from
+// host) — so the fill is the placeholder's and the fade is the real
+// component's.
+.mtrl-skeleton-host {
+  display: block;
+}
+
+.mtrl-skeleton-host > .#{$component} {
+  inline-size: 100%;
+}
+
+.mtrl-skeleton-host > *:not(.#{$component}) {
+  animation: #{$component}-reveal var(--#{$component}-reveal-duration, 200ms) var(--#{$component}-reveal-easing, cubic-bezier(0.2, 0, 0, 1)) both;
+}
+
+@keyframes #{$component}-reveal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  // The attribute-scoped selectors match the wave and pulse rules'
+  // specificity, and these come later in the sheet: reduced motion wins
+  // over both motions whatever the placeholder is configured for.
+  .#{$component} .#{$component}__shape,
+  .#{$component}[data-motion] .#{$component}__shape,
+  .#{$component} .#{$component}__line,
+  .#{$component}[data-motion] .#{$component}__line,
+  .mtrl-skeleton-host > *:not(.#{$component}) {
+    animation: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .#{$component} .#{$component}__shape,
+  .#{$component}[data-motion] .#{$component}__shape,
+  .#{$component} .#{$component}__line,
+  .#{$component}[data-motion] .#{$component}__line {
+    background: Canvas;
+    border: 1px solid CanvasText;
+    animation: none;
+  }
+}

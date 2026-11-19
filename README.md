@@ -296,6 +296,108 @@ Measured as standalone minified ESM bundles, gzipped, with `material` external; 
 
 The targets were estimates made before the implementation and all three rows exceed them; the row records what was measured.
 
+## Skeleton
+
+<!-- example: fragment -->
+```javascript
+import 'material/styles';
+import 'material-addons/styles';
+import { createSkeleton } from 'material-addons';
+
+const skeleton = createSkeleton({ variant: 'text', lines: 3 });
+document.body.append(skeleton.element);
+```
+
+A skeleton is a loading placeholder. Material Design 3 publishes no skeleton
+component: the shape reads the transitions page's direction (a subtle sweep
+from the reading-order origin toward the far corner) on tone-based surface
+roles, and every number the library fixes is a `--mtrl-skeleton-*` token.
+
+The shape is a `variant`: a text bar, the avatar circle, or a block. The
+`size` axis is small, medium or large, and a circle uses the avatar boxes.
+`lines` is the text bar count, the same option `ListItem` uses. The
+`motion` is the wave sweep (the default) or a contained pulse.
+
+The shape is always hidden from assistive technology; a standalone
+skeleton's root carries `aria-busy` while it stands in, and `busy: false`
+(the element's `no-busy`) leaves it off. No events, no focus, no disabled
+state: a skeleton is not a control
+
+### Layout placeholders
+
+The second layer renders those shapes from the same schema the real layout
+uses, then swaps the real components in without moving the layout classes.
+The creator map decides each placeholder's box, so register what you render:
+the placeholder holds exactly the box the real component will take.
+
+<!-- example: fragment -->
+```javascript
+import { skeleton } from 'material-addons/layout';
+import { registerSkeleton } from 'material-addons/components/skeleton';
+import { createAvatar } from 'material-addons/components/avatar';
+
+// the avatar stands in as its circle, at the avatar box
+registerSkeleton(createAvatar, (options) => ({
+  variant: 'circle', size: options.size ?? 'large',
+}));
+
+// a field stands in as a block the field's own box, width and height
+registerSkeleton(createTextField, () => ({
+  variant: 'rect', inlineSize: '280px', blockSize: '56px',
+}));
+
+const layout = skeleton([
+  'div',
+  { layout: { type: 'row', gap: '1rem' } },
+  [createAvatar, 'avatar', { size: 'large' }],
+  [createTextField, 'name', { label: 'Name' }],
+]);
+
+// when the data lands:
+layout.reveal();
+```
+
+The stack, row or grid is real; only the component leaves stand in. Each
+placeholder fills a host `div` that carries the layout classes the real
+element would have taken, and `reveal()` replaces the placeholder inside
+the same host. The region (the parent the layout was built into) carries
+`aria-busy` until `reveal()`.
+
+The page does not shift when the placeholder is sized like the real
+content: an `inlineSize` or `blockSize` from the mapping, or a built-in
+mapping measured to match. A placeholder sized differently lets the real
+component take its own size at the cost of one reflow, never a permanent
+clip.
+
+A form forwards the same flag: `createForm({ layout, skeleton: true })`
+renders its fields as placeholders and its own `reveal()` swaps them in.
+
+### Element
+
+<!-- example: fragment -->
+```html
+<m-skeleton variant="text" lines="3"></m-skeleton>
+<m-skeleton variant="circle" size="large"></m-skeleton>
+```
+
+Every attribute is also a property, and `no-busy` opts out of the busy
+flag. The element is client-only, and its three parts are styleable through
+`::part()`. The framework adapters export it as `Skeleton` (React, Solid,
+Svelte) and `MSkeleton` (Vue) with the same attributes as props.
+
+### Size
+
+Measured as standalone minified ESM bundles, gzipped, with `material`
+external. `scripts/skeleton-size.mjs` prints the rows.
+
+| Artifact | Measured | Target |
+|----------|----------|--------|
+| `createSkeleton` and the creator map | 1.1 KB | 1.2 KB |
+| The compiled stylesheet | 0.8 KB | 0.8 KB |
+
+The targets were the spec note's estimates; the row records what was
+measured.
+
 ## Colour picker
 
 <!-- example: run, shows "#6750a4" -->

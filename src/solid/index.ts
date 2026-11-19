@@ -22,3 +22,8 @@ export const ExpansionPanel = /*#__PURE__*/ createSolidExpansionPanel();
 export const Accordion = /*#__PURE__*/ createSolidAccordion();
 export type { SolidExpansionPanelProps, SolidAccordionProps } from "../adapters/solid-expansion";
 export type { ExpansionPanelElementEventMap } from "../elements/expansion-panel";
+import "material-addons/elements/css/skeleton";
+import { createSolidSkeleton } from "../adapters/skeleton/solid";
+export const Skeleton = /*#__PURE__*/ createSolidSkeleton();
+export type { SolidSkeletonProps } from "../adapters/skeleton/solid";
+export type { SkeletonElementEventMap } from "../elements/skeleton";

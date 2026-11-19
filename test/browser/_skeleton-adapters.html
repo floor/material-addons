@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en" data-theme="baseline">
+<meta charset="utf-8">
+<title>Skeleton adapter fixture</title>
+<body>
+<div id="react-root"></div>
+<div id="svelte-root"></div>
+<script type="module">
+  import 'material/styles';
+  import 'material-addons/styles';
+  import 'material-addons/elements/css/skeleton';
+  import React from "react";
+  import { createRoot } from "react-dom/client";
+  import { Skeleton as ReactSkeleton } from "material-addons/react";
+  import { mount as svelteMount, unmount as svelteUnmount } from "svelte";
+
+  window.skeletonAdapters = { React, createRoot, ReactSkeleton, svelteMount, svelteUnmount };
+</script>

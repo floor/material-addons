@@ -60,6 +60,13 @@ export interface LayoutOptions {
   /** Default creator function to use if not specified in schema */
   creator?: Function;
   /**
+   * Render the layout's component leaves as skeleton placeholders instead of
+   * calling their creators. The layout itself (stack, row, grid) stays real;
+   * `reveal()` on the result swaps the real components in without moving the
+   * layout classes. Default false.
+   */
+  skeleton?: boolean;
+  /**
    * @deprecated No effect: a layout item's classes (class, className and the
    * deprecated rawClass) are applied as written. Kept so existing code keeps
    * compiling.
@@ -82,6 +89,12 @@ export interface LayoutResult {
   getAll(): Record<string, any>;
   /** Destroys the layout, cleaning up all components */
   destroy(): void;
+  /**
+   * Swaps every skeleton placeholder for its real component, in the same
+   * host, then clears the region's `aria-busy`. A layout that was not built
+   * with `skeleton: true` has nothing to reveal; calling it is a no-op.
+   */
+  reveal(): void;
 }
 
 type ComponentLike = { element: HTMLElement; [key: string]: any };
@@ -123,6 +136,8 @@ const fragmentPool = new FragmentPool();
 const classCache = new Map<string, string>();
 
 // Configuration constants
+import { createSkeleton, skeletonFor } from "../../components/skeleton";
+
 const PREFIX = "mtrl"; // TODO: Make this configurable
 const PREFIX_WITH_DASH = `${PREFIX}-`;
 
@@ -356,13 +371,98 @@ function hasClass(element: HTMLElement, className: string): boolean {
 // ============================================================================
 
 /**
+ * A component leaf stood in as its mapped skeleton placeholder.
+ *
+ * A host div takes the layout classes the real element would have taken and
+ * the mapped placeholder fills it; `reveal()` later creates the real
+ * component with the original options (minus the layout classes, which stay
+ * on the host) and replaces the placeholder in the same turn. The layout's
+ * region carries `aria-busy`; the placeholder inside it does not. Used by
+ * the schema processor's creator path and by JSX's `h()` alike.
+ */
+export function createSkeletonHost(
+  Component: Function,
+  options: Record<string, any> = {},
+): { element: HTMLElement; reveal: () => any; destroy: () => void } {
+  const { layout: layoutConfig, layoutItem: layoutItemConfig, ...skeletonOptions } = options;
+  const host = document.createElement("div");
+  host.className = "mtrl-skeleton-host";
+  if (layoutConfig) applyLayoutClasses(host, layoutConfig);
+  if (layoutItemConfig) applyLayoutItemClasses(host, layoutItemConfig);
+  const mapped = skeletonFor(Component, skeletonOptions);
+  // The mapping's sizes are the host's: the host is the layout's item, so a
+  // mapped inlineSize or blockSize takes the layout's box rather than an
+  // even split, and the placeholder fills that box.
+  if (mapped.inlineSize) {
+    host.style.width = mapped.inlineSize;
+    // The mapping owns this box: a row's growing items would otherwise
+    // redistribute it into an even split. The flex behaviour is the host's
+    // for its whole life — it is never switched at reveal, so a matched
+    // mapping cannot move anything by changing how the container shares
+    // space between the two phases.
+    host.style.flex = "none";
+  }
+  if (mapped.blockSize) host.style.height = mapped.blockSize;
+  const placeholder = createSkeleton({ ...mapped, busy: false });
+  host.appendChild(placeholder.element);
+  // The component slot: until reveal it is the placeholder's host, and every
+  // holder of this object — a layout's component map, a form's field
+  // registry — sees the placeholder. reveal() swaps the real component in
+  // and forwards this object to it, so those same holders see the real
+  // component's element and API from then on, with nothing re-registered.
+  const slot: { element: HTMLElement; reveal: () => any; destroy: () => void; [key: string]: any } = {
+    element: host,
+    reveal(): any {
+      const { layout: _layout, layoutItem: _layoutItem, ...revealOptions } = options;
+      const real = createComponentInstance(Component, revealOptions);
+      if (real && real.element) {
+        // The host leaves the layout: the real element takes its place,
+        // wearing the same layout classes, with none of the host's sizes or
+        // flex — the real component is an ordinary item of the container
+        // and sizes itself for its whole life, so a 50% child, a resized
+        // container or viewport, and content growth all behave exactly as
+        // on a page that never had a skeleton. Zero shift holds when the
+        // mapping matched what the real component lays out to in that
+        // container; a mismatch reflows once.
+        const realElement = real.element as HTMLElement;
+        const carriedClasses = host.className.split(/\s+/).filter((name) => name && name !== "mtrl-skeleton-host");
+        if (carriedClasses.length) realElement.classList.add(...carriedClasses);
+        host.replaceWith(realElement);
+        placeholder.destroy();
+        for (const key of Object.keys(real)) {
+          if (key !== "destroy") slot[key] = (real as Record<string, unknown>)[key];
+        }
+        slot.element = real.element as HTMLElement;
+        if (typeof real.destroy === "function") {
+          const destroyReal = real.destroy.bind(real);
+          slot.destroy = (): void => destroyReal();
+        }
+      }
+      return real;
+    },
+    destroy(): void {
+      placeholder.destroy();
+      host.remove();
+    },
+  };
+  return slot;
+}
+
+/**
  * Creates a component instance with optimized option processing
  * Uses destructuring for cleaner separation of concerns
  */
 function createComponentInstance(
   Component: any,
   options: Record<string, any> = {},
+  skeleton: boolean = false,
 ): any {
+  // The skeleton branch: the component's creator is not called. The internal
+  // element creator is not a skeleton: its plain divs are the layout itself.
+  if (skeleton && typeof Component === "function" && Component !== createElement) {
+    return createSkeletonHost(Component, options);
+  }
+
   try {
     // Destructure special configs in one operation
     const {
@@ -644,7 +744,7 @@ function processArraySchema(
   const layout: Record<string, any> = {};
   const components: Array<[string, any]> = [];
   const fragment = createFragment();
-  let component = null;
+  let component: any = null;
 
   if (!Array.isArray(schema)) {
     return createLayoutResult(layout);
@@ -704,10 +804,22 @@ function processArraySchema(
     }
 
     // Create component
-    component = createComponentInstance(creator, processedOptions);
+    component = createComponentInstance(creator, processedOptions, options.skeleton === true);
     const element = isComponent(component) ? component.element : component;
 
-    if (level === 1) layout.element = element;
+    if (level === 1) {
+      layout.element = element;
+      // A skeleton root is the placeholder's host; when reveal() replaces
+      // it, the layout's root reference follows the real element.
+      if (component && typeof (component as any).reveal === "function" && (component as any).element === element) {
+        const slotReveal = (component as any).reveal.bind(component);
+        (component as any).reveal = () => {
+          const revealed = slotReveal();
+          layout.element = (component as any).element;
+          return revealed;
+        };
+      }
+    }
     if (name) {
       layout[name] = component;
       components.push([name, component]);
@@ -771,7 +883,9 @@ function processObjectSchema(
     const rootComponent = createComponentInstance(
       createElementFn,
       processedOptions,
+      options.skeleton === true,
     );
+
     layout.element = rootComponent;
     if (elementDef.name) layout[elementDef.name] = rootComponent;
 
@@ -806,7 +920,7 @@ function processObjectSchema(
       def.name = key;
     }
 
-    const created = createComponentInstance(elementCreator, processedOptions);
+    const created = createComponentInstance(elementCreator, processedOptions, options.skeleton === true);
     layout[key] = created;
     if (def.name && def.name !== key) layout[def.name] = created;
 
@@ -868,7 +982,12 @@ function createLayoutResult(layout: Record<string, any>): LayoutResult {
 
   return {
     layout,
-    element: layout.element,
+    // Live: a skeleton layout's root is the placeholder's host until
+    // reveal() replaces it with the real element; the root reference
+    // follows that swap instead of pointing at the detached host.
+    get element() {
+      return layout.element;
+    },
     component: flattenedComponents,
 
     get(name: string): any {
@@ -877,6 +996,22 @@ function createLayoutResult(layout: Record<string, any>): LayoutResult {
 
     getAll(): Record<string, any> {
       return flattenedComponents;
+    },
+
+    reveal(): void {
+      for (const component of Object.values(flattenedComponents)) {
+        if (
+          component &&
+          typeof component === "object" &&
+          typeof (component as any).reveal === "function"
+        ) {
+          (component as any).reveal();
+        }
+      }
+      const region = isComponent(layout.element) ? layout.element.element : layout.element;
+      if (region && typeof region.removeAttribute === "function") {
+        region.removeAttribute("aria-busy");
+      }
     },
 
     destroy(): void {
@@ -971,21 +1106,35 @@ export function createLayout(
     return createLayoutResult(layout);
   }
 
-  // Handle JSX-like schemas (array with function, string, object pattern)
-  if (
-    Array.isArray(schema) &&
-    schema.length >= 3 &&
-    typeof schema[0] === "function" &&
-    typeof schema[1] === "string" &&
-    isObject(schema[2])
-  ) {
-    return processArraySchema(schema, parentElement, 0, options);
-  }
-
-  // Route to appropriate processor
-  return Array.isArray(schema)
+  // Route to appropriate processor; the JSX-like array (function, string,
+  // object) is the array processor's own triple form, not a separate path
+  const result = Array.isArray(schema)
     ? processArraySchema(schema, parentElement, 0, options)
     : processObjectSchema(schema, parentElement, options);
+
+  if (options.skeleton === true) {
+    // The region is the layout root: the parent this layout was built into,
+    // or the layout's own element when there is none. The region carries
+    // aria-busy while the placeholders stand in; the wave parent attribute
+    // lets one sweep cross the group.
+    const region = (parentElement ?? result.element) as HTMLElement | null;
+    const root = region && isComponent(region) ? (region as any).element : region;
+    if (root && typeof root.setAttribute === "function") {
+      root.setAttribute("aria-busy", "true");
+      if (root.querySelector?.("[data-motion='wave']")) {
+        root.setAttribute("data-mtrl-skeleton-wave", "");
+      }
+      // The region, not the result's own element, is what reveal() clears:
+      // when a parent was given, that parent is the region.
+      const innerReveal = result.reveal;
+      result.reveal = (): void => {
+        innerReveal();
+        root.removeAttribute("aria-busy");
+      };
+    }
+  }
+
+  return result;
 }
 
 // ============================================================================

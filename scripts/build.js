@@ -45,6 +45,7 @@ const MODULES = [
   { name: "svelte runtime", entry: "src/adapters/svelte.ts", outDir: "dist/svelte", basename: "runtime", adapter: true },
   { name: "svelte autocomplete runtime", entry: "src/adapters/autocomplete/svelte.ts", outDir: "dist/svelte", basename: "autocomplete-runtime", adapter: true },
   { name: "svelte avatar runtime", entry: "src/adapters/avatar/svelte.ts", outDir: "dist/svelte", basename: "avatar-runtime", adapter: true },
+  { name: "svelte skeleton runtime", entry: "src/adapters/skeleton/svelte.ts", outDir: "dist/svelte", basename: "skeleton-runtime", adapter: true },
   {
     name: "avatar", entry: "src/components/avatar/index.ts", outDir: "dist/components/avatar",
   },
@@ -121,6 +122,17 @@ const MODULES = [
     name: "layout",
     entry: "src/core/layout/index.ts",
     outDir: "dist/core/layout",
+    plugins: [{
+      // The skeleton creator map is one instance: the layout module imports
+      // the public component subpath instead of bundling its own copy, so a
+      // registration the consumer made reaches the layout's placeholders.
+      name: "skeleton-map-entry",
+      setup(build) {
+        build.onResolve({ filter: /^\.\.\/\.\.\/components\/skeleton$/ }, () => ({
+          path: "material-addons/components/skeleton", external: true,
+        }));
+      },
+    }],
   },
   {
     name: "gestures",
@@ -131,6 +143,24 @@ const MODULES = [
     name: "components",
     entry: "src/components/index.ts",
     outDir: "dist/components",
+  },
+  {
+    name: "skeleton constants",
+    entry: "src/components/skeleton/constants.ts",
+    outDir: "dist/components/skeleton",
+    basename: "constants",
+  },
+  {
+    name: "skeleton component",
+    entry: "src/components/skeleton/index.ts",
+    outDir: "dist/components/skeleton",
+    basename: "index",
+  },
+  {
+    name: "skeleton element",
+    entry: "src/elements/skeleton.ts",
+    outDir: "dist/elements",
+    basename: "skeleton",
   },
   {
     name: "stepper constants",
@@ -263,7 +293,7 @@ const buildStyles = async () => {
 const buildElementStyles = async () => {
   const dir = join(DIST_DIR, "elements/css");
   await mkdir(dir, { recursive: true });
-  for (const name of ["stepper", "expansion-panel", "avatar"]) {
+  for (const name of ["stepper", "expansion-panel", "avatar", "skeleton"]) {
     const source = `src/styles/components/_${name}.scss`;
     const result = Bun.spawn(
       ["npx", "sass", source, "--style=compressed", "--no-source-map", "--load-path=node_modules"],

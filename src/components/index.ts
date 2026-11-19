@@ -27,6 +27,16 @@ export type {
   CancelHandler,
 } from "./form/types";
 
+// Skeleton component (the loading placeholder primitive)
+export { createSkeleton, registerSkeleton, skeletonFor } from "./skeleton";
+export type {
+  SkeletonComponent,
+  SkeletonConfig,
+  SkeletonMotion,
+  SkeletonSize,
+  SkeletonVariant,
+} from "./skeleton/types";
+
 // Stepper component
 export { createStepper } from "./stepper";
 export type {

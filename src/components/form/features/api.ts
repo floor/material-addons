@@ -20,6 +20,8 @@ import type {
   FieldValue,
 } from "../types";
 import { FORM_EVENTS } from "../constants";
+import { reregisterFields } from "./fields";
+import { reapplyInitialData } from "./data";
 import type { EventCallback } from "material/core/state";
 
 /**
@@ -76,6 +78,8 @@ const wireControlButtons = (
  * Extended component interface before API is applied
  */
 interface EnhancedFormComponent extends BaseFormComponent {
+  /** Forwarded from the layout feature: the way out of skeleton mode. */
+  reveal?: () => void;
   form: HTMLFormElement;
   ui: Record<string, unknown>;
   fields: FormFieldRegistry;
@@ -401,6 +405,17 @@ export const withAPI = (config: FormConfig) => {
       /**
        * Destroy the form and clean up resources
        */
+      reveal(): void {
+        component.reveal?.();
+        // The skeleton slots now forward to the real components: the field
+        // registry re-registers so getData, submit and change events see
+        // the real fields, not the placeholders that held their boxes.
+        reregisterFields(component as Parameters<typeof reregisterFields>[0]);
+        // The configured initial data was set at compose time on
+        // placeholders; the real fields get it now.
+        reapplyInitialData(component as Parameters<typeof reapplyInitialData>[0]);
+      },
+
       destroy(): void {
         // Clear all field event listeners
         for (const [, field] of component.fields) {

@@ -54,7 +54,9 @@ const processLayoutSchema = (
   }
 
   // Use material-addons createLayout to process the schema
-  const layoutResult = createLayout(schema, form, {});
+  // Form has no skeleton renderer of its own: it forwards the flag, and the
+  // form element is the region the layout marks aria-busy.
+  const layoutResult = createLayout(schema, form, { skeleton: config.skeleton === true });
 
   // Extract named components from layout result
   const ui: Record<string, unknown> = {};
@@ -169,6 +171,12 @@ export const withLayout = (config: FormConfig) => {
       ui,
       layoutResult,
       _cleanupScrollIndicator: cleanupScrollIndicator,
+      // The documented way out of skeleton mode: swap the real components
+      // in and clear the form region's busy flag.
+      reveal: (): void => {
+        const revealOf = (layoutResult as { reveal?: () => void } | null)?.reveal;
+        if (typeof revealOf === "function") revealOf();
+      },
     };
   };
 };
