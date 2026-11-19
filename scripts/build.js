@@ -47,6 +47,24 @@ const MODULES = [
     entry: "src/components/index.ts",
     outDir: "dist/components",
   },
+  {
+    name: "stepper constants",
+    entry: "src/components/stepper/constants.ts",
+    outDir: "dist/components/stepper",
+    basename: "constants",
+  },
+  {
+    name: "stepper component",
+    entry: "src/components/stepper/index.ts",
+    outDir: "dist/components/stepper",
+    basename: "index",
+  },
+  {
+    name: "elements",
+    entry: "src/elements/index.ts",
+    outDir: "dist/elements",
+    basename: "index",
+  },
 ];
 
 // Log build mode
@@ -109,7 +127,7 @@ const buildStyles = async () => {
     console.log("✓ SCSS build successful");
     console.log(`  CSS bundle: ${cssSize.toFixed(2)} KB`);
 
-    return true;
+    return await buildElementStyles();
   } catch (error) {
     console.error("❌ SCSS build error:", error.message);
 
@@ -135,6 +153,47 @@ const buildStyles = async () => {
 
     return false;
   }
+};
+
+/**
+ * The stepper's shadow-root CSS, as the module that registers it.
+ *
+ * A shadow root does not inherit the document's stylesheets, so an element's
+ * own sheet ships as JS that hands the text to `material`'s style registry,
+ * the way `material/elements/css/<name>` does. The same text is written as a
+ * plain stylesheet for a page that links its shadow CSS instead.
+ */
+const buildElementStyles = async () => {
+  const dir = join(DIST_DIR, "elements/css");
+  await mkdir(dir, { recursive: true });
+  const source = "src/styles/components/_stepper.scss";
+  const result = Bun.spawn(
+    ["npx", "sass", source, "--style=compressed", "--no-source-map", "--load-path=node_modules"],
+    { cwd: ROOT_DIR, stdio: ["inherit", "pipe", "pipe"] },
+  );
+  const css = await new Response(result.stdout).text();
+  const stderr = await new Response(result.stderr).text();
+  if ((await result.exited) !== 0) {
+    console.error("❌ Element stylesheet build failed");
+    if (stderr.trim()) console.error("STDERR:", stderr);
+    return false;
+  }
+  await Bun.write(join(dir, "stepper.css"), css);
+  await Bun.write(
+    join(dir, "stepper.js"),
+    'import { registerStyles } from "material/elements";\n' +
+      `registerStyles({ stepper: ${JSON.stringify(css)} });\n`,
+  );
+  await Bun.write(join(dir, "stepper.d.ts"), "export {};\n");
+  // The named subpath the docs use re-exports the elements entry; keeping it a
+  // file of its own lets a bundler resolve the subpath without the shim being
+  // a second copy of the code.
+  await Bun.write(
+    join(DIST_DIR, "elements/stepper.mjs"),
+    'export { stepperElement, stepDeclaration, defineStepper } from "./index.mjs";\n',
+  );
+  console.log(`  Element stylesheet: ${(css.length / 1024).toFixed(2)} KB`);
+  return true;
 };
 
 const buildModule = async (module) => {

@@ -31,7 +31,23 @@
       "types": "./dist/components/*/constants.d.ts",
       "import": "./dist/components/*/constants.mjs"
     },
-    "./styles": "./dist/styles.css"
+    "./styles": "./dist/styles.css",
+    "./components/stepper": {
+      "types": "./dist/components/stepper/index.d.ts",
+      "import": "./dist/components/stepper/index.mjs"
+    },
+    "./elements": {
+      "types": "./dist/elements/index.d.ts",
+      "import": "./dist/elements/index.mjs"
+    },
+    "./elements/stepper": {
+      "types": "./dist/elements/stepper.d.ts",
+      "import": "./dist/elements/stepper.mjs"
+    },
+    "./elements/css/stepper": {
+      "types": "./dist/elements/css/stepper.d.ts",
+      "import": "./dist/elements/css/stepper.js"
+    }
   },
   "files": [
     "dist",
@@ -63,7 +79,7 @@
   "author": "floor",
   "license": "MIT",
   "peerDependencies": {
-    "material": "^3.0.0"
+    "material": "^3.15.1"
   },
   "devDependencies": {
     "@types/jsdom": "^21.1.7",
@@ -71,7 +87,7 @@
     "bun-types": "^1.0.0",
     "jsdom": "^26.1.0",
     "madge": "^8.0.0",
-    "material": "3.0.1",
+    "material": "3.15.1",
     "playwright": "^1.63.0",
     "sass": "^1.94.2",
     "standard": "^17.0.0",
