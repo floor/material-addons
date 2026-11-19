@@ -258,6 +258,39 @@ describe("Accordion one-open invariant", () => {
     accordion.closeAll();
     accordion.openAll();
     expect(accordion.getValues()).toEqual(["a"]);
+    // A panel other than the first is already open: openAll still leaves one
+    accordion.getPanel("c")!.open();
+    expect(accordion.getValues()).toEqual(["c"]);
+    accordion.openAll();
+    expect(accordion.getValues()).toEqual(["a"]);
+    expect(accordion.getPanel("c")!.isOpen()).toBe(false);
+    accordion.destroy();
+  });
+
+  test("two panels that start open converge to the first", () => {
+    const accordion = createAccordion({
+      panels: [
+        { value: "a", label: "A", open: true },
+        { value: "b", label: "B", open: true },
+      ],
+    });
+    document.body.append(accordion.element);
+    expect(accordion.getValues()).toEqual(["a"]);
+    expect(accordion.getPanel("b")!.isOpen()).toBe(false);
+    accordion.destroy();
+  });
+
+  test("a vetoed switch opens nothing and emits no open event", () => {
+    const accordion = setup();
+    document.body.append(accordion.element);
+    accordion.getPanel("a")!.open();
+    accordion.getPanel("a")!.on("beforeclose", (event) => event.preventDefault());
+    const opened: string[] = [];
+    accordion.getPanel("b")!.on("open", (event) => opened.push(event.value));
+    accordion.getPanel("b")!.open();
+    expect(opened).toEqual([]);
+    expect(accordion.getPanel("b")!.isOpen()).toBe(false);
+    expect(accordion.getValues()).toEqual(["a"]);
     accordion.destroy();
   });
 
@@ -293,8 +326,10 @@ describe("Accordion coordination", () => {
     expect(accordion.getValue()).toBe("b");
     expect(accordion.getValues()).toEqual(["b"]);
     expect(accordion.getPanel("a")!.isOpen()).toBe(false);
+    // The closing panel's state change is a real one, then the opening's
     expect(changes.map((change) => [change.value, change.values])).toEqual([
       ["a", ["a"]],
+      [null, []],
       ["b", ["b"]],
     ]);
     accordion.destroy();

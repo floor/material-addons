@@ -25,6 +25,9 @@
         h(Accordion, { value, onUpdateValue: setValue, onChange: recordChange },
           h(ExpansionPanel, { value: 'one', label: 'One', onBeforeopen: recordBefore, onChange: recordChange }, 'First body'),
           h(ExpansionPanel, { value: 'two', label: 'Two' }, 'Second body')),
+        h(Accordion, { multiSelect: true },
+          h(ExpansionPanel, { value: 'd', label: 'D' }, 'Multi body'),
+          h(ExpansionPanel, { value: 'e', label: 'E' }, 'Multi body')),
         h('output', null, value));
     }
     createRoot(mount).render(h(App));
@@ -38,6 +41,10 @@
           h(MAccordion, { modelValue: value.value, 'onUpdate:modelValue': (next) => { value.value = next; }, onChange: recordChange }, () => [
             h(MExpansionPanel, { value: 'one', label: 'One', onBeforeopen: recordBefore, onChange: recordChange }, () => 'First body'),
             h(MExpansionPanel, { value: 'two', label: 'Two' }, () => 'Second body'),
+          ]),
+          h(MAccordion, { multiSelect: true }, () => [
+            h(MExpansionPanel, { value: 'd', label: 'D' }, () => 'Multi body'),
+            h(MExpansionPanel, { value: 'e', label: 'E' }, () => 'Multi body'),
           ]),
           h('output', value.value),
         ]);
@@ -57,6 +64,13 @@
           get children() { return [
             createComponent(ExpansionPanel, { value: 'one', label: 'One', onBeforeopen: recordBefore, onChange: recordChange, children: 'First body' }),
             createComponent(ExpansionPanel, { value: 'two', label: 'Two', children: 'Second body' }),
+          ]; },
+        }),
+        createComponent(Accordion, {
+          multiSelect: true,
+          get children() { return [
+            createComponent(ExpansionPanel, { value: 'd', label: 'D', children: 'Multi body' }),
+            createComponent(ExpansionPanel, { value: 'e', label: 'E', children: 'Multi body' }),
           ]; },
         }),
         createComponent(Dynamic, { component: 'output', get children() { return value(); } }),

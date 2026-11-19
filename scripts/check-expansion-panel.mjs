@@ -264,6 +264,40 @@ try {
   assert.equal(boundary.closeReflected, true);
   assert.deepEqual(boundary.seen, { hidden: false, inert: false });
 
+  // A vetoed switch opens nothing, openAll starts from a non-first panel,
+  // and a removed child leaves the group
+  await reset();
+  const switching = await page.evaluate(async () => {
+    document.body.innerHTML = `<m-accordion>
+      <m-expansion-panel value="a" label="A"></m-expansion-panel>
+      <m-expansion-panel value="b" label="B"></m-expansion-panel>
+      <m-expansion-panel value="c" label="C"></m-expansion-panel>
+    </m-accordion>`;
+    window.expansion.defineExpansionPanel();
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    const accordion = document.querySelector("m-accordion");
+    const [a, b, c] = accordion.component.getPanels();
+    a.open();
+    const vetoClose = (event) => event.preventDefault();
+    a.on("beforeclose", vetoClose);
+    let opened = 0;
+    b.on("open", () => { opened += 1; });
+    b.header.click();
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    const vetoed = { opened, values: accordion.component.getValues(), b: b.isOpen() };
+    a.off("beforeclose", vetoClose);
+    accordion.component.setValues([]);
+    c.open();
+    accordion.component.openAll();
+    const openAll = accordion.component.getValues();
+    document.querySelector("m-expansion-panel[value='c']").remove();
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    return { vetoed, openAll, panels: accordion.component.getPanels().length };
+  });
+  assert.deepEqual(switching.vetoed, { opened: 0, values: ["a"], b: false });
+  assert.deepEqual(switching.openAll, ["a"]);
+  assert.equal(switching.panels, 2);
+
   // Forced colours keep the boundary, the focus ring and the disabled colour apart
   await reset();
   await page.emulateMedia({ forcedColors: "active" });
@@ -319,7 +353,7 @@ try {
         console.error(framework, "diagnostics:", adapterErrors, (await adapterPage.content()).slice(0, 300));
         throw error;
       }
-      const accordion = adapterPage.locator("m-accordion");
+      const accordion = adapterPage.locator("m-accordion").first();
       assert.ok(await accordion.evaluate((node) => node.shadowRoot.adoptedStyleSheets.length > 0), framework);
       // A vetoed opening leaves the panel closed
       await adapterPage.evaluate(() => {
@@ -361,6 +395,20 @@ try {
         `${framework} keeps one panel open`,
       );
       await adapterPage.waitForFunction(() => document.querySelector("output")?.textContent === "two");
+      // Multi-select keeps both panels open, whatever the framework's prop name
+      const multi = await adapterPage.evaluate(async () => {
+        const accordion = document.querySelectorAll("m-accordion")[1];
+        for (let i = 0; i < 40 && !accordion.component?.getPanels().length; i++) {
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+        const panels = accordion.component.getPanels();
+        panels[0].header.click();
+        await new Promise((resolve) => setTimeout(resolve, 320));
+        panels[1].header.click();
+        await new Promise((resolve) => setTimeout(resolve, 320));
+        return { multiSelect: accordion.multiSelect, values: accordion.component.getValues() };
+      });
+      assert.deepEqual(multi, { multiSelect: true, values: ["d", "e"] }, `${framework} multi-select`);
       assert.deepEqual(adapterErrors, [], framework);
       console.log(`${framework}: panel and accordion mount, veto and model pass`);
     } finally {

@@ -192,4 +192,27 @@ describe("<m-expansion-panel> and <m-accordion>", () => {
     const first = document.querySelector("m-expansion-panel[value='a']") as unknown as PanelHost;
     expect(first.hasAttribute("open")).toBe(false);
   });
+
+  test("a removed panel child leaves the group", async () => {
+    document.body.innerHTML = `
+      <m-accordion>
+        <m-expansion-panel value="a" label="A"></m-expansion-panel>
+        <m-expansion-panel value="b" label="B"></m-expansion-panel>
+      </m-accordion>`;
+    const accordion = document.querySelector("m-accordion") as unknown as HTMLElement & {
+      getPanels: () => unknown[];
+      getValues: () => string[];
+    };
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(accordion.getPanels()).toHaveLength(2);
+    const removed = document.querySelector("m-expansion-panel[value='b']") as unknown as PanelHost;
+    removed.remove();
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(accordion.getPanels()).toHaveLength(1);
+    // The removed child's component is disposed with it, so it cannot
+    // coordinate, and the group's own panel still opens alone
+    expect(removed.component).toBeNull();
+    (document.querySelector("m-expansion-panel[value='a']") as unknown as PanelHost).component!.open();
+    expect(accordion.getValues()).toEqual(["a"]);
+  });
 });
