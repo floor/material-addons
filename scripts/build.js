@@ -25,19 +25,36 @@ const PREUPGRADE_CSS = join(DIST_DIR, "elements/preupgrade.css");
 // Granular module entry points for tree-shaking
 // Adapter bundles import their public element entry instead of duplicating it.
 const adapterPlugin = {
-  name: "stepper-element-entry",
+  name: "adapter-element-entry",
   setup(build) {
-    build.onResolve({ filter: /^\.\.\/elements\/stepper$/ }, () => ({
-      path: "material-addons/elements/stepper", external: true,
+    build.onResolve({ filter: /^(?:\.\.\/)+elements\/(stepper|autocomplete|avatar)$/ }, ({ path }) => ({
+      path: `material-addons/${path.slice(path.lastIndexOf("elements/"))}`, external: true,
     }));
   },
 };
+
+const externalEntry = (filter, path) => ({
+  name: "reuse-addon-entry",
+  setup(build) { build.onResolve({ filter }, () => ({ path, external: true })); },
+});
 
 const MODULES = [
   ...["react", "vue", "solid"].map(framework => ({
     name: framework, entry: `src/${framework}/index.ts`, outDir: `dist/${framework}`, adapter: true,
   })),
   { name: "svelte runtime", entry: "src/adapters/svelte.ts", outDir: "dist/svelte", basename: "runtime", adapter: true },
+  { name: "svelte autocomplete runtime", entry: "src/adapters/autocomplete/svelte.ts", outDir: "dist/svelte", basename: "autocomplete-runtime", adapter: true },
+  { name: "svelte avatar runtime", entry: "src/adapters/avatar/svelte.ts", outDir: "dist/svelte", basename: "avatar-runtime", adapter: true },
+  {
+    name: "avatar", entry: "src/components/avatar/index.ts", outDir: "dist/components/avatar",
+  },
+  {
+    name: "avatar constants", entry: "src/components/avatar/constants.ts", outDir: "dist/components/avatar", basename: "constants",
+  },
+  {
+    name: "avatar element", entry: "src/elements/avatar.ts", outDir: "dist/elements", basename: "avatar",
+    plugins: [externalEntry(/^\.\.\/components\/avatar$/, "../components/avatar/index.mjs")],
+  },
   {
     name: "form constants",
     entry: "src/components/form/constants.ts",
@@ -136,6 +153,7 @@ const MODULES = [
     entry: "src/elements/index.ts",
     outDir: "dist/elements",
     basename: "index",
+    plugins: [externalEntry(/^\.\/avatar$/, "./avatar.mjs")],
   },
 ];
 
@@ -249,56 +267,29 @@ const buildStyles = async () => {
 const buildElementStyles = async () => {
   const dir = join(DIST_DIR, "elements/css");
   await mkdir(dir, { recursive: true });
-  const source = "src/styles/components/_stepper.scss";
-  const result = Bun.spawn(
-    ["npx", "sass", source, "--style=compressed", "--no-source-map", "--load-path=node_modules"],
-    { cwd: ROOT_DIR, stdio: ["inherit", "pipe", "pipe"] },
-  );
-  const css = await new Response(result.stdout).text();
-  const stderr = await new Response(result.stderr).text();
-  if ((await result.exited) !== 0) {
-    console.error("❌ Element stylesheet build failed");
-    if (stderr.trim()) console.error("STDERR:", stderr);
-    return false;
-  }
-  await Bun.write(join(dir, "stepper.css"), css);
-
-  // The skeleton's own shadow-root CSS, the same shape as the stepper's.
-  {
-    const source = "src/styles/components/_skeleton.scss";
+  for (const name of ["stepper", "avatar", "skeleton"]) {
+    const source = `src/styles/components/_${name}.scss`;
     const result = Bun.spawn(
       ["npx", "sass", source, "--style=compressed", "--no-source-map", "--load-path=node_modules"],
       { cwd: ROOT_DIR, stdio: ["inherit", "pipe", "pipe"] },
     );
-    const css = await new Response(result.stdout).text();
-    const stderr = await new Response(result.stderr).text();
+    const [css, stderr] = await Promise.all([
+      new Response(result.stdout).text(), new Response(result.stderr).text(),
+    ]);
     if ((await result.exited) !== 0) {
-      console.error("❌ Skeleton element stylesheet build failed");
-      if (stderr.trim()) console.error("STDERR:", stderr);
+      console.error(`Element stylesheet build failed: ${name}`, stderr);
       return false;
     }
-    await Bun.write(join(dir, "skeleton.css"), css);
-    await Bun.write(
-      join(dir, "skeleton.js"),
-      'import "material/elements/css/ripple";\n' +
+    await Bun.write(join(dir, `${name}.css`), css);
+    const peerStyle = name === "avatar" ? 'import "material/elements/css/badge";\n' : "";
+    await Bun.write(join(dir, `${name}.js`),
+      'import "material/elements/css/ripple";\n' + peerStyle +
       'import { registerStyles } from "material/elements";\n' +
-        `registerStyles({ skeleton: ${JSON.stringify(css)} });\n`,
+      `registerStyles({ ${name}: ${JSON.stringify(css)} });\n`,
     );
-    await Bun.write(join(dir, "skeleton.d.ts"), "export {};\n");
-    await Bun.write(
-      join(DIST_DIR, "elements/skeleton.mjs"),
-      'export { skeletonElement, defineSkeleton, skeletonElementEventNames } from "./index.mjs";\n',
-    );
+    await Bun.write(join(dir, `${name}.d.ts`), "export {};\n");
+    console.log(`  Element stylesheet ${name}: ${(css.length / 1024).toFixed(2)} KB`);
   }
-
-  await Bun.write(
-    join(dir, "stepper.js"),
-    // The shadow base an element adopts first: material's ripple sheet
-    'import "material/elements/css/ripple";\n' +
-      'import { registerStyles } from "material/elements";\n' +
-      `registerStyles({ stepper: ${JSON.stringify(css)} });\n`,
-  );
-  await Bun.write(join(dir, "stepper.d.ts"), "export {};\n");
   // The named subpath the docs use re-exports the elements entry; keeping it a
   // file of its own lets a bundler resolve the subpath without the shim being
   // a second copy of the code.
@@ -306,7 +297,6 @@ const buildElementStyles = async () => {
     join(DIST_DIR, "elements/stepper.mjs"),
     'export { stepperElement, stepDeclaration, defineStepper, stepperElementEventNames } from "./index.mjs";\n',
   );
-  console.log(`  Element stylesheet: ${(css.length / 1024).toFixed(2)} KB`);
   return true;
 };
 

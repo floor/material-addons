@@ -85,3 +85,4 @@ export {
 } from "./colorpicker/utils";
 
 export * from "./autocomplete";
+export * from "./avatar";

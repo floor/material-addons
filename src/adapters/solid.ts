@@ -6,11 +6,6 @@ import {
 } from "./stepper";
 import { toAttribute } from "material/elements";
 import type { StepperElement } from "../elements/stepper";
-import {
-  attributes as skeletonAttributes, initialize as initializeSkeleton, skeletonHost,
-  synchronize as synchronizeSkeleton, tag as skeletonTag, type SkeletonProps,
-} from "./skeleton";
-import type { SkeletonElement } from "../elements/skeleton";
 
 type Host<E extends HTMLElement> = JSX.HTMLAttributes<E> & { children?: JSX.Element };
 export type SolidStepperProps = StepperProps & StepperEventProps & Omit<Host<StepperElement>, keyof (StepperProps & StepperEventProps) | "ref"> & { ref?: (node: StepperElement) => void };
@@ -59,29 +54,5 @@ export function createSolidStep(): Component<SolidStepProps> {
   return props => {
     const [, rest] = splitProps(props, [...stepHost.attributes.keys()] as (keyof SolidStepProps)[]);
     return Dynamic(mergeProps(rest, mapped(stepHost, props), { component: tag("step") }) as never);
-  };
-}
-
-export type SolidSkeletonProps = SkeletonProps & Omit<Host<SkeletonElement>, keyof SkeletonProps | "ref"> & { ref?: (node: SkeletonElement) => void };
-
-/** `<m-skeleton>` for Solid: attributes in, no events, no model. */
-export function createSolidSkeleton(): Component<SolidSkeletonProps> {
-  return (props) => {
-    const [own, rest] = splitProps(props, [...skeletonHost.attributes.keys(), "ref"] as (keyof SolidSkeletonProps)[]);
-    let element: SkeletonElement | undefined;
-    onMount(() => {
-      if (element) initializeSkeleton(element, own as Record<string, unknown> as SkeletonProps);
-    });
-    createEffect(() => { if (element) synchronizeSkeleton(element, own as Record<string, unknown> as SkeletonProps); });
-    return Dynamic({
-      component: skeletonTag(),
-      ...rest,
-      ...skeletonAttributes(own as Record<string, unknown>),
-      ref: (node: SkeletonElement) => {
-        element = node;
-        const ref = (props as { ref?: (node: SkeletonElement) => void }).ref;
-        if (typeof ref === "function") ref(node);
-      },
-    });
   };
 }

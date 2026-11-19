@@ -12,7 +12,7 @@ const server = await createServer({
   },
   resolve: { conditions: ["svelte", "module", "browser", "development"] },
   cacheDir: "node_modules/.vite-stepper-adapters",
-  optimizeDeps: { entries: ["test/browser/stepper-adapters.html"], exclude: ["material-addons/svelte", "svelte"] },
+  optimizeDeps: { entries: ["test/browser/stepper-adapters.html", "test/browser/autocomplete-adapters.html"], exclude: ["material-addons/svelte", "svelte"] },
   server: { host: "127.0.0.1", port: 0, hmr: false },
   plugins: [{
     name: "compile-svelte-fixture",
@@ -54,6 +54,28 @@ try {
       ], framework);
       assert.deepEqual(errors, [], framework);
       console.log(`${framework}: declarations, styles, cancellable events and model updates passed`);
+
+      await page.goto(`http://127.0.0.1:${port}/test/browser/autocomplete-adapters.html?framework=${framework}`);
+      await page.waitForFunction(() => !!document.querySelector("m-autocomplete")?.component, {}, { timeout: 7_000 });
+      const autocomplete = page.locator("m-autocomplete");
+      assert.ok(await autocomplete.evaluate(node => node.shadowRoot.adoptedStyleSheets.length > 0), framework);
+      assert.ok(await autocomplete.evaluate(node => node.hasAttribute("no-open-on-focus")), framework);
+      assert.deepEqual(await autocomplete.evaluate(node => node.getOptions().map(option => [option.value, option.text, option.supportingText])), [
+        ["ch", "Switzerland", "Europe"], ["jp", "Japan", undefined],
+      ], framework);
+      const input = autocomplete.getByRole("combobox");
+      await input.focus();
+      assert.equal(await input.getAttribute("aria-expanded"), "false", framework);
+      await input.fill("Swi");
+      await autocomplete.getByRole("option", { name: /Switzerland/ }).click();
+      await page.waitForFunction(() => document.querySelector("output")?.textContent === "ch");
+      assert.equal(await autocomplete.evaluate(node => node.value), "ch", framework);
+      assert.deepEqual(await page.evaluate(() => window.events), [["input", "Swi"], ["select", "ch"], ["change", "ch"]], framework);
+      await page.getByRole("button", { name: "Set Japan" }).click();
+      await page.waitForFunction(() => document.querySelector("m-autocomplete")?.value === "jp");
+      assert.equal(await input.inputValue(), "Japan", framework);
+      assert.deepEqual(errors, [], framework);
+      console.log(`${framework}: autocomplete options, styles, typed event delivery and model updates passed`);
     } finally {
       await page.close();
     }

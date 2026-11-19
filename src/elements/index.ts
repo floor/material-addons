@@ -14,3 +14,6 @@ export type { SkeletonElement, SkeletonElementEventMap, SkeletonSpec } from "./s
 
 export { stepperElement, stepDeclaration, defineStepper, stepperElementEventNames } from "./stepper";
 export type { StepperElement, StepAttributes, StepperElementEventMap } from "./stepper";
+
+export { avatarElement, defineAvatar } from "./avatar";
+export type { AvatarElement, AvatarElementEventMap } from "./avatar";

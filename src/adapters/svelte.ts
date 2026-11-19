@@ -4,16 +4,8 @@ import {
   changesModel, initialize, listen, synchronize, type StepProps, type StepperProps,
 } from "./stepper";
 import type { StepperElement, StepperElementEventMap } from "../elements/stepper";
-import {
-  attributes as skeletonAttributes, initialize as initializeSkeleton,
-  skeletonHost, synchronize as synchronizeSkeleton, tag as skeletonTag, type SkeletonProps,
-} from "./skeleton";
-import type { SkeletonElement } from "../elements/skeleton";
 
 export { attributes, hostProps, initialValue, stepHost, stepperHost, svelteEventKeys, tag } from "./stepper";
-export { skeletonAttributes, skeletonHost, skeletonTag, initializeSkeleton, synchronizeSkeleton };
-export type SvelteSkeletonProps = SkeletonProps & Omit<HTMLAttributes<HTMLElement>, keyof SkeletonProps | "children"> & { children?: Snippet };
-export type { SkeletonElement };
 export type SvelteStepperEvents = {
   [K in keyof StepperElementEventMap as `on${K}`]?: (event: StepperElementEventMap[K]) => void;
 };

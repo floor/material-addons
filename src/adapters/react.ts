@@ -1,19 +1,12 @@
 "use client";
 
-import { createElement, forwardRef, useCallback, useEffect, useLayoutEffect, useRef, type ForwardRefExoticComponent, type HTMLAttributes, type RefAttributes } from "react";
+import { createElement, forwardRef, useCallback, useEffect, useLayoutEffect, useRef, type HTMLAttributes } from "react";
 import {
   attributes, changesModel, dispatch, eventKeys, hostProps, initialize, initialValue,
   listen, stepHost, stepperHost, synchronize, tag,
   type StepProps, type StepperEventProps, type StepperProps,
 } from "./stepper";
 import type { StepperElement } from "../elements/stepper";
-import {
-  attributes as skeletonAttributes, initialize as initializeSkeleton,
-  passthrough as skeletonPassthrough,
-  synchronize as synchronizeSkeleton, tag as skeletonTag,
-  type SkeletonProps,
-} from "./skeleton";
-import type { SkeletonElement } from "../elements/skeleton";
 
 export type ReactStepperProps = StepperProps & StepperEventProps &
   Omit<HTMLAttributes<StepperElement>, keyof StepperProps | keyof StepperEventProps | "defaultValue">;
@@ -63,28 +56,4 @@ export function createReactStep() {
       ...attributes(stepHost, props), class: props.className, ref,
     }, props.children);
   });
-}
-
-export type ReactSkeletonProps = SkeletonProps &
-  Omit<HTMLAttributes<SkeletonElement>, keyof SkeletonProps>;
-
-/** `<m-skeleton>` for React: attributes in, no events, no model. */
-export function createReactSkeleton(): ForwardRefExoticComponent<ReactSkeletonProps & RefAttributes<SkeletonElement>> {
-  const Skeleton = forwardRef<SkeletonElement, ReactSkeletonProps>(function Skeleton(props, ref) {
-    const element = useRef<SkeletonElement | null>(null);
-    useClientLayoutEffect(() => {
-      const node = element.current;
-      if (node) {
-        initializeSkeleton(node, props);
-        synchronizeSkeleton(node, props);
-      }
-    });
-    return createElement(skeletonTag(), {
-      ...skeletonPassthrough(props as Record<string, unknown>),
-      ...skeletonAttributes(props),
-      class: props.className,
-      ref,
-    });
-  });
-  return Skeleton;
 }
