@@ -11,10 +11,15 @@ import { releasePack } from "./release-pack.mjs";
 const EXPECTED_PATHS = [
   "LICENSE",
   "README.md",
+  "dist/adapters/expansion-panel.d.ts",
+  "dist/adapters/react-expansion.d.ts",
   "dist/adapters/react.d.ts",
+  "dist/adapters/solid-expansion.d.ts",
   "dist/adapters/solid.d.ts",
   "dist/adapters/stepper.d.ts",
+  "dist/adapters/svelte-expansion.d.ts",
   "dist/adapters/svelte.d.ts",
+  "dist/adapters/vue-expansion.d.ts",
   "dist/adapters/vue.d.ts",
   "dist/components/autocomplete/api.d.ts",
   "dist/components/autocomplete/autocomplete.css",
@@ -43,6 +48,18 @@ const EXPECTED_PATHS = [
   "dist/components/colorpicker/index.d.ts",
   "dist/components/colorpicker/types.d.ts",
   "dist/components/colorpicker/utils.d.ts",
+  "dist/components/expansion-panel/accordion.d.ts",
+  "dist/components/expansion-panel/api.d.ts",
+  "dist/components/expansion-panel/config.d.ts",
+  "dist/components/expansion-panel/constants.d.ts",
+  "dist/components/expansion-panel/constants.mjs",
+  "dist/components/expansion-panel/expansion-panel.d.ts",
+  "dist/components/expansion-panel/features/withAccordionKeyboard.d.ts",
+  "dist/components/expansion-panel/features/withHeader.d.ts",
+  "dist/components/expansion-panel/features/withRegion.d.ts",
+  "dist/components/expansion-panel/index.d.ts",
+  "dist/components/expansion-panel/index.mjs",
+  "dist/components/expansion-panel/types.d.ts",
   "dist/components/form/config.d.ts",
   "dist/components/form/constants.d.ts",
   "dist/components/form/constants.mjs",
@@ -103,9 +120,14 @@ const EXPECTED_PATHS = [
   "dist/elements/autocomplete-css.mjs",
   "dist/elements/autocomplete.d.ts",
   "dist/elements/autocomplete.mjs",
+  "dist/elements/css/expansion-panel.css",
+  "dist/elements/css/expansion-panel.d.ts",
+  "dist/elements/css/expansion-panel.js",
   "dist/elements/css/stepper.css",
   "dist/elements/css/stepper.d.ts",
   "dist/elements/css/stepper.js",
+  "dist/elements/expansion-panel.d.ts",
+  "dist/elements/expansion-panel.mjs",
   "dist/elements/index.d.ts",
   "dist/elements/index.mjs",
   "dist/elements/preupgrade.css",
@@ -118,6 +140,10 @@ const EXPECTED_PATHS = [
   "dist/solid/index.d.ts",
   "dist/solid/index.mjs",
   "dist/styles.css",
+  "dist/svelte/Accordion.svelte",
+  "dist/svelte/Accordion.svelte.d.ts",
+  "dist/svelte/ExpansionPanel.svelte",
+  "dist/svelte/ExpansionPanel.svelte.d.ts",
   "dist/svelte/Step.svelte",
   "dist/svelte/Step.svelte.d.ts",
   "dist/svelte/Stepper.svelte",
@@ -130,10 +156,12 @@ const EXPECTED_PATHS = [
   "package.json",
   "src/styles/components/_autocomplete.scss",
   "src/styles/components/_colorpicker.scss",
+  "src/styles/components/_expansion-panel.scss",
   "src/styles/components/_form.scss",
   "src/styles/components/_stepper.scss",
   "src/styles/core/_layout.scss",
   "src/styles/elements/_autocomplete.scss",
+  "src/styles/elements/_expansion-panel.scss",
   "src/styles/elements/_stepper.scss",
   "src/styles/index.scss",
 ];
@@ -198,7 +226,7 @@ try {
   const specifiers = [];
   const adapters = new Map([["./react", "react"], ["./vue", "vue"], ["./solid", "solid-js"]]);
   for (const [entry, conditions] of Object.entries(pkg.exports)) {
-    const components = entry.includes("*") ? ["form", "colorpicker", "autocomplete", "stepper"] : [""];
+    const components = entry.includes("*") ? ["form", "colorpicker", "autocomplete", "stepper", "expansion-panel"] : [""];
     for (const component of components) {
       const paths = typeof conditions === "string" ? [conditions] : Object.values(conditions);
       for (const path of paths) {
@@ -209,7 +237,7 @@ try {
       }
     }
   }
-  assert.equal(specifiers.length, 15);
+  assert.equal(specifiers.length, 19);
   run(process.execPath, ["--input-type=module", "-e", `
     import assert from 'node:assert/strict';
     import { createRequire } from 'node:module';

@@ -41,5 +41,7 @@ jobs:
         run: bun run check:autocomplete
       - name: Stepper browser behavior
         run: bun run check:stepper
+      - name: Expansion panel browser behavior
+        run: bun run check:expansion-panel
       - name: Stepper adapters in Chromium
         run: bun run check:stepper-adapters

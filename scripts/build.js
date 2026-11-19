@@ -56,6 +56,31 @@ const MODULES = [
     outDir: "dist/components/autocomplete",
   },
   {
+    name: "expansion panel",
+    entry: "src/components/expansion-panel/index.ts",
+    outDir: "dist/components/expansion-panel",
+  },
+  {
+    name: "expansion panel constants",
+    entry: "src/components/expansion-panel/constants.ts",
+    outDir: "dist/components/expansion-panel",
+    basename: "constants",
+  },
+  {
+    name: "expansion panel element",
+    entry: "src/elements/expansion-panel.ts",
+    outDir: "dist/elements",
+    basename: "expansion-panel",
+    plugins: [{
+      name: "reuse-expansion-factories",
+      setup(build) {
+        build.onResolve({ filter: /^\.\.\/components\/expansion-panel$/ }, () => ({
+          path: "../components/expansion-panel/index.mjs", external: true,
+        }));
+      },
+    }],
+  },
+  {
     name: "autocomplete constants",
     entry: "src/components/autocomplete/constants.ts",
     outDir: "dist/components/autocomplete",
@@ -220,27 +245,33 @@ const buildStyles = async () => {
 const buildElementStyles = async () => {
   const dir = join(DIST_DIR, "elements/css");
   await mkdir(dir, { recursive: true });
-  const source = "src/styles/components/_stepper.scss";
-  const result = Bun.spawn(
-    ["npx", "sass", source, "--style=compressed", "--no-source-map", "--load-path=node_modules"],
-    { cwd: ROOT_DIR, stdio: ["inherit", "pipe", "pipe"] },
-  );
-  const css = await new Response(result.stdout).text();
-  const stderr = await new Response(result.stderr).text();
-  if ((await result.exited) !== 0) {
-    console.error("❌ Element stylesheet build failed");
-    if (stderr.trim()) console.error("STDERR:", stderr);
-    return false;
+  const entries = [
+    { name: "stepper", source: "src/styles/components/_stepper.scss" },
+    { name: "expansion-panel", source: "src/styles/components/_expansion-panel.scss" },
+  ];
+  for (const { name, source } of entries) {
+    const result = Bun.spawn(
+      ["npx", "sass", source, "--style=compressed", "--no-source-map", "--load-path=node_modules"],
+      { cwd: ROOT_DIR, stdio: ["inherit", "pipe", "pipe"] },
+    );
+    const css = await new Response(result.stdout).text();
+    const stderr = await new Response(result.stderr).text();
+    if ((await result.exited) !== 0) {
+      console.error(`❌ Element stylesheet build failed: ${name}`);
+      if (stderr.trim()) console.error("STDERR:", stderr);
+      return false;
+    }
+    await Bun.write(join(dir, `${name}.css`), css);
+    await Bun.write(
+      join(dir, `${name}.js`),
+      // The shadow base an element adopts first: material's ripple sheet
+      'import "material/elements/css/ripple";\n' +
+        'import { registerStyles } from "material/elements";\n' +
+        `registerStyles({ ${JSON.stringify(name)}: ${JSON.stringify(css)} });\n`,
+    );
+    await Bun.write(join(dir, `${name}.d.ts`), "export {};\n");
+    console.log(`  Element stylesheet (${name}): ${(css.length / 1024).toFixed(2)} KB`);
   }
-  await Bun.write(join(dir, "stepper.css"), css);
-  await Bun.write(
-    join(dir, "stepper.js"),
-    // The shadow base an element adopts first: material's ripple sheet
-    'import "material/elements/css/ripple";\n' +
-      'import { registerStyles } from "material/elements";\n' +
-      `registerStyles({ stepper: ${JSON.stringify(css)} });\n`,
-  );
-  await Bun.write(join(dir, "stepper.d.ts"), "export {};\n");
   // The named subpath the docs use re-exports the elements entry; keeping it a
   // file of its own lets a bundler resolve the subpath without the shim being
   // a second copy of the code.
@@ -248,7 +279,6 @@ const buildElementStyles = async () => {
     join(DIST_DIR, "elements/stepper.mjs"),
     'export { stepperElement, stepDeclaration, defineStepper, stepperElementEventNames } from "./index.mjs";\n',
   );
-  console.log(`  Element stylesheet: ${(css.length / 1024).toFixed(2)} KB`);
   return true;
 };
 
