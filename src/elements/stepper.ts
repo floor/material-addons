@@ -114,6 +114,7 @@ const stepperSpec = {
       update: (c, value) => c.element.setAttribute("aria-label", value === null ? "Progress" : String(value)),
     },
     disabled: { type: "boolean", config: "disabled", update: (c, value) => void (value ? c.disable() : c.enable()) },
+    display: { type: "string", config: "display" },
   },
   properties: {
     value: { get: (c) => c.getValue(), set: (c, value) => void c.setValue(value === null || value === undefined ? null : String(value)), config: "value" },
@@ -204,6 +205,7 @@ export type StepperElement = HTMLElement & {
   noReportValidity: boolean;
   optionalSupportingText: string | null;
   disabled: boolean;
+  display: string | null;
   next: () => Promise<boolean>;
   prev: () => Promise<boolean>;
   goTo: (target: number | string) => Promise<boolean>;

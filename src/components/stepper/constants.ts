@@ -70,6 +70,10 @@ export const STEPPER_CLASSES = {
   PANEL_INNER: "stepper__panel-inner",
   PANEL_BODY: "stepper__panel-body",
   PANEL_ACTIONS: "stepper__panel-actions",
+  COUNT: "stepper__count",
+  PROGRESS: "stepper__progress",
+  PROGRESS_BAR: "stepper__progress-bar",
+  PROGRESS_LABEL: "stepper__progress-label",
 } as const;
 
 /** Root and item modifiers, without the prefix */
@@ -90,7 +94,21 @@ export const STEPPER_MODIFIERS = {
   ERROR: "stepper__item--error",
   DISABLED_ITEM: "stepper__item--disabled",
   VALIDATING_ITEM: "stepper__item--validating",
+  DISPLAY_LABELS: "stepper--display-labels",
+  DISPLAY_COUNT: "stepper--display-count",
+  DISPLAY_DOTS: "stepper--display-dots",
+  DISPLAY_PROGRESS: "stepper--display-progress",
 } as const;
+
+/** How much of each step the header list shows */
+export const STEPPER_DISPLAYS = {
+  LABELS: "labels",
+  COUNT: "count",
+  DOTS: "dots",
+  PROGRESS: "progress",
+} as const;
+
+export type StepperDisplay = (typeof STEPPER_DISPLAYS)[keyof typeof STEPPER_DISPLAYS];
 
 /** Defaults every option falls back to */
 export const STEPPER_DEFAULTS = {
@@ -102,6 +120,7 @@ export const STEPPER_DEFAULTS = {
   REPORT_VALIDITY: true,
   VALIDATE_ON_FORWARD: true,
   FOCUS_ON_ACTION: "panel",
+  DISPLAY: STEPPER_DISPLAYS.LABELS,
   OPTIONAL_SUPPORTING_TEXT: "Optional",
   ARIA_LABEL: "Progress",
   COMPONENT_NAME: "stepper",

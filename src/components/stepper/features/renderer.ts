@@ -81,6 +81,36 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
   live.setAttribute("aria-atomic", "true");
   element.appendChild(live);
 
+  // A compact display replaces the header list with a read-only status line;
+  // "dots" keeps the list and only restyles it (see the stylesheet)
+  let count: HTMLElement | null = null;
+  let progress: HTMLElement | null = null;
+  let progressLabel: HTMLElement | null = null;
+  let progressFill: HTMLElement | null = null;
+  if (settings.display === "count") {
+    count = document.createElement("p");
+    count.className = cls(STEPPER_CLASSES.COUNT);
+    // The header list stays for assistive technology; this line repeats it
+    count.setAttribute("aria-hidden", "true");
+    element.appendChild(count);
+  } else if (settings.display === "progress") {
+    progress = document.createElement("div");
+    progress.className = cls(STEPPER_CLASSES.PROGRESS);
+    progress.setAttribute("role", "progressbar");
+    progress.setAttribute("aria-label", settings.ariaLabel);
+    progress.setAttribute("aria-valuemin", "0");
+    const bar = document.createElement("div");
+    bar.className = cls(STEPPER_CLASSES.PROGRESS_BAR);
+    progressFill = document.createElement("span");
+    progressFill.setAttribute("aria-hidden", "true");
+    bar.appendChild(progressFill);
+    progressLabel = document.createElement("span");
+    progressLabel.className = cls(STEPPER_CLASSES.PROGRESS_LABEL);
+    progressLabel.setAttribute("aria-hidden", "true");
+    progress.append(bar, progressLabel);
+    element.appendChild(progress);
+  }
+
   const list = document.createElement("ol");
   list.className = cls(STEPPER_CLASSES.LIST);
   element.appendChild(list);
@@ -196,6 +226,14 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
     element.classList.toggle(cls(STEPPER_MODIFIERS.VERTICAL), vertical);
     element.classList.toggle(cls(STEPPER_MODIFIERS.HORIZONTAL), !vertical);
     element.classList.toggle(cls(STEPPER_MODIFIERS.VALIDATING), steps.some((step) => step.validating));
+    const active = steps.find((step) => step.active);
+    if (count) count.textContent = active ? `Step ${active.index + 1} of ${steps.length}: ${active.label}` : "";
+    if (progress && active) {
+      progress.setAttribute("aria-valuemax", String(steps.length));
+      progress.setAttribute("aria-valuenow", String(active.index + 1));
+      if (progressLabel) progressLabel.textContent = `Step ${active.index + 1} of ${steps.length}: ${active.label}`;
+      if (progressFill) progressFill.style.width = `${((active.index + 1) / Math.max(steps.length, 1)) * 100}%`;
+    }
     // The layout options travel with the state, not only the creation classes
     element.classList.toggle(
       cls(STEPPER_MODIFIERS.LABEL_BOTTOM),
@@ -214,6 +252,10 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
       settings.headerPlacement !== "bottom",
     );
     element.classList.toggle(cls(STEPPER_MODIFIERS.AUTO), settings.orientation === "auto");
+    element.classList.toggle(cls(STEPPER_MODIFIERS.DISPLAY_LABELS), settings.display === "labels");
+    element.classList.toggle(cls(STEPPER_MODIFIERS.DISPLAY_COUNT), settings.display === "count");
+    element.classList.toggle(cls(STEPPER_MODIFIERS.DISPLAY_DOTS), settings.display === "dots");
+    element.classList.toggle(cls(STEPPER_MODIFIERS.DISPLAY_PROGRESS), settings.display === "progress");
     const off = element.getAttribute("aria-disabled") === "true";
 
     steps.forEach((step, index) => {

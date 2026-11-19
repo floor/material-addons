@@ -285,6 +285,78 @@
   display: block;
 }
 
+// Compact displays. "count" and "progress" replace the header list with a
+// read-only status line; "dots" keeps the headers interactive and moves the
+// labels into the accessible name only.
+.mtrl-stepper__count,
+.mtrl-stepper__progress {
+  display: none;
+  margin: 0;
+  padding: var(--mtrl-stepper-header-padding);
+  color: var(--mtrl-stepper-label-active-color);
+  font-weight: var(--mtrl-stepper-label-active-weight);
+}
+
+.mtrl-stepper--display-count > .mtrl-stepper__count,
+.mtrl-stepper--display-progress > .mtrl-stepper__progress {
+  display: block;
+}
+
+.mtrl-stepper--display-count > .mtrl-stepper__list,
+.mtrl-stepper--display-progress > .mtrl-stepper__list {
+  display: none;
+}
+
+.mtrl-stepper__progress-label {
+  color: inherit;
+}
+
+.mtrl-stepper__progress-bar {
+  height: 4px;
+  margin-bottom: 8px;
+  overflow: hidden;
+  border-radius: var(--mtrl-stepper-indicator-shape);
+  background: var(--mtrl-stepper-indicator-inactive-bg);
+}
+
+.mtrl-stepper__progress-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--mtrl-stepper-indicator-active-bg);
+  transition: width var(--mtrl-stepper-transition-duration) var(--mtrl-stepper-transition-easing);
+}
+
+.mtrl-stepper--display-dots .mtrl-stepper__label-group {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.mtrl-stepper--display-dots .mtrl-stepper__header {
+  padding: 8px;
+}
+
+.mtrl-stepper--display-dots .mtrl-stepper__indicator {
+  width: 8px;
+  height: 8px;
+  font-size: 0;
+}
+
+.mtrl-stepper--display-dots .mtrl-stepper__indicator svg {
+  display: none;
+}
+
+.mtrl-stepper--display-dots .mtrl-stepper__item--active .mtrl-stepper__indicator {
+  width: 24px;
+}
+
+.mtrl-stepper--display-dots .mtrl-stepper__connector {
+  min-width: 16px;
+}
+
 // Forced colours: the glyph and the state carry the meaning, so the tokens are
 // replaced with system colours that stay apart
 @media (forced-colors: active) {

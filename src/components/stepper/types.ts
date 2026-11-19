@@ -158,6 +158,13 @@ export interface StepperConfig {
   /** Move focus into the newly shown panel after an action button */
   /** Where focus goes after a panel action changes the step (default: "panel") */
   focusOnAction?: "none" | "panel" | "heading";
+  /**
+   * How much of each step the header list shows (default: "labels"). "dots"
+   * restyles the headers to dots and keeps them interactive; "count" and
+   * "progress" replace the list with a read-only status line, and panel
+   * actions are how the user moves.
+   */
+  display?: "labels" | "count" | "dots" | "progress";
   /** Supporting text a step shows when it is optional and has none of its own */
   optionalSupportingText?: string;
   /** The root's accessible name */
