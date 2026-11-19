@@ -118,7 +118,8 @@ for (const link of links) {
 // While material 3 is a pre-release it installs from the `next` tag; once
 // package.json's peer range no longer names a pre-release, the tag goes.
 const peer = manifest.peerDependencies.material;
-const install = /-/.test(peer) ? "npm install material-addons material@next" : "npm install material-addons material";
+const tag = /^\d+\.\d+\.\d+$/.test(peer) ? `@${peer}` : /-/.test(peer) ? "@next" : "";
+const install = `npm install material-addons material${tag}`;
 const installed = text.split("<!-- install -->")[1]?.split("<!-- /install -->")[0]?.split("\n").filter((line) => line.startsWith("npm install"));
 if (!installed || installed.length !== 1 || installed[0] !== install) {
   fail(`the install line is ${JSON.stringify(installed)}; the peer range is ${peer}, so it is "${install}"`);

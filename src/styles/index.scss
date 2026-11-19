@@ -7,6 +7,8 @@
 // Import component styles (only addons-specific enhancements)
 @forward "./components/form";
 @forward "./components/colorpicker";
+@forward "./components/autocomplete";
+@forward "./elements/autocomplete";
 
 // Future addons-specific component styles will be added here
 // @forward "./components/datagrid";      // Advanced grid functionality

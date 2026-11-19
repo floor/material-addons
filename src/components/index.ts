@@ -49,3 +49,5 @@ export {
   normalizeHex,
   getContrastColor,
 } from "./colorpicker/utils";
+
+export * from "./autocomplete";

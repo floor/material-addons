@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { gzipSync } from "node:zlib";
 import { releasePack } from "./release-pack.mjs";
 
 // Recorded before the first commit on this branch, from
@@ -10,6 +11,17 @@ import { releasePack } from "./release-pack.mjs";
 const EXPECTED_PATHS = [
   "LICENSE",
   "README.md",
+  "dist/components/autocomplete/api.d.ts",
+  "dist/components/autocomplete/autocomplete.css",
+  "dist/components/autocomplete/autocomplete.d.ts",
+  "dist/components/autocomplete/config.d.ts",
+  "dist/components/autocomplete/constants.d.ts",
+  "dist/components/autocomplete/constants.mjs",
+  "dist/components/autocomplete/features/withListbox.d.ts",
+  "dist/components/autocomplete/features/withTextField.d.ts",
+  "dist/components/autocomplete/index.d.ts",
+  "dist/components/autocomplete/index.mjs",
+  "dist/components/autocomplete/types.d.ts",
   "dist/components/colorpicker/api.d.ts",
   "dist/components/colorpicker/colorpicker.d.ts",
   "dist/components/colorpicker/config.d.ts",
@@ -69,13 +81,20 @@ const EXPECTED_PATHS = [
   "dist/core/layout/jsx.d.ts",
   "dist/core/layout/schema.d.ts",
   "dist/core/layout/types.d.ts",
+  "dist/elements/autocomplete-css.d.ts",
+  "dist/elements/autocomplete-css.mjs",
+  "dist/elements/autocomplete.d.ts",
+  "dist/elements/autocomplete.mjs",
+  "dist/elements/preupgrade.css",
   "dist/index.d.ts",
   "dist/index.mjs",
   "dist/styles.css",
   "package.json",
+  "src/styles/components/_autocomplete.scss",
   "src/styles/components/_colorpicker.scss",
   "src/styles/components/_form.scss",
   "src/styles/core/_layout.scss",
+  "src/styles/elements/_autocomplete.scss",
   "src/styles/index.scss",
 ];
 
@@ -127,30 +146,38 @@ try {
 
   const specifiers = [];
   for (const [entry, conditions] of Object.entries(pkg.exports)) {
-    const components = entry.includes("*") ? ["form", "colorpicker"] : [""];
+    const components = entry.includes("*") ? ["form", "colorpicker", "autocomplete"] : [""];
     for (const component of components) {
       const paths = typeof conditions === "string" ? [conditions] : Object.values(conditions);
       for (const path of paths) {
         assert.ok(existsSync(join(addon, path.replace("*", component))), `Missing export: ${path}`);
       }
-      if (entry !== "./styles") {
+      if (typeof conditions !== "string") {
         specifiers.push(entry === "." ? pkg.name : pkg.name + entry.slice(1).replace("*", component));
       }
     }
   }
-  assert.equal(specifiers.length, 6);
+  assert.equal(specifiers.length, 10);
   run(process.execPath, ["--input-type=module", "-e", `
     import assert from 'node:assert/strict';
     import { createRequire } from 'node:module';
     const require = createRequire(import.meta.url);
     for (const specifier of ${JSON.stringify(specifiers)}) {
       const esm = await import(specifier);
-      assert.ok(Object.keys(esm).length, specifier + ' has no exports');
+      if (!specifier.includes('/elements/css/')) assert.ok(Object.keys(esm).length, specifier + ' has no exports');
       // ESM only, as material 3: no require condition, so require does not resolve
       assert.throws(() => require(specifier), { code: 'ERR_PACKAGE_PATH_NOT_EXPORTED' }, specifier);
     }
   `], fixture);
   console.log(`Packed ${pkg.name}@${pkg.version}: manifest has no scripts or devDependencies; ${packed.files.length} paths; ${specifiers.length} entry points import as ESM and refuse require.`);
+  for (const path of [
+    "dist/components/autocomplete/index.mjs", "dist/elements/autocomplete.mjs",
+    "dist/components/autocomplete/autocomplete.css", "dist/elements/preupgrade.css",
+    "dist/elements/autocomplete-css.mjs",
+  ]) {
+    const bytes = readFileSync(join(addon, path));
+    console.log(`${path}: ${bytes.length} B raw, ${gzipSync(bytes, { level: 9 }).length} B gzip`);
+  }
 } finally {
   rmSync(fixture, { recursive: true, force: true });
 }

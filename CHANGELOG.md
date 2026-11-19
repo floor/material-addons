@@ -2,6 +2,16 @@
 
 Published as `mtrl-addons` up to 0.9.x. This file has written notes from 0.8.0, and the commit history below for everything earlier.
 
+## [Unreleased]
+
+### Added
+
+- Add an autocomplete factory and client custom elements with keyboard selection, free-form or strict values, and optional async suggestions.
+
+### Changed
+
+- Require the tested Material 3.15.1 peer for the autocomplete element and listbox styling contracts.
+
 ## [3.0.0] - 2026-10-04
 
 The first stable release for material 3, and everything since 0.9.0. There
