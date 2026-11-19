@@ -4,7 +4,7 @@ A form builder, a stepper, an autocomplete, a colour picker, a layout schema and
 
 - **Form.** Builds a set of fields from a layout and keeps their data: it reads and sets it, knows when it has changed, validates it and submits it.
 - **Autocomplete.** An editable text field with a suggestion popup, keyboard navigation and optional async suggestions.
-- **Stepper.** An ordered list of steps over one panel at a time, with linear or free progression and a validation pipeline.
+- **Stepper.** An ordered list of steps over one panel at a time, with linear or free progression, a validation pipeline and compact displays.
 - **Colour picker.** An HSV area, a hue slider, swatches, a hex field and an eyedropper; inline, as a dropdown or as a dialog.
 - **Layout.** Builds a tree of elements and components from an array, and gives each named component back.
 - **Gestures.** Tap, swipe, long press, pan, pinch and rotate, on touch and mouse.
@@ -15,10 +15,10 @@ The form and the colour picker have a page with live examples on [md3.io](https:
 
 <!-- install -->
 ```bash
-npm install material-addons material@3.15.1
+npm install material-addons material
 ```
 
-This release uses `material` 3.15.1.
+This package's peer range is `material` `^3.15.1`.
 <!-- /install -->
 
 Both packages are ESM only. The examples below import stylesheets, so they need a bundler that handles CSS imports, such as Vite.
@@ -372,15 +372,19 @@ The gestures:
 
 | Import | From |
 |--------|------|
-| Component factories and colour conversions, plus the layout and gestures | `material-addons` |
-| Autocomplete factory and types | `material-addons/components/autocomplete` |
-| Autocomplete and option elements | `material-addons/elements/autocomplete` |
-| Autocomplete shadow styles | `material-addons/elements/css/autocomplete` |
-| Autocomplete pre-upgrade styles | `material-addons/elements/preupgrade.css` |
+| The form, the stepper, the autocomplete, the colour picker, the colour conversions, plus the layout and gestures | `material-addons` |
+| The autocomplete factory and types | `material-addons/components/autocomplete` |
+| The autocomplete and option elements | `material-addons/elements/autocomplete` |
+| The autocomplete's shadow styles | `material-addons/elements/css/autocomplete` |
+| The pre-upgrade styles | `material-addons/elements/preupgrade.css` |
+| The stepper factory | `material-addons/components/stepper` |
 | The layout | `material-addons/layout` |
 | The gestures | `material-addons/gestures` |
-| Component factories and colour conversions | `material-addons/components` |
-| Stepper factory and types | `material-addons/components/stepper` |
+| The same components, without the layout and gesture exports | `material-addons/components` |
+| The React adapter | `material-addons/react` |
+| The Vue adapter | `material-addons/vue` |
+| The Solid adapter | `material-addons/solid` |
+| The Svelte 5 adapter | `material-addons/svelte` |
 | The stepper element | `material-addons/elements`, `material-addons/elements/stepper` |
 | The stepper's shadow styles | `material-addons/elements/css/stepper` |
 | A component's constants | `material-addons/components/form/constants`, `material-addons/components/colorpicker/constants`, `material-addons/components/autocomplete/constants`, `material-addons/components/stepper/constants` |
