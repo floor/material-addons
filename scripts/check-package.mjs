@@ -54,6 +54,19 @@ const EXPECTED_PATHS = [
   "dist/components/form/types.d.ts",
   "dist/components/index.d.ts",
   "dist/components/index.mjs",
+  "dist/components/stepper/api.d.ts",
+  "dist/components/stepper/config.d.ts",
+  "dist/components/stepper/constants.d.ts",
+  "dist/components/stepper/constants.mjs",
+  "dist/components/stepper/features/index.d.ts",
+  "dist/components/stepper/features/keyboard.d.ts",
+  "dist/components/stepper/features/navigation.d.ts",
+  "dist/components/stepper/features/orientation.d.ts",
+  "dist/components/stepper/features/renderer.d.ts",
+  "dist/components/stepper/index.d.ts",
+  "dist/components/stepper/index.mjs",
+  "dist/components/stepper/stepper.d.ts",
+  "dist/components/stepper/types.d.ts",
   "dist/core/compose/features/gestures/index.d.ts",
   "dist/core/compose/features/gestures/longpress.d.ts",
   "dist/core/compose/features/gestures/pan.d.ts",
@@ -85,7 +98,14 @@ const EXPECTED_PATHS = [
   "dist/elements/autocomplete-css.mjs",
   "dist/elements/autocomplete.d.ts",
   "dist/elements/autocomplete.mjs",
+  "dist/elements/css/stepper.css",
+  "dist/elements/css/stepper.d.ts",
+  "dist/elements/css/stepper.js",
+  "dist/elements/index.d.ts",
+  "dist/elements/index.mjs",
   "dist/elements/preupgrade.css",
+  "dist/elements/stepper.d.ts",
+  "dist/elements/stepper.mjs",
   "dist/index.d.ts",
   "dist/index.mjs",
   "dist/styles.css",
@@ -93,8 +113,10 @@ const EXPECTED_PATHS = [
   "src/styles/components/_autocomplete.scss",
   "src/styles/components/_colorpicker.scss",
   "src/styles/components/_form.scss",
+  "src/styles/components/_stepper.scss",
   "src/styles/core/_layout.scss",
   "src/styles/elements/_autocomplete.scss",
+  "src/styles/elements/_stepper.scss",
   "src/styles/index.scss",
 ];
 
@@ -146,7 +168,7 @@ try {
 
   const specifiers = [];
   for (const [entry, conditions] of Object.entries(pkg.exports)) {
-    const components = entry.includes("*") ? ["form", "colorpicker", "autocomplete"] : [""];
+    const components = entry.includes("*") ? ["form", "colorpicker", "autocomplete", "stepper"] : [""];
     for (const component of components) {
       const paths = typeof conditions === "string" ? [conditions] : Object.values(conditions);
       for (const path of paths) {
@@ -157,7 +179,7 @@ try {
       }
     }
   }
-  assert.equal(specifiers.length, 10);
+  assert.equal(specifiers.length, 15);
   run(process.execPath, ["--input-type=module", "-e", `
     import assert from 'node:assert/strict';
     import { createRequire } from 'node:module';

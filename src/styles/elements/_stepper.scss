@@ -1,0 +1,14 @@
+// Before the element definitions arrive: keep the box and hide every step but
+// the first, so unupgraded content neither stacks nor collapses.
+m-stepper:not(:defined) {
+  display: block;
+  contain: layout;
+}
+
+m-step:not(:defined) {
+  display: block;
+}
+
+m-stepper:not(:defined) > m-step:not(:first-of-type) {
+  display: none;
+}

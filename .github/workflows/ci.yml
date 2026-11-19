@@ -37,3 +37,5 @@ jobs:
         run: bun run readme:check
       - name: Autocomplete browser behavior
         run: bun run check:autocomplete
+      - name: Stepper browser behavior
+        run: bun run check:stepper
