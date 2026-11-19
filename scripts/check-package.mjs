@@ -187,6 +187,13 @@ try {
   // The published peer tracks the tested release with a caret, as the release
   // brief requires: the development dependency may pin, the peer may not.
   assert.equal(pkg.peerDependencies.material, `^${source.devDependencies.material}`);
+  // The Svelte entry is a bundler condition first and an import second, as
+  // Material's own entry is: a plain import (md3.io's) must resolve it too.
+  assert.equal(pkg.exports["./svelte"].svelte, "./dist/svelte/index.js");
+  assert.equal(pkg.exports["./svelte"].import, "./dist/svelte/index.js");
+  // An open major range would claim a Solid 2 that this package was never
+  // tested against; the peer is the tested 1.x.
+  assert.equal(pkg.peerDependencies["solid-js"], ">=1.8 <2");
 
   const specifiers = [];
   const adapters = new Map([["./react", "react"], ["./vue", "vue"], ["./solid", "solid-js"]]);
