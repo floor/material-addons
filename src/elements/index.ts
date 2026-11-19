@@ -11,3 +11,9 @@
 
 export { stepperElement, stepDeclaration, defineStepper, stepperElementEventNames } from "./stepper";
 export type { StepperElement, StepAttributes, StepperElementEventMap } from "./stepper";
+export {
+  expansionPanelElement, accordionElement, expansionPanelEventNames, defineExpansionPanel,
+} from "./expansion-panel";
+export type {
+  AccordionElement, ExpansionPanelElement, ExpansionPanelElementEventMap,
+} from "./expansion-panel";
