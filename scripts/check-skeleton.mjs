@@ -156,6 +156,75 @@ try {
   assert.equal(swap.busy, false, "reveal clears the region's aria-busy");
   console.log(`reveal: ${swap.before}px -> ${swap.after}px, aria-busy cleared`);
 
+  // Multi-line text: the root holds every line, nothing overflows, and the
+  // bars carry the sweep (the shape paints nothing of its own).
+  const multi = await page.evaluate(() => {
+    const { createSkeleton } = window.skeleton;
+    document.body.innerHTML = "";
+    const skeleton = createSkeleton({ variant: "text", lines: 3 });
+    document.body.appendChild(skeleton.element);
+    const root = skeleton.element;
+    const shape = root.querySelector(".mtrl-skeleton__shape");
+    const bars = [...root.querySelectorAll(".mtrl-skeleton__line")];
+    const rootBox = root.getBoundingClientRect();
+    const shapeBox = shape.getBoundingClientRect();
+    const shapeStyle = getComputedStyle(shape);
+    return {
+      rootHeight: rootBox.height,
+      shapeHeight: shapeBox.height,
+      bars: bars.length,
+      shapeBackground: shapeStyle.backgroundImage,
+      barBackground: getComputedStyle(bars[0]).backgroundImage,
+      shapeAnimation: shapeStyle.animationName,
+      barAnimation: getComputedStyle(bars[0]).animationName,
+    };
+  });
+  const lineGap = 8;
+  const singleLine = await page.evaluate(() => {
+    const { createSkeleton } = window.skeleton;
+    document.body.innerHTML = "";
+    const skeleton = createSkeleton({ variant: "text" });
+    document.body.appendChild(skeleton.element);
+    const height = skeleton.element.getBoundingClientRect().height;
+    skeleton.destroy();
+    return height;
+  });
+  const expected = 3 * singleLine + 2 * lineGap;
+  assert.equal(multi.bars, 3, "three bars");
+  assert.ok(
+    Math.abs(multi.rootHeight - expected) <= 1,
+    `the root holds three lines and two gaps: ${multi.rootHeight} (expected ${expected})`,
+  );
+  assert.ok(multi.shapeHeight <= multi.rootHeight + 1, "the shape fits inside the root");
+  assert.equal(multi.shapeBackground, "none", "the multi-line shape paints nothing of its own");
+  assert.notEqual(multi.barBackground, "none", "each bar carries the sweep gradient");
+  assert.equal(multi.shapeAnimation, "none", "the multi-line shape does not animate");
+  assert.notEqual(multi.barAnimation, "none", "the bars animate");
+  console.log(`multi-line: root ${multi.rootHeight}px = 3 x ${singleLine}px + 2 gaps; the bars carry the sweep`);
+
+  // A skeleton built without a parent still gets its wave delay once the
+  // caller appends it.
+  const appended = await page.evaluate(async () => {
+    const { createSkeleton } = window.skeleton;
+    document.body.innerHTML = "";
+    const group = document.createElement("div");
+    group.setAttribute("data-mtrl-skeleton-wave", "");
+    group.style.display = "flex";
+    group.style.gap = "24px";
+    document.body.appendChild(group);
+    // Created first, appended after: the read happens on connect.
+    const first = createSkeleton({ variant: "circle" });
+    const second = createSkeleton({ variant: "circle" });
+    group.appendChild(first.element);
+    group.appendChild(second.element);
+    const frame = (resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve));
+    await new Promise(frame);
+    const delayOf = (element) => parseFloat(getComputedStyle(element).getPropertyValue("--mtrl-skeleton-delay"));
+    return { first: delayOf(first.element), second: delayOf(second.element) };
+  });
+  assert.ok(appended.second > appended.first, `the appended skeleton's delay is computed on connect (${appended.first} -> ${appended.second})`);
+  console.log(`appended after creation: delays ${appended.first}ms -> ${appended.second}ms`);
+
   // The element: attributes reach the placeholder, no-busy opts out.
   const element = await page.evaluate(() => {
     const { defineSkeleton } = window.skeleton;

@@ -65,19 +65,37 @@ $component: "mtrl-skeleton";
   &[data-size="medium"] { --#{$component}-block-size: var(--mtrl-sys-typescale-body-medium-line-height, 1.5rem); }
   &[data-size="large"] { --#{$component}-block-size: var(--mtrl-sys-typescale-body-large-line-height, 1.75rem); }
 
-  .#{$component}__line {
-    flex: none;
-    block-size: var(--#{$component}-block-size);
-    border-radius: inherit;
-    background: inherit;
-  }
+  // The root holds every line: lines * the line height plus the gaps
+  // between them, so nothing overflows the box the real text will take.
+  block-size: calc(
+    (var(--#{$component}-block-size) + var(--#{$component}-line-gap, 8px)) *
+    var(--#{$component}-line-count, 1) - var(--#{$component}-line-gap, 8px)
+  );
+}
 
-  // The lines are bars of the shape's own fill; the moving band belongs to
-  // the shape, so the lines draw the fill only and the sweep stays one.
-  .#{$component}__line {
-    background: var(--#{$component}-fill, var(--mtrl-sys-color-surface-container-highest));
-    animation: none;
-  }
+// One line is the shape itself, painted by the shape's own rule. More lines
+// are bars the shape lays out; the shape stops painting and each bar carries
+// the same fill and sweep, on the group's one delay.
+.#{$component}[data-variant="text"][data-lines="multi"] .#{$component}__shape {
+  background: none;
+  animation: none;
+}
+
+.#{$component}__line {
+  flex: none;
+  block-size: var(--#{$component}-block-size);
+  border-radius: var(--#{$component}-shape, 4px);
+  background:
+    linear-gradient(
+      100deg,
+      transparent 20%,
+      var(--#{$component}-highlight, var(--mtrl-sys-color-surface-container-low)) 45%,
+      transparent 70%
+    ) no-repeat,
+    var(--#{$component}-fill, var(--mtrl-sys-color-surface-container-highest));
+  background-size: 60% 100%, 100% 100%;
+  animation: #{$component}-wave var(--#{$component}-pulse-duration) linear infinite;
+  animation-delay: var(--#{$component}-delay);
 }
 
 .#{$component}[data-variant="rect"] {

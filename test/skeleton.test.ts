@@ -18,6 +18,10 @@ beforeAll(() => {
   (globalThis as any).document = dom.window.document;
   (globalThis as any).Element = dom.window.Element;
   (globalThis as any).HTMLElement = dom.window.HTMLElement;
+  // The wave reads geometry on the frame after connect; give the module the
+  // jsdom frame, as the browser would give it its own.
+  (globalThis as any).requestAnimationFrame = dom.window.requestAnimationFrame.bind(dom.window);
+  (globalThis as any).getComputedStyle = dom.window.getComputedStyle;
 });
 
 afterAll(() => {
@@ -71,6 +75,33 @@ describe("skeleton primitive", () => {
     expect(skeleton.isBusy()).toBe(false);
     skeleton.setBusy(true);
     expect(skeleton.element.getAttribute("aria-busy")).toBe("true");
+    skeleton.destroy();
+  });
+
+  test("multi-line text sizes the root to the line count", async () => {
+    const { createSkeleton } = await import("../src/components/skeleton");
+    const three = createSkeleton({ variant: "text", lines: 3 });
+    expect(three.element.style.getPropertyValue("--mtrl-skeleton-line-count")).toBe("3");
+    expect(three.element.dataset.lines).toBe("multi");
+    three.setLines(1);
+    expect(three.element.style.getPropertyValue("--mtrl-skeleton-line-count")).toBe("1");
+    expect(three.element.dataset.lines).toBeUndefined();
+    three.destroy();
+    const circle = createSkeleton({ variant: "circle", lines: 3 });
+    expect(circle.element.style.getPropertyValue("--mtrl-skeleton-line-count")).toBe("1");
+    circle.destroy();
+  });
+
+  test("the wave computes when the skeleton is appended after creation", async () => {
+    const { createSkeleton } = await import("../src/components/skeleton");
+    const skeleton = createSkeleton({ variant: "rect" });
+    expect(skeleton.element.style.getPropertyValue("--mtrl-skeleton-delay")).toBe("");
+    document.body.appendChild(skeleton.element);
+    // The read happens on the first frame after the element is connected,
+    // not only on the first frame after creation.
+    const frame = (globalThis as any).requestAnimationFrame as (cb: () => void) => number;
+    await new Promise((resolve) => frame(() => frame(resolve)));
+    expect(skeleton.element.style.getPropertyValue("--mtrl-skeleton-delay")).toMatch(/ms$/);
     skeleton.destroy();
   });
 

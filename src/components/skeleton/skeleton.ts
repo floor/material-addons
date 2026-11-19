@@ -79,6 +79,11 @@ const createSkeleton = (config: SkeletonConfig = {}): SkeletonComponent => {
     root.dataset.variant = variant;
     root.dataset.size = size;
     root.dataset.motion = motion;
+    // The stylesheet sizes the root to the line count: a multi-line text
+    // placeholder is lines * line height plus the gaps between them.
+    root.style.setProperty("--mtrl-skeleton-line-count", String(variant === "text" ? lines : 1));
+    if (variant === "text" && lines > 1) root.dataset.lines = "multi";
+    else delete root.dataset.lines;
     shape.textContent = "";
     if (variant === "text" && lines > 1) {
       for (let index = 0; index < lines; index++) {
@@ -103,8 +108,19 @@ const createSkeleton = (config: SkeletonConfig = {}): SkeletonComponent => {
       root.style.setProperty("--mtrl-skeleton-delay", `${Math.round(waveDelayOf(root, duration))}ms`);
     };
     const frame = (globalThis as { requestAnimationFrame?: (callback: () => void) => number }).requestAnimationFrame;
-    if (frame) frame(() => read());
-    else if (root.isConnected) read();
+    if (!frame) {
+      if (root.isConnected) read();
+      return;
+    }
+    // The caller may append the skeleton after creating it; the geometry is
+    // read on the first frame the element is connected, not only the first
+    // frame after creation. The retry is bounded and subscribes to nothing.
+    let waited = 0;
+    const tick = (): void => {
+      if (root.isConnected) read();
+      else if (waited++ < 240) frame(tick);
+    };
+    frame(tick);
   };
 
   const applyBusy = (): void => {
