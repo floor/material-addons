@@ -192,7 +192,8 @@ try {
     page.on("console", (message) => { if (["error", "warning"].includes(message.type())) reported.push(`${message.type()}: ${message.text()}`); });
     try {
       await page.goto(`http://127.0.0.1:${port}/readme-${index}.html`, { waitUntil: "load" });
-      await page.getByText(example.shows, { exact: true }).first().waitFor({ state: "visible", timeout: 10_000 });
+      await page.getByText(example.shows, { exact: true }).filter({ visible: true }).first()
+        .waitFor({ state: "visible", timeout: 10_000 });
       const drawn = await page.locator('[class*="mtrl-"]').evaluateAll(elements => elements.filter(element => {
         const rect = element.getBoundingClientRect();
         return rect.width > 0 && rect.height > 0;
