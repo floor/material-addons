@@ -290,8 +290,8 @@ Measured as standalone minified ESM bundles, gzipped, with `material` external; 
 
 | Artifact | Measured | Target |
 |----------|----------|--------|
-| `createExpansionPanel` and `createAccordion` | 5.0 KB | 1.4 KB |
-| `<m-expansion-panel>` and `<m-accordion>` | 1.8 KB | 0.6 KB |
+| `createExpansionPanel` and `createAccordion` | 5.2 KB | 1.4 KB |
+| `<m-expansion-panel>` and `<m-accordion>` | 1.9 KB | 0.6 KB |
 | The compiled stylesheet | 1.5 KB | 0.9 KB |
 
 The targets were estimates made before the implementation and all three rows exceed them; the row records what was measured.
