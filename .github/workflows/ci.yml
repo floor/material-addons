@@ -35,3 +35,5 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: README examples, as written, against the packed package
         run: bun run readme:check
+      - name: Stepper browser behavior
+        run: bun run check:stepper

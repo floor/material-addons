@@ -1,0 +1,324 @@
+// Stepper: an ordered list of steps over one panel at a time.
+//
+// Every value comes from a `--mtrl-stepper-*` token on the block, mapped to an
+// `--mtrl-sys-*` role, so light and dark themes and a chosen palette apply the
+// same way the rest of material does. The tokens live on the block, not on
+// `:root`: the element renders its own markup inside a shadow root, where a
+// `:root` declaration would not reach.
+
+.mtrl-stepper {
+  --mtrl-stepper-header-padding: 16px;
+  --mtrl-stepper-header-shape: var(--mtrl-sys-shape-corner-medium, 12px);
+  --mtrl-stepper-header-gap: 12px;
+  --mtrl-stepper-indicator-size: 24px;
+  --mtrl-stepper-indicator-shape: var(--mtrl-sys-shape-corner-full, 9999px);
+  --mtrl-stepper-indicator-icon-size: 16px;
+  --mtrl-stepper-indicator-inactive-bg: var(--mtrl-sys-color-surface-container-highest);
+  --mtrl-stepper-indicator-inactive-color: var(--mtrl-sys-color-on-surface-variant);
+  --mtrl-stepper-indicator-active-bg: var(--mtrl-sys-color-primary);
+  --mtrl-stepper-indicator-active-color: var(--mtrl-sys-color-on-primary);
+  // A completed indicator is the active one: same role, kept as its own token
+  --mtrl-stepper-indicator-completed-bg: var(--mtrl-stepper-indicator-active-bg);
+  --mtrl-stepper-indicator-completed-color: var(--mtrl-stepper-indicator-active-color);
+  --mtrl-stepper-indicator-error-bg: var(--mtrl-sys-color-error);
+  --mtrl-stepper-indicator-error-color: var(--mtrl-sys-color-on-error);
+  --mtrl-stepper-label-inactive-weight: var(--mtrl-sys-typescale-body-medium-weight, 400);
+  --mtrl-stepper-label-active-weight: var(--mtrl-sys-typescale-title-small-weight, 500);
+  --mtrl-stepper-label-inactive-color: var(--mtrl-sys-color-on-surface-variant);
+  --mtrl-stepper-label-active-color: var(--mtrl-sys-color-on-surface);
+  --mtrl-stepper-supporting-text-color: var(--mtrl-sys-color-on-surface-variant);
+  --mtrl-stepper-error-color: var(--mtrl-sys-color-error);
+  --mtrl-stepper-connector-thickness: 1px;
+  --mtrl-stepper-connector-color: var(--mtrl-sys-color-outline-variant);
+  --mtrl-stepper-connector-completed-color: var(--mtrl-sys-color-primary);
+  --mtrl-stepper-panel-padding: 16px 24px 24px;
+  --mtrl-stepper-panel-gap: 16px;
+  --mtrl-stepper-actions-height: 48px;
+  --mtrl-stepper-actions-gap: 8px;
+  --mtrl-stepper-transition-duration: var(--mtrl-sys-motion-duration-medium2, 300ms);
+  --mtrl-stepper-transition-easing: var(--mtrl-sys-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1));
+  --mtrl-stepper-disabled-opacity: 0.38;
+
+  display: block;
+  color: var(--mtrl-stepper-label-inactive-color);
+  font-family: var(--mtrl-ref-typeface-plain, Roboto, sans-serif);
+  font-size: var(--mtrl-sys-typescale-body-medium-size, 0.875rem);
+  line-height: var(--mtrl-sys-typescale-body-medium-line-height, 1.25rem);
+}
+
+// Announced, not shown: step changes speak from here
+.mtrl-stepper__live,
+.mtrl-stepper__sr-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.mtrl-stepper__list {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mtrl-stepper__item {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  min-width: 0;
+}
+
+.mtrl-stepper__header {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--mtrl-stepper-header-gap);
+  min-width: 0;
+  padding: var(--mtrl-stepper-header-padding);
+  border: 0;
+  border-radius: var(--mtrl-stepper-header-shape);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.mtrl-stepper__header:focus {
+  outline: none;
+}
+
+.mtrl-stepper__header:focus-visible {
+  outline: 2px solid var(--mtrl-sys-color-secondary);
+  outline-offset: 2px;
+}
+
+// The M3 state layer, over the whole header
+.mtrl-stepper__ripple {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mtrl-stepper__header:hover .mtrl-stepper__ripple {
+  opacity: 0.08;
+}
+
+.mtrl-stepper__header:focus-visible .mtrl-stepper__ripple,
+.mtrl-stepper__header:active .mtrl-stepper__ripple {
+  opacity: 0.1;
+}
+
+.mtrl-stepper__indicator {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--mtrl-stepper-indicator-size);
+  height: var(--mtrl-stepper-indicator-size);
+  border-radius: var(--mtrl-stepper-indicator-shape);
+  background: var(--mtrl-stepper-indicator-inactive-bg);
+  color: var(--mtrl-stepper-indicator-inactive-color);
+  font-size: var(--mtrl-sys-typescale-label-medium-size, 0.75rem);
+  font-weight: var(--mtrl-sys-typescale-label-medium-weight, 500);
+  transition: background-color var(--mtrl-stepper-transition-duration) var(--mtrl-stepper-transition-easing);
+}
+
+.mtrl-stepper__indicator svg {
+  width: var(--mtrl-stepper-indicator-icon-size);
+  height: var(--mtrl-stepper-indicator-icon-size);
+  fill: currentColor;
+}
+
+.mtrl-stepper__label-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mtrl-stepper__label {
+  overflow: hidden;
+  color: var(--mtrl-stepper-label-inactive-color);
+  font-weight: var(--mtrl-stepper-label-inactive-weight);
+}
+
+.mtrl-stepper__supporting-text {
+  overflow: hidden;
+  color: var(--mtrl-stepper-supporting-text-color);
+  font-size: var(--mtrl-sys-typescale-body-small-size, 0.75rem);
+  line-height: var(--mtrl-sys-typescale-body-small-line-height, 1rem);
+}
+
+.mtrl-stepper__supporting-text:empty {
+  display: none;
+}
+
+.mtrl-stepper__connector {
+  flex: 0 0 auto;
+  min-width: 32px;
+  height: var(--mtrl-stepper-connector-thickness);
+  margin-inline: 8px;
+  background: var(--mtrl-stepper-connector-color);
+}
+
+.mtrl-stepper__item:last-child > .mtrl-stepper__connector {
+  display: none;
+}
+
+// Active and completed steps read at full contrast; the indicator carries the
+// colour, the label only gains weight
+.mtrl-stepper__item--active .mtrl-stepper__label,
+.mtrl-stepper__item--completed .mtrl-stepper__label {
+  color: var(--mtrl-stepper-label-active-color);
+  font-weight: var(--mtrl-stepper-label-active-weight);
+}
+
+.mtrl-stepper__item--active .mtrl-stepper__indicator,
+.mtrl-stepper__item--completed .mtrl-stepper__indicator {
+  background: var(--mtrl-stepper-indicator-active-bg);
+  color: var(--mtrl-stepper-indicator-active-color);
+}
+
+.mtrl-stepper__item--completed > .mtrl-stepper__connector {
+  background: var(--mtrl-stepper-connector-completed-color);
+}
+
+// Error outranks completion, as the indicator's glyph does
+.mtrl-stepper__item--error .mtrl-stepper__label,
+.mtrl-stepper__item--error .mtrl-stepper__supporting-text {
+  color: var(--mtrl-stepper-error-color);
+}
+
+.mtrl-stepper__item--error .mtrl-stepper__indicator {
+  background: var(--mtrl-stepper-indicator-error-bg);
+  color: var(--mtrl-stepper-indicator-error-color);
+}
+
+.mtrl-stepper__item--disabled .mtrl-stepper__indicator {
+  opacity: var(--mtrl-stepper-disabled-opacity);
+}
+
+.mtrl-stepper--disabled {
+  pointer-events: none;
+}
+
+.mtrl-stepper__panel {
+  padding: var(--mtrl-stepper-panel-padding);
+}
+
+.mtrl-stepper__panel[hidden],
+.mtrl-stepper__panel-wrapper[hidden] {
+  display: none !important;
+}
+
+.mtrl-stepper__panel-inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mtrl-stepper-panel-gap);
+}
+
+// The author's `<div slot="actions">` inside a step stays in the light DOM and
+// reads these inherited tokens; it is the panel's action bar
+.mtrl-stepper [slot="actions"] {
+  display: flex;
+  gap: var(--mtrl-stepper-actions-gap);
+  justify-content: flex-end;
+  min-height: var(--mtrl-stepper-actions-height);
+}
+
+// Label under the indicator, for a horizontal list that reads as icons over words
+.mtrl-stepper--label-bottom .mtrl-stepper__header {
+  flex-direction: column;
+  gap: 8px;
+  padding-block: 12px;
+  text-align: center;
+}
+
+.mtrl-stepper--label-bottom .mtrl-stepper__label-group {
+  align-items: center;
+}
+
+// The list after the panels
+.mtrl-stepper--header-bottom {
+  display: flex;
+  flex-direction: column;
+}
+
+.mtrl-stepper--header-bottom > .mtrl-stepper__list {
+  order: 1;
+}
+
+// Vertical: each header over its own panel, with the rail down the items
+.mtrl-stepper--vertical .mtrl-stepper__list,
+.mtrl-stepper--vertical .mtrl-stepper__item {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.mtrl-stepper--vertical .mtrl-stepper__item {
+  flex: none;
+}
+
+.mtrl-stepper--vertical .mtrl-stepper__header {
+  flex: none;
+}
+
+.mtrl-stepper--vertical .mtrl-stepper__connector {
+  width: var(--mtrl-stepper-connector-thickness);
+  min-width: 0;
+  min-height: 16px;
+  margin-block: 4px;
+  margin-inline: 0;
+  align-self: flex-start;
+  margin-inline-start: calc(var(--mtrl-stepper-header-padding) + var(--mtrl-stepper-indicator-size) / 2);
+}
+
+.mtrl-stepper--vertical .mtrl-stepper__panel-wrapper {
+  display: block;
+}
+
+// Forced colours: the glyph and the state carry the meaning, so the tokens are
+// replaced with system colours that stay apart
+@media (forced-colors: active) {
+  .mtrl-stepper__indicator {
+    border: 1px solid CanvasText;
+    forced-color-adjust: none;
+  }
+
+  .mtrl-stepper__item--active .mtrl-stepper__indicator {
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .mtrl-stepper__item--disabled .mtrl-stepper__indicator {
+    border-color: GrayText;
+    color: GrayText;
+  }
+
+  .mtrl-stepper__connector {
+    background: CanvasText;
+  }
+
+  .mtrl-stepper__item--disabled > .mtrl-stepper__connector {
+    background: GrayText;
+  }
+
+  .mtrl-stepper__header:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mtrl-stepper {
+    --mtrl-stepper-transition-duration: 0ms;
+  }
+}

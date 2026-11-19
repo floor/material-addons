@@ -7,6 +7,10 @@
 // Import component styles (only addons-specific enhancements)
 @forward "./components/form";
 @forward "./components/colorpicker";
+@forward "./components/stepper";
+
+// Rules for the elements before their definitions arrive
+@forward "./elements/stepper";
 
 // Future addons-specific component styles will be added here
 // @forward "./components/datagrid";      // Advanced grid functionality

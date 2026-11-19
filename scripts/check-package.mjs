@@ -42,6 +42,19 @@ const EXPECTED_PATHS = [
   "dist/components/form/types.d.ts",
   "dist/components/index.d.ts",
   "dist/components/index.mjs",
+  "dist/components/stepper/api.d.ts",
+  "dist/components/stepper/config.d.ts",
+  "dist/components/stepper/constants.d.ts",
+  "dist/components/stepper/constants.mjs",
+  "dist/components/stepper/features/index.d.ts",
+  "dist/components/stepper/features/keyboard.d.ts",
+  "dist/components/stepper/features/navigation.d.ts",
+  "dist/components/stepper/features/orientation.d.ts",
+  "dist/components/stepper/features/renderer.d.ts",
+  "dist/components/stepper/index.d.ts",
+  "dist/components/stepper/index.mjs",
+  "dist/components/stepper/stepper.d.ts",
+  "dist/components/stepper/types.d.ts",
   "dist/core/compose/features/gestures/index.d.ts",
   "dist/core/compose/features/gestures/longpress.d.ts",
   "dist/core/compose/features/gestures/pan.d.ts",
@@ -69,13 +82,22 @@ const EXPECTED_PATHS = [
   "dist/core/layout/jsx.d.ts",
   "dist/core/layout/schema.d.ts",
   "dist/core/layout/types.d.ts",
+  "dist/elements/css/stepper.css",
+  "dist/elements/css/stepper.d.ts",
+  "dist/elements/css/stepper.js",
+  "dist/elements/index.d.ts",
+  "dist/elements/index.mjs",
+  "dist/elements/stepper.d.ts",
+  "dist/elements/stepper.mjs",
   "dist/index.d.ts",
   "dist/index.mjs",
   "dist/styles.css",
   "package.json",
   "src/styles/components/_colorpicker.scss",
   "src/styles/components/_form.scss",
+  "src/styles/components/_stepper.scss",
   "src/styles/core/_layout.scss",
+  "src/styles/elements/_stepper.scss",
   "src/styles/index.scss",
 ];
 
@@ -133,12 +155,13 @@ try {
       for (const path of paths) {
         assert.ok(existsSync(join(addon, path.replace("*", component))), `Missing export: ${path}`);
       }
-      if (entry !== "./styles") {
+      // A stylesheet entry registers CSS and exports nothing, like ./styles
+      if (entry !== "./styles" && !entry.includes("/css/")) {
         specifiers.push(entry === "." ? pkg.name : pkg.name + entry.slice(1).replace("*", component));
       }
     }
   }
-  assert.equal(specifiers.length, 6);
+  assert.equal(specifiers.length, 9);
   run(process.execPath, ["--input-type=module", "-e", `
     import assert from 'node:assert/strict';
     import { createRequire } from 'node:module';
