@@ -404,6 +404,51 @@ try {
   assert.equal(matched.after.below, matched.before.below, `a matched mapping moves nothing (got ${matched.before.below} -> ${matched.after.below})`);
   console.log(`matched mapping: the page below stays at ${matched.after.below}px across the reveal`);
 
+  // Unequal mapped inline sizes hold their hosts: 144/320 mapped and real
+  // means the hosts render 144/320, not an even split, and the reveal moves
+  // nothing.
+  const unequalMapped = await page.evaluate(() => {
+    const { createLayout, registerSkeleton } = window.skeleton;
+    document.body.innerHTML = "";
+    const makeCreator = (width) => (options) => {
+      const element = document.createElement("div");
+      element.style.width = width;
+      element.style.height = "40px";
+      return { element, destroy: () => element.remove(), ...options };
+    };
+    const narrow = makeCreator("144px");
+    const wide = makeCreator("320px");
+    registerSkeleton(narrow, () => ({ variant: "rect", blockSize: "40px", inlineSize: "144px" }));
+    registerSkeleton(wide, () => ({ variant: "rect", blockSize: "40px", inlineSize: "320px" }));
+    const below = document.createElement("p");
+    below.textContent = "after";
+    const region = document.createElement("div");
+    document.body.append(region, below);
+    const result = createLayout(
+      ["div", { layout: { type: "row", gap: "0px" } }, [narrow, "narrow", {}], [wide, "wide", {}]],
+      region,
+      { skeleton: true },
+    );
+    const hostOf = (name) => result.get(name).element;
+    const boxOf = (host) => {
+      const box = host.getBoundingClientRect();
+      return { width: box.width, left: box.left };
+    };
+    const narrowHost = hostOf("narrow");
+    const wideHost = hostOf("wide");
+    const before = { narrow: boxOf(narrowHost), wide: boxOf(wideHost), below: below.getBoundingClientRect().top };
+    result.reveal();
+    const after = { narrow: boxOf(narrowHost), wide: boxOf(wideHost), below: below.getBoundingClientRect().top };
+    result.destroy();
+    return { before, after };
+  });
+  assert.equal(unequalMapped.before.narrow.width, 144, `the narrow host renders its mapped inline size (got ${unequalMapped.before.narrow.width})`);
+  assert.equal(unequalMapped.before.wide.width, 320, `the wide host renders its mapped inline size (got ${unequalMapped.before.wide.width})`);
+  assert.equal(unequalMapped.after.narrow.width, 144, "the narrow host keeps it across the reveal");
+  assert.equal(unequalMapped.after.wide.width, 320, "the wide host keeps it across the reveal");
+  assert.equal(unequalMapped.after.below, unequalMapped.before.below, `the reveal moves nothing (got ${unequalMapped.before.below} -> ${unequalMapped.after.below})`);
+  console.log(`unequal mapped sizes: hosts hold 144px and 320px, the page below stays at ${unequalMapped.after.below}px`);
+
   // A mismatched mapping is a one-time reflow, never a permanent clip: the
   // even placeholders (232/232) reveal into 184/280, and the real components
   // take their own widths inside their hosts.

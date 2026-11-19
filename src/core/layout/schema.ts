@@ -389,7 +389,18 @@ export function createSkeletonHost(
   host.className = "mtrl-skeleton-host";
   if (layoutConfig) applyLayoutClasses(host, layoutConfig);
   if (layoutItemConfig) applyLayoutItemClasses(host, layoutItemConfig);
-  const placeholder = createSkeleton({ ...skeletonFor(Component, skeletonOptions), busy: false });
+  const mapped = skeletonFor(Component, skeletonOptions);
+  // The mapping's sizes are the host's: the host is the layout's item, so a
+  // mapped inlineSize or blockSize takes the layout's box rather than an
+  // even split, and the placeholder fills that box.
+  if (mapped.inlineSize) {
+    host.style.width = mapped.inlineSize;
+    // The mapping owns this box: a row's growing items would otherwise
+    // redistribute it into an even split.
+    host.style.flex = "none";
+  }
+  if (mapped.blockSize) host.style.height = mapped.blockSize;
+  const placeholder = createSkeleton({ ...mapped, busy: false });
   host.appendChild(placeholder.element);
   // The component slot: until reveal it is the placeholder's host, and every
   // holder of this object — a layout's component map, a form's field
