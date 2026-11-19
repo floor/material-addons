@@ -27,7 +27,9 @@ interface AccordionHost {
 
 const withAccordionCore =
   (settings: AccordionSettings) =>
-  (component: AccordionHost): AccordionHost & { accordion: { panels: ExpansionPanelComponent[] } } => {
+  (component: AccordionHost): AccordionHost & {
+    accordion: { panels: ExpansionPanelComponent[]; register: (panel: ExpansionPanelComponent, move: boolean) => void };
+  } => {
     const panels: ExpansionPanelComponent[] = [];
     let coordinating = false;
 
@@ -44,6 +46,8 @@ const withAccordionCore =
 
     const valuesOf = (): string[] => panels.filter((panel) => panel.isOpen()).map((panel) => panel.getValue());
     const valueOf = (): string | null => valuesOf()[0] ?? null;
+    const silent = (panel: ExpansionPanelComponent, open: boolean): void =>
+      void (panel as unknown as { setOpen: (open: boolean) => void }).setOpen(open);
 
     const positions = (): void => {
       panels.forEach((panel, index) => {
@@ -59,8 +63,14 @@ const withAccordionCore =
       coordinating = true;
       try {
         if (open && !settings.multiSelect) {
+          // One open panel, vetoes included: a close that refuses keeps that
+          // panel open, so the one that just opened gives way instead
           for (const other of panels) {
             if (other !== panel && other.isOpen()) other.close();
+          }
+          if (panels.some((other) => other !== panel && other.isOpen())) {
+            silent(panel, false);
+            return;
           }
         }
         emit<AccordionChangeEvent>(ACCORDION_EVENTS.CHANGE, {
@@ -82,17 +92,26 @@ const withAccordionCore =
       ...config,
     });
 
-    const attachPanel = (panel: ExpansionPanelComponent, index?: number): void => {
+    /** The one registration path: creation, addPanel and the element's claim */
+    const register = (panel: ExpansionPanelComponent, move: boolean): void => {
       panel.element.setAttribute("data-mtrl-accordion-panel", "");
-      if (index === undefined || index >= panels.length) panels.push(panel);
-      else panels.splice(index, 0, panel);
       panel.on(EXPANSION_PANEL_EVENTS.CHANGE, (event) => onPanelChange(panel, event.open));
+      if (move) component.element.appendChild(panel.element);
       positions();
-      component.element.appendChild(panel.element);
       if (settings.disabled) {
         panel.disable();
         panel.header.disabled = true;
       }
+    };
+
+    const insert = (panel: ExpansionPanelComponent, index: number): void => {
+      if (index >= panels.length) panels.push(panel);
+      else panels.splice(index, 0, panel);
+    };
+
+    const attachPanel = (panel: ExpansionPanelComponent): void => {
+      insert(panel, panels.length);
+      register(panel, !panel.element.isConnected);
     };
 
     const isPanel = (entry: ExpansionPanelConfig | ExpansionPanelComponent): entry is ExpansionPanelComponent =>
@@ -104,25 +123,20 @@ const withAccordionCore =
 
     const keyboardOff = withAccordionKeyboard(component.element, () => panels.map((panel) => panel.header));
 
+    // One-open invariant, the silent setter, and the initial model all share
+    // one path; a veto is not consulted here because the model is programmatic
     const apply = (values: string[]): void => {
-      const wanted = new Set(values);
+      const wanted = settings.multiSelect ? values : values.slice(0, 1);
+      const set = new Set(wanted);
       coordinating = true;
       try {
-        for (const panel of panels) {
-          if (wanted.has(panel.getValue())) {
-            if (!panel.isOpen()) void (panel as unknown as { setOpen: (open: boolean) => void }).setOpen(true);
-          } else if (panel.isOpen()) {
-            void (panel as unknown as { setOpen: (open: boolean) => void }).setOpen(false);
-          }
-        }
+        for (const panel of panels) silent(panel, set.has(panel.getValue()));
       } finally {
         coordinating = false;
       }
     };
 
-    const initial = settings.multiSelect
-      ? settings.values ?? []
-      : settings.value ? [settings.value] : [];
+    const initial = settings.multiSelect ? settings.values ?? [] : settings.value ? [settings.value] : [];
     if (initial.length) apply(initial);
 
     const originalDestroy = component.lifecycle?.destroy?.bind(component.lifecycle);
@@ -136,13 +150,15 @@ const withAccordionCore =
 
     return {
       ...component,
-      accordion: { panels },
+      accordion: { panels, register },
     };
   };
 
 const withAccordionAPI =
   (settings: AccordionSettings) =>
-  (component: AccordionHost & { accordion: { panels: ExpansionPanelComponent[] } }): AccordionComponent => {
+  (component: AccordionHost & {
+    accordion: { panels: ExpansionPanelComponent[]; register: (panel: ExpansionPanelComponent, move: boolean) => void };
+  }): AccordionComponent => {
     const panels = (): ExpansionPanelComponent[] => component.accordion.panels;
     // The host's own listeners, taken before the API's `on`/`off` land on it
     const hostOn = component.on;
@@ -159,20 +175,14 @@ const withAccordionAPI =
     const api: AccordionComponent = {
       element: component.element,
       getValue: () => values()[0] ?? null,
-      setValue: (value: string | null) => {
-        const wanted = value === null ? [] : [value];
+      setValue: (value: string | null) => api.setValues(value === null ? [] : [value]),
+      getValues: values,
+      setValues: (next: string[]) => {
+        // Single selection keeps one open: the first value wins
+        const wanted = settings.multiSelect ? next : next.slice(0, 1);
         const current = new Set(values());
         for (const panel of panels()) {
           const shouldOpen = wanted.includes(panel.getValue());
-          if (shouldOpen !== current.has(panel.getValue())) setOpen(panel, shouldOpen);
-        }
-        return api;
-      },
-      getValues: values,
-      setValues: (next: string[]) => {
-        const current = new Set(values());
-        for (const panel of panels()) {
-          const shouldOpen = next.includes(panel.getValue());
           if (shouldOpen !== current.has(panel.getValue())) setOpen(panel, shouldOpen);
         }
         return api;
@@ -186,10 +196,9 @@ const withAccordionAPI =
         const at = index === undefined ? panels().length : Math.max(0, Math.min(index, panels().length));
         if (at >= panels().length) panels().push(panel);
         else panels().splice(at, 0, panel);
-        panel.element.setAttribute("data-mtrl-accordion-panel", "");
         // A panel built by an element already renders in that element's own
         // shadow root: only a factory-built panel is moved into this one
-        if (!panel.element.isConnected) component.element.appendChild(panel.element);
+        component.accordion.register(panel, !panel.element.isConnected);
         return api;
       },
       removePanel: (valueOrIndex) => {
@@ -201,7 +210,13 @@ const withAccordionAPI =
         return api;
       },
       openAll: () => {
-        for (const panel of panels()) if (!panel.isDisabled()) setOpen(panel, true);
+        const enabled = panels().filter((panel) => !panel.isDisabled());
+        if (!enabled.length) return api;
+        if (!settings.multiSelect) {
+          setOpen(enabled[0]!, true);
+          return api;
+        }
+        for (const panel of enabled) setOpen(panel, true);
         return api;
       },
       closeAll: () => {
@@ -242,7 +257,9 @@ export const createAccordion = (config: AccordionConfig = {}): AccordionComponen
     withElement(getAccordionElementConfig(settings)),
     withLifecycle(),
     withAccordionCore(settings),
-  )(settings as never) as AccordionHost & { accordion: { panels: ExpansionPanelComponent[] } };
+  )(settings as never) as AccordionHost & {
+    accordion: { panels: ExpansionPanelComponent[]; register: (panel: ExpansionPanelComponent, move: boolean) => void };
+  };
   const withMethods = withAccordionAPI(settings)(built);
   // The change event reaches the element host once the public component is in
   // place; panels created before it keep their own callbacks

@@ -106,9 +106,12 @@ const withPanelCore =
       if (!ask(open ? EXPANSION_PANEL_EVENTS.BEFORE_OPEN : EXPANSION_PANEL_EVENTS.BEFORE_CLOSE)) return false;
       state.open = open;
       syncHeader();
+      // The region is in its new state before the event describes it: an
+      // `open` listener sees the content, not a hidden inert region
+      const settled = region.apply(open);
       emit(open ? EXPANSION_PANEL_EVENTS.OPEN : EXPANSION_PANEL_EVENTS.CLOSE, payload());
       emit(EXPANSION_PANEL_EVENTS.CHANGE, payload());
-      void region.apply(open).then(() => {
+      void settled.then(() => {
         emit(open ? EXPANSION_PANEL_EVENTS.AFTER_OPEN : EXPANSION_PANEL_EVENTS.AFTER_CLOSE, payload());
       });
       return true;

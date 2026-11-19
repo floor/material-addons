@@ -47,6 +47,16 @@ const slotFor = (name?: string): HTMLSlotElement => {
 const slotted = (host: HTMLElement, name: string): HTMLSlotElement | undefined =>
   Array.from(host.children).some((child) => child.getAttribute("slot") === name) ? slotFor(name) : undefined;
 
+/** Claims upgraded panel children, leaving the ones already registered */
+const claimPanels = (host: HTMLElement, component: AccordionComponent): void => {
+  for (const child of Array.from(host.children)) {
+    if (child.localName !== "m-expansion-panel") continue;
+    const panel = (child as unknown as { component: ExpansionPanelComponent | null }).component;
+    const known = component.getPanels().some((candidate) => candidate.element === panel?.element);
+    if (panel && !known) component.addPanel(panel);
+  }
+};
+
 const panelSpec = {
   name: "expansion-panel",
   ssr: false,
@@ -57,8 +67,11 @@ const panelSpec = {
     open: {
       type: "boolean",
       config: "open",
-      update: (c: ExpansionPanelComponent, value: AttributeValue) =>
-        void (value ? c.open() : c.close()),
+      update: (c: ExpansionPanelComponent, value: AttributeValue, host: HTMLElement) => {
+        void (value ? c.open() : c.close());
+        // A veto leaves the state where it was: the attribute follows it back
+        queueMicrotask(() => host.toggleAttribute("open", c.isOpen()));
+      },
     },
     value: { type: "string", config: "value" },
     label: { type: "string", config: "label" },
@@ -108,7 +121,6 @@ const panelSpec = {
     },
   },
   methods: [
-    "openPanel",
     "close",
     "toggle",
     "isOpen",
@@ -149,6 +161,11 @@ const panelSpec = {
     content: (body: HTMLElement) => body.appendChild(slotFor()),
   }),
   setup: (host: ElementHost<ExpansionPanelComponent>, component: ExpansionPanelComponent) => {
+    // The Boolean `open` property is the state; the command has its own name
+    Object.defineProperty(host, "openPanel", {
+      configurable: true,
+      value: () => component.open(),
+    });
     // The factory's state drives the host's `open` attribute, as `<details>`
     const reflect = (): void => void host.toggleAttribute("open", component.isOpen());
     const onOpen = (): void => reflect();
@@ -223,24 +240,22 @@ const accordionSpec = {
     // The panel children render through a slot, in place
     const slot = slotFor();
     component.element.appendChild(slot);
-    const claim = (): void => {
-      for (const child of Array.from(host.children)) {
-        if (child.localName !== "m-expansion-panel") continue;
-        const panel = (child as unknown as { component: ExpansionPanelComponent | null }).component;
-        const known = component.getPanels().some((candidate) => candidate.element === panel?.element);
-        if (panel && !known) component.addPanel(panel);
-      }
-    };
     // The panel children upgrade after their parent: claim them once the
-    // current task's upgrades have run
-    queueMicrotask(claim);
+    // current task's upgrades have run, then apply the authored model
+    queueMicrotask(() => {
+      claimPanels(host, component);
+      const value = host.getAttribute("value");
+      if (value !== null) component.setValue(value);
+      const values = (host as unknown as { values?: unknown }).values;
+      if (Array.isArray(values) && values.length) component.setValues(values as string[]);
+    });
     return () => {
       slot.remove();
     };
   },
-  // New or removed panel children are claimed without rebuilding the group
-  observeChildren: (_host: ElementHost<AccordionComponent>, component: AccordionComponent): boolean => {
-    void component;
+  // New panel children are claimed without rebuilding the group
+  observeChildren: (host: ElementHost<AccordionComponent>, component: AccordionComponent): boolean => {
+    claimPanels(host, component);
     return true;
   },
 } satisfies ElementSpec<AccordionComponent>;

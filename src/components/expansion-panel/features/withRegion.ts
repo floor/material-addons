@@ -53,7 +53,7 @@ export const withRegion =
 
     const region = document.createElement("div");
     region.className = cls(EXPANSION_PANEL_CLASSES.REGION);
-    region.id = `${component.element.id || cls(EXPANSION_PANEL_CLASSES.ROOT)}-region`;
+    region.id = `${parts.header.id.replace(/-header$/, "")}-region`;
     region.setAttribute("role", "region");
     region.setAttribute("aria-labelledby", parts.header.id);
     region.hidden = true;
@@ -117,11 +117,8 @@ export const withRegion =
           button.type = "button";
           button.className = `${cls("expansion-panel")}__action`;
           button.textContent = String((config as { text?: string }).text ?? "");
-          for (const [name, handler] of Object.entries({
-            click: (config as { onClick?: (event: MouseEvent) => void }).onClick,
-          })) {
-            if (typeof handler === "function") button.addEventListener(name, handler as EventListener);
-          }
+          const onClick = (config as { onClick?: (event: MouseEvent) => void }).onClick;
+          if (typeof onClick === "function") button.addEventListener("click", onClick);
           actions.appendChild(button);
         }
         actions.hidden = false;
@@ -142,7 +139,7 @@ export const withRegion =
       } else {
         region.inert = true;
       }
-      parts.header.setAttribute("aria-expanded", String(open));
+
       const settle = (): void => {
         if (token !== settleToken) return;
         if (open) {

@@ -22,11 +22,16 @@ export const withAccordionKeyboard = (
 ): (() => void) => {
   const onKeydown = (event: KeyboardEvent): void => {
     if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
-    const target = event.target as HTMLElement | null;
-    if (!target || !target.classList.contains(headerClass(container))) return;
+    // A header lives in a panel's shadow root: the composed path carries it
+    const target = event
+      .composedPath()
+      .find((node): node is HTMLButtonElement =>
+        node instanceof HTMLElement && node.classList.contains(headerClass(container)),
+      );
+    if (!target) return;
     const list = headers().filter((header) => !header.disabled);
     if (!list.length) return;
-    const from = list.indexOf(target as HTMLButtonElement);
+    const from = list.indexOf(target);
     if (from === -1) return;
     let next: number;
     if (event.key === "ArrowDown") next = (from + 1) % list.length;

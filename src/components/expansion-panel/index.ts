@@ -10,6 +10,11 @@
  */
 
 export { default as createExpansionPanel } from "./expansion-panel";
+export type {
+  ExpansionPanelDensity,
+  ExpansionPanelPlacement,
+  ExpansionPanelVariant,
+} from "./constants";
 export { default as createAccordion } from "./accordion";
 
 export type {

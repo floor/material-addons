@@ -21,8 +21,14 @@ interface HeaderHost {
   componentName?: string;
 }
 
-const textOf = (value: string | Node | undefined): string =>
-  typeof value === "string" ? value : value?.textContent ?? "";
+/** One id per panel instance: two panels never share a disclosure pair */
+let instance = 0;
+export const nextInstanceId = (): string => `mtrl-expansion-panel-${++instance}`;
+
+const headingLevelOf = (value: unknown): number => {
+  const level = Number(value);
+  return Number.isInteger(level) && level >= 2 && level <= 6 ? level : 3;
+};
 
 /** Builds the heading, the trigger button and everything inside it */
 export const withHeader =
@@ -32,14 +38,14 @@ export const withHeader =
     const element = component.element;
     element.replaceChildren();
 
-    const headingTag = `h${settings.headingLevel ?? 3}`;
+    const headingTag = `h${headingLevelOf(settings.headingLevel)}`;
     const heading = document.createElement(headingTag);
     heading.className = cls(EXPANSION_PANEL_CLASSES.HEADING);
 
     const header = document.createElement("button");
     header.type = "button";
     header.className = cls(EXPANSION_PANEL_CLASSES.HEADER);
-    header.id = `${element.id || cls(EXPANSION_PANEL_CLASSES.ROOT)}-header`;
+    header.id = `${nextInstanceId()}-header`;
 
     const ripple = document.createElement("span");
     ripple.className = cls(EXPANSION_PANEL_CLASSES.RIPPLE);
@@ -111,7 +117,7 @@ export const withHeader =
       const visible = !settings.noToggle;
       toggle.hidden = !visible;
       leadingIcon.hidden = !settings.leadingIcon;
-      supportingText.hidden = !textOf(supportingText.textContent ?? "");
+      supportingText.hidden = !supportingText.textContent;
       header.setAttribute("aria-expanded", String(state.open));
       element.classList.toggle(cls(EXPANSION_PANEL_MODIFIERS.OPEN), state.open);
       element.classList.toggle(cls(EXPANSION_PANEL_MODIFIERS.ERROR), state.error);

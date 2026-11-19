@@ -53,17 +53,7 @@ export const getElementConfig = (
   settings: ExpansionPanelSettings,
 ): Parameters<typeof withElement>[0] => {
   const prefix = EXPANSION_PANEL_DEFAULTS.PREFIX;
-  const className = [
-    `${prefix}-${EXPANSION_PANEL_CLASSES.ROOT}`,
-    `${prefix}-${EXPANSION_PANEL_MODIFIERS.OUTLINED.replace("outlined", settings.variant)}`,
-    settings.density === EXPANSION_PANEL_DENSITIES.COMPACT
-      ? `${prefix}-${EXPANSION_PANEL_MODIFIERS.COMPACT}`
-      : undefined,
-    settings.placement === EXPANSION_PANEL_PLACEMENTS.START
-      ? `${prefix}-${EXPANSION_PANEL_MODIFIERS.PLACEMENT_START}`
-      : undefined,
-    settings.class,
-  ].filter((name): name is string => Boolean(name));
+  const className = [`${prefix}-${EXPANSION_PANEL_CLASSES.ROOT}`, settings.class].filter((name): name is string => Boolean(name));
 
   return {
     tag: "div",

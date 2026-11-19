@@ -109,6 +109,18 @@ describe("Expansion panel anatomy and state", () => {
     panel.destroy();
   });
 
+  test("the open event sees the region already shown", () => {
+    const panel = createExpansionPanel({ label: "One" });
+    document.body.append(panel.element);
+    let seen: { hidden: boolean; inert: boolean } | null = null;
+    panel.on("open", () => {
+      seen = { hidden: panel.region.hidden, inert: panel.region.inert };
+    });
+    panel.open();
+    expect(seen).toEqual({ hidden: false, inert: false });
+    panel.destroy();
+  });
+
   test("setOpen is silent: no change event", async () => {
     const panel = createExpansionPanel({ label: "One" });
     document.body.append(panel.element);
@@ -140,6 +152,30 @@ describe("Expansion panel anatomy and state", () => {
     expect(calls).toBe(1);
     expect(panel.body.textContent).toBe("Rendered");
     panel.destroy();
+  });
+});
+
+describe("Expansion panel disclosure identity", () => {
+  test("two panels never share a header or region id", () => {
+    const first = createExpansionPanel({ label: "One" });
+    const second = createExpansionPanel({ label: "Two" });
+    document.body.append(first.element, second.element);
+    expect(first.header.id).not.toBe(second.header.id);
+    expect(first.region.id).not.toBe(second.region.id);
+    expect(first.header.getAttribute("aria-controls")).toBe(first.region.id);
+    expect(second.header.getAttribute("aria-controls")).toBe(second.region.id);
+    first.destroy();
+    second.destroy();
+  });
+
+  test("heading level is normalised: 4 is an h4, 7 falls back to h3", () => {
+    const four = createExpansionPanel({ label: "Four", headingLevel: 4 });
+    expect(four.element.querySelector("h4")).not.toBeNull();
+    const seven = createExpansionPanel({ label: "Seven", headingLevel: 7 as never });
+    expect(seven.element.querySelector("h3")).not.toBeNull();
+    expect(seven.element.querySelector("h7")).toBeNull();
+    four.destroy();
+    seven.destroy();
   });
 });
 
@@ -189,6 +225,52 @@ describe("Expansion panel options and setters", () => {
     panel.open();
     expect(panel.isOpen()).toBe(true);
     panel.destroy();
+  });
+});
+
+describe("Accordion one-open invariant", () => {
+  const setup = () =>
+    createAccordion({
+      panels: [
+        { value: "a", label: "A" },
+        { value: "b", label: "B" },
+        { value: "c", label: "C" },
+      ],
+    });
+
+  test("a vetoed close keeps the open panel and refuses the new one", () => {
+    const accordion = setup();
+    document.body.append(accordion.element);
+    accordion.getPanel("a")!.open();
+    accordion.getPanel("a")!.on("beforeclose", (event) => event.preventDefault());
+    accordion.getPanel("b")!.open();
+    expect(accordion.getPanel("a")!.isOpen()).toBe(true);
+    expect(accordion.getPanel("b")!.isOpen()).toBe(false);
+    expect(accordion.getValues()).toEqual(["a"]);
+    accordion.destroy();
+  });
+
+  test("setValues and openAll open one panel in single-select mode", () => {
+    const accordion = setup();
+    document.body.append(accordion.element);
+    accordion.setValues(["a", "b"]);
+    expect(accordion.getValues()).toEqual(["a"]);
+    accordion.closeAll();
+    accordion.openAll();
+    expect(accordion.getValues()).toEqual(["a"]);
+    accordion.destroy();
+  });
+
+  test("addPanel registers the panel for coordination", () => {
+    const accordion = setup();
+    document.body.append(accordion.element);
+    accordion.getPanel("a")!.open();
+    const extra = createExpansionPanel({ value: "d", label: "D" });
+    accordion.addPanel(extra);
+    extra.open();
+    expect(accordion.getPanel("a")!.isOpen()).toBe(false);
+    expect(accordion.getValue()).toBe("d");
+    accordion.destroy();
   });
 });
 

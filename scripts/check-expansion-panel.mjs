@@ -35,7 +35,7 @@ try {
   const base = `http://127.0.0.1:${port}`;
   const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
   const errors = [];
-  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("pageerror", (error) => errors.push(error.stack ?? error.message));
   const reset = async () => {
     await page.goto(`${base}/test/browser/expansion-panel.html`);
     await page.waitForFunction(() => !!window.expansion);
@@ -144,6 +144,117 @@ try {
   });
   assert.equal(tabOrder.hiddenPanelHidden, true);
   assert.equal(tabOrder.seen[0], "a-input", "the open panel's content follows its header");
+
+  // Disclosure identity: two panels never share an id, and each button
+  // controls its own region
+  await reset();
+  const identity = await page.evaluate(async () => {
+    document.body.replaceChildren();
+    const accordion = window.expansion.createAccordion({
+      panels: [{ value: "a", label: "A" }, { value: "b", label: "B" }],
+    });
+    document.body.append(accordion.element);
+    const panels = accordion.getPanels();
+    return {
+      ids: panels.map((panel) => panel.header.id),
+      regions: panels.map((panel) => panel.region.id),
+      controlsResolve: panels.map((panel) => panel.header.getAttribute("aria-controls") === panel.region.id),
+      labelledBy: panels.map((panel) => panel.region.getAttribute("aria-labelledby") === panel.header.id),
+    };
+  });
+  assert.equal(new Set(identity.ids).size, 2, "header ids are unique");
+  assert.equal(new Set(identity.regions).size, 2, "region ids are unique");
+  assert.deepEqual(identity.controlsResolve, [true, true]);
+  assert.deepEqual(identity.labelledBy, [true, true]);
+
+  // One open panel, vetoes included; setValues holds the invariant too
+  const coordination = await page.evaluate(async () => {
+    document.body.replaceChildren();
+    const accordion = window.expansion.createAccordion({
+      panels: [{ value: "a", label: "A" }, { value: "b", label: "B" }],
+    });
+    document.body.append(accordion.element);
+    accordion.getPanel("a").open();
+    const vetoClose = (event) => event.preventDefault();
+    accordion.getPanel("a").on("beforeclose", vetoClose);
+    accordion.getPanel("b").open();
+    const vetoed = { a: accordion.getPanel("a").isOpen(), b: accordion.getPanel("b").isOpen(), values: accordion.getValues() };
+    accordion.getPanel("a").off("beforeclose", vetoClose);
+    accordion.getPanel("b").open();
+    const after = accordion.getValues();
+    accordion.setValues(["a", "b"]);
+    const setValues = accordion.getValues();
+    return { vetoed, after, setValues };
+  });
+  assert.deepEqual(coordination.vetoed, { a: true, b: false, values: ["a"] });
+  assert.deepEqual(coordination.after, ["b"]);
+  assert.deepEqual(coordination.setValues, ["a"]);
+
+  // The element boundary: the authored value, two clicks, a later child, a
+  // vetoed attribute and the open command
+  await reset();
+  const boundary = await page.evaluate(async () => {
+    document.body.innerHTML = `<m-accordion value="b">
+      <m-expansion-panel value="a" label="A"></m-expansion-panel>
+      <m-expansion-panel value="b" label="B"></m-expansion-panel>
+    </m-accordion>`;
+    window.expansion.defineExpansionPanel();
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    const accordion = document.querySelector("m-accordion");
+    const initial = { value: accordion.value, open: accordion.component.getPanels().map((panel) => panel.isOpen()) };
+    // Two header clicks in single-select mode leave one open
+    const headers = accordion.component.getPanels().map((panel) => panel.header);
+    headers[1].click();
+    await new Promise((resolve) => setTimeout(resolve, 320));
+    headers[0].click();
+    await new Promise((resolve) => setTimeout(resolve, 320));
+    const clicked = accordion.component.getValues();
+    // ArrowDown reaches the next header inside the next panel's shadow root
+    headers[0].focus();
+    headers[0].dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, composed: true, cancelable: true }));
+    const deepActive = (() => {
+      let active = document.activeElement;
+      while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+      return active;
+    })();
+    const arrowNext = deepActive === headers[1];
+    // A later child is claimed and coordinates
+    const extra = document.createElement("m-expansion-panel");
+    extra.setAttribute("value", "c");
+    extra.setAttribute("label", "C");
+    accordion.append(extra);
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    const claimed = accordion.component.getPanels().length;
+    extra.component.open();
+    const afterExtra = accordion.component.getValues();
+    // A vetoed opening leaves the host without the attribute
+    const vetoPanel = accordion.component.getPanel("a");
+    const vetoOpen = (event) => event.preventDefault();
+    vetoPanel.on("beforeopen", vetoOpen);
+    const panelA = document.querySelector("m-expansion-panel[value='a']");
+    panelA.setAttribute("open", "");
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    const vetoReflected = panelA.hasAttribute("open");
+    vetoPanel.off("beforeopen", vetoOpen);
+    panelA.openPanel();
+    await new Promise((resolve) => setTimeout(resolve, 320));
+    const forwarded = panelA.hasAttribute("open") && vetoPanel.isOpen();
+    // The open event sees the shown region
+    let seen = null;
+    const eventPanel = accordion.component.getPanel("b");
+    eventPanel.on("open", () => { seen = { hidden: eventPanel.region.hidden, inert: eventPanel.region.inert }; });
+    eventPanel.open();
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    return { initial, clicked, arrowNext, claimed, afterExtra, vetoReflected, forwarded, seen };
+  });
+  assert.deepEqual(boundary.initial, { value: "b", open: [false, true] });
+  assert.deepEqual(boundary.clicked, ["a"]);
+  assert.equal(boundary.arrowNext, true);
+  assert.equal(boundary.claimed, 3);
+  assert.deepEqual(boundary.afterExtra, ["c"]);
+  assert.equal(boundary.vetoReflected, false);
+  assert.equal(boundary.forwarded, true);
+  assert.deepEqual(boundary.seen, { hidden: false, inert: false });
 
   // Forced colours keep the boundary, the focus ring and the disabled colour apart
   await reset();

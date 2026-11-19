@@ -35,14 +35,14 @@ export function createSolidAccordion(): Component<SolidAccordionProps> {
       defineExpansionPanel();
       const node = element;
       if (!node) return;
-      onCleanup(listenAccordion(node, () => {
-        props.onChange?.({ value: node.value, values: node.component?.getValues() ?? [], open: true } as never);
+      onCleanup(listenAccordion(node, (_name, event) => {
+        props.onChange?.(event as never);
         props.onUpdateValue?.(node.value);
       }));
       synchronizeAccordion(node, props);
     });
     const [rest] = splitProps(props, ["onChange", "onUpdateValue", "ref"] as (keyof SolidAccordionProps)[]);
-    return Dynamic(mergeProps(rest, hostProps(accordionHost, props, ["ref"]), attributes(accordionHost, props), {
+    return Dynamic(mergeProps(rest, hostProps(accordionHost, props, ["onChange", "onUpdateValue", "ref"]), attributes(accordionHost, props), {
       component: tag("accordion"),
       ref(node: AccordionElement) { element = node; props.ref?.(node); },
     }) as never);

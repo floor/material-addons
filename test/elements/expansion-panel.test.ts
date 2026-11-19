@@ -3,6 +3,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import { JSDOM } from "jsdom";
 import { defineExpansionPanel } from "../../src/elements/expansion-panel";
+import { registerStyles } from "material/elements";
 
 let dom: JSDOM;
 const originalGlobals = new Map<string, PropertyDescriptor | undefined>();
@@ -31,6 +32,7 @@ beforeAll(async () => {
     originalGlobals.set(name, Object.getOwnPropertyDescriptor(globalThis, name));
     Object.defineProperty(globalThis, name, { value, writable: true, configurable: true });
   }
+  registerStyles({ ripple: "", "expansion-panel": "" });
   defineExpansionPanel();
 });
 
@@ -110,6 +112,54 @@ describe("<m-expansion-panel> and <m-accordion>", () => {
     (host as unknown as { component: { open: () => void } }).component.open();
     await settle();
     expect(host.hasAttribute("open")).toBe(false);
+  });
+
+  test("a host veto puts the open attribute back", async () => {
+    const host = mountPanel('label="One"');
+    host.addEventListener("beforeopen", (event) => event.preventDefault());
+    host.setAttribute("open", "");
+    await settle();
+    expect(host.hasAttribute("open")).toBe(false);
+  });
+
+  test("openPanel opens a closed panel", async () => {
+    const host = mountPanel('label="One"');
+    (host as unknown as { openPanel: () => void }).openPanel();
+    await settle();
+    expect(host.hasAttribute("open")).toBe(true);
+    expect((host as unknown as { component: { isOpen: () => boolean } }).component.isOpen()).toBe(true);
+  });
+
+  test("the authored value opens its panel once the children are claimed", async () => {
+    document.body.innerHTML = `
+      <m-accordion value="b">
+        <m-expansion-panel value="a" label="A"></m-expansion-panel>
+        <m-expansion-panel value="b" label="B"></m-expansion-panel>
+      </m-accordion>`;
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    const accordion = document.querySelector("m-accordion") as unknown as {
+      getValue: () => string | null;
+      getPanels: () => Array<{ isOpen: () => boolean }>;
+    };
+    expect(accordion.getValue()).toBe("b");
+    expect(accordion.getPanels().map((panel) => panel.isOpen())).toEqual([false, true]);
+  });
+
+  test("a panel child added later is claimed", async () => {
+    document.body.innerHTML = `<m-accordion><m-expansion-panel value="a" label="A"></m-expansion-panel></m-accordion>`;
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    const accordion = document.querySelector("m-accordion") as unknown as {
+      getPanels: () => unknown[];
+      getValue: () => string | null;
+    };
+    const extra = document.createElement("m-expansion-panel");
+    extra.setAttribute("value", "b");
+    extra.setAttribute("label", "B");
+    document.querySelector("m-accordion")!.append(extra);
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    expect(accordion.getPanels()).toHaveLength(2);
+    (extra as unknown as { component: { open: () => void } }).component.open();
+    expect(accordion.getValue()).toBe("b");
   });
 
   test("an accordion claims its panel children and coordinates them", async () => {
