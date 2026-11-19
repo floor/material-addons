@@ -183,6 +183,13 @@ export const withNavigation = (
     if (supportingText !== undefined) step.supportingText = supportingText;
   };
 
+  const emitComplete = (step: StepState): void => {
+    emit<StepperCompleteEvent>(STEPPER_EVENTS.COMPLETE, {
+      value: step.value,
+      steps: ctx.steps.map((candidate) => ({ ...candidate })),
+    });
+  };
+
   const emitError = (index: number): void => {
     const step = ctx.steps[index];
     emit<StepperErrorEvent>(STEPPER_EVENTS.ERROR, {
@@ -190,6 +197,13 @@ export const withNavigation = (
       step: { ...step },
       supportingText: step.error ? step.supportingText : undefined,
     });
+  };
+
+  /** The one place a failed validation is shown */
+  const fail = (index: number, supportingText?: string): void => {
+    markError(index, supportingText);
+    sync();
+    emitError(index);
   };
 
   /** The one place the active step changes */
@@ -208,9 +222,7 @@ export const withNavigation = (
       if (shouldValidate) {
         const result = await runValidation(from, target.value);
         if (!result.valid) {
-          markError(from, result.supportingText);
-          sync();
-          emitError(from);
+          fail(from, result.supportingText);
           if (settings.linear) return false;
         } else {
           fromStep.error = false;
@@ -246,12 +258,7 @@ export const withNavigation = (
     const allDone = ctx.steps
       .slice(0, -1)
       .every((step) => step.completed || step.optional);
-    if (index === last && (target.completed || allDone)) {
-      emit<StepperCompleteEvent>(STEPPER_EVENTS.COMPLETE, {
-        value: target.value,
-        steps: ctx.steps.map((step) => ({ ...step })),
-      });
-    }
+    if (index === last && (target.completed || allDone)) emitComplete(target);
     return true;
   };
 
@@ -278,26 +285,26 @@ export const withNavigation = (
     return commit(index);
   };
 
+  /** `next()` on the last step: validation, then completion, no move */
+  const finish = async (index: number): Promise<boolean> => {
+    const result = await runValidation(index, null);
+    const step = ctx.steps[index]!;
+    if (!result.valid) {
+      fail(index, result.supportingText);
+      return false;
+    }
+    step.error = false;
+    restoreSupportingText(index);
+    step.completed = true;
+    sync();
+    emitComplete(step);
+    return true;
+  };
+
   const next = async (): Promise<boolean> => {
     const from = activeIndex();
     if (from < 0) return false;
-    if (from === ctx.steps.length - 1) {
-      const result = await runValidation(from, null);
-      if (!result.valid) {
-        markError(from, result.supportingText);
-        sync();
-        emitError(from);
-        return false;
-      }
-      ctx.steps[from].error = false;
-      ctx.steps[from].completed = true;
-      sync();
-      emit<StepperCompleteEvent>(STEPPER_EVENTS.COMPLETE, {
-        value: ctx.steps[from].value,
-        steps: ctx.steps.map((step) => ({ ...step })),
-      });
-      return true;
-    }
+    if (from === ctx.steps.length - 1) return finish(from);
     // The next enabled step only: a veto or a guard on it does not fall through
     // to a later one
     for (let index = from + 1; index < ctx.steps.length; index++) {
@@ -325,8 +332,7 @@ export const withNavigation = (
       step.error = false;
       restoreSupportingText(index);
     } else {
-      markError(index, result.supportingText);
-      emitError(index);
+      fail(index, result.supportingText);
     }
     sync();
     return result.valid;
