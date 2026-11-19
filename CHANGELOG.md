@@ -2,7 +2,7 @@
 
 Published as `mtrl-addons` up to 0.9.x. This file has written notes from 0.8.0, and the commit history below for everything earlier.
 
-## [3.2.0] - 2026-11-19
+## [3.2.0] - 2026-11-20
 
 ### Added
 
@@ -19,9 +19,9 @@ Published as `mtrl-addons` up to 0.9.x. This file has written notes from 0.8.0, 
   `open` attribute following the committed state, silent updates included.
   Their shadow stylesheet is
   `material-addons/elements/css/expansion-panel`.
-- The avatar: `createAvatar`, with an image or initials, the sizes and
-  shapes, the badge and click behaviour, and `<m-avatar>` with its shadow
-  stylesheet.
+- The avatar: `createAvatar`, with an image, initials or an icon glyph,
+  the sizes and shapes, the badge and click behaviour, and `<m-avatar>` with
+  its shadow stylesheet.
 - The skeleton: `createSkeleton` and its creator map, with text, circle and
   rectangle placeholders that fill a layout's real hosts and are replaced in
   place by `reveal()`, the layout and form integration, and `<m-skeleton>`
