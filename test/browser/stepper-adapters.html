@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Stepper adapter test</title>
+<div id="fixture"></div>
+<script type="module">
+  import "material/styles";
+  import "material-addons/styles";
+  const mount = document.getElementById("fixture");
+  const framework = new URL(location.href).searchParams.get("framework");
+  window.events = [];
+  window.veto = true;
+  window.recordBefore = event => {
+    window.events.push([event.type, event.detail.value, event.cancelable]);
+    if (window.veto) event.preventDefault();
+  };
+  window.recordChange = event => window.events.push([event.type, event.detail.value]);
+  if (framework === "react") {
+    const { createElement: h, useState } = await import("react");
+    const { createRoot } = await import("react-dom/client");
+    const { Stepper, Step } = await import("material-addons/react");
+    function App() {
+      const [value, setValue] = useState("one");
+      return h("div", null,
+        h(Stepper, { value, onBeforechange: recordBefore, onChange: event => {
+          recordChange(event);
+          setValue(event.detail.value);
+        } },
+          h(Step, { value: "one", label: "One", supportingText: "First" }, "First panel"),
+          h(Step, { value: "two", label: "Two" }, "Second panel")),
+        h("output", null, value));
+    }
+    createRoot(mount).render(h(App));
+  } else if (framework === "vue") {
+    const { createApp, h, ref } = await import("vue");
+    const { MStepper, MStep } = await import("material-addons/vue");
+    createApp({
+      setup() {
+        const value = ref("one");
+        return () => h("div", [
+          h(MStepper, {
+            modelValue: value.value, "onUpdate:modelValue": next => { value.value = next; },
+            onBeforechange: recordBefore, onChange: recordChange,
+          }, () => [
+            h(MStep, { value: "one", label: "One", supportingText: "First" }, () => "First panel"),
+            h(MStep, { value: "two", label: "Two" }, () => "Second panel"),
+          ]),
+          h("output", value.value),
+        ]);
+      },
+    }).mount(mount);
+  } else if (framework === "solid") {
+    const { createSignal, createComponent } = await import("solid-js");
+    const { render, Dynamic } = await import("solid-js/web");
+    const { Stepper, Step } = await import("material-addons/solid");
+    render(() => {
+      const [value, setValue] = createSignal("one");
+      return [
+        createComponent(Stepper, {
+          get value() { return value(); },
+          onBeforechange: recordBefore,
+          onChange(event) { recordChange(event); setValue(event.detail.value); },
+          get children() { return [
+            createComponent(Step, { value: "one", label: "One", supportingText: "First", children: "First panel" }),
+            createComponent(Step, { value: "two", label: "Two", children: "Second panel" }),
+          ]; },
+        }),
+        createComponent(Dynamic, { component: "output", get children() { return value(); } }),
+      ];
+    }, mount);
+  } else if (framework === "svelte") {
+    const { mount: render } = await import("svelte");
+    const { default: App } = await import("./StepperSvelteFixture.svelte");
+    render(App, { target: mount });
+  }
+</script>

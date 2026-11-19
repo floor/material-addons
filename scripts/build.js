@@ -1,3 +1,4 @@
+import { writeSvelteAdapters } from "./generate-adapters.mjs";
 // build.js
 import { mkdir, rm } from "fs/promises";
 import { existsSync } from "fs";
@@ -19,7 +20,21 @@ const CSS_OUTPUT = join(DIST_DIR, "styles.css");
 const STYLES_ENTRY = join(ROOT_DIR, "src/styles/index.scss");
 
 // Granular module entry points for tree-shaking
+// Adapter bundles import their public element entry instead of duplicating it.
+const adapterPlugin = {
+  name: "stepper-element-entry",
+  setup(build) {
+    build.onResolve({ filter: /^\.\.\/elements\/stepper$/ }, () => ({
+      path: "material-addons/elements/stepper", external: true,
+    }));
+  },
+};
+
 const MODULES = [
+  ...["react", "vue", "solid"].map(framework => ({
+    name: framework, entry: `src/${framework}/index.ts`, outDir: `dist/${framework}`, adapter: true,
+  })),
+  { name: "svelte runtime", entry: "src/adapters/svelte.ts", outDir: "dist/svelte", basename: "runtime", adapter: true },
   {
     name: "form constants",
     entry: "src/components/form/constants.ts",
@@ -192,7 +207,7 @@ const buildElementStyles = async () => {
   // a second copy of the code.
   await Bun.write(
     join(DIST_DIR, "elements/stepper.mjs"),
-    'export { stepperElement, stepDeclaration, defineStepper } from "./index.mjs";\n',
+    'export { stepperElement, stepDeclaration, defineStepper, stepperElementEventNames } from "./index.mjs";\n',
   );
   console.log(`  Element stylesheet: ${(css.length / 1024).toFixed(2)} KB`);
   return true;
@@ -222,7 +237,9 @@ const buildModule = async (module) => {
     naming: {
       entry: `${basename}.mjs`,
     },
-    external: ["material"],
+    external: module.adapter ? ["material", "material-addons", "react", "vue", "solid-js", "svelte"] : ["material"],
+    plugins: module.adapter ? [adapterPlugin] : undefined,
+    banner: module.name === "react" ? '"use client";' : undefined,
   });
 
   if (!esmResult.success) {
@@ -385,6 +402,7 @@ const buildApp = async () => {
 };
 
 const buildAll = async () => {
+  await writeSvelteAdapters(join(DIST_DIR, "svelte"));
   const jsSuccess = await buildApp();
   const cssSuccess = await buildStyles();
   return jsSuccess && cssSuccess;

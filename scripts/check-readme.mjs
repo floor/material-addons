@@ -145,7 +145,7 @@ try {
   for (const block of blocks) {
     for (const match of block.code.matchAll(new RegExp(`(?:from|import)\\s*['"](${NAMES}(?:/[\\w./-]+)?)['"]`, "g"))) specifiers.add(match[1]);
   }
-  const probe = spawnSync(process.execPath, ["--input-type=module", "-e", `
+  const probe = spawnSync(process.execPath, ["--conditions=svelte", "--input-type=module", "-e", `
     import { existsSync } from 'node:fs';
     import { fileURLToPath } from 'node:url';
     const resolved = {};

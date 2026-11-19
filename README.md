@@ -166,6 +166,25 @@ A `<m-step>` declares one step:
 | `completed`, `error`, `optional`, `disabled` | The step's state |
 | `no-edit` | Present to bar returning once completed |
 
+### Framework adapters
+
+Install the framework you use. The factory and custom element imports work without a framework dependency.
+
+| Framework | Import | Components | Two-way state |
+| --- | --- | --- | --- |
+| React | `material-addons/react` | `Stepper`, `Step` | `value` and `onChange` |
+| Vue | `material-addons/vue` | `MStepper`, `MStep` | `v-model` or `v-model:value` |
+| Svelte 5 | `material-addons/svelte` | `Stepper`, `Step` | `bind:value` |
+| Solid | `material-addons/solid` | `Stepper`, `Step` | `value` and `onChange` |
+
+The adapters load the shadow styles and register both tags when mounted. They pass the same typed custom events as the elements. Call `preventDefault()` on the before-change event to veto navigation.
+
+| Event API | Before change | Validation failed |
+| --- | --- | --- |
+| React and Solid callbacks | `onBeforechange` | `onValidationerror` |
+| Vue listeners | `@beforechange` | `@validationerror` |
+| Svelte callbacks | `onbeforechange` | `onvalidationerror` |
+
 ### Size
 
 Measured as standalone minified ESM bundles, gzipped, with `material` external; the element's bundle also has the factory external. `scripts/stepper-size.mjs` prints the row.

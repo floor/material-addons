@@ -9,5 +9,5 @@
  * @module elements
  */
 
-export { stepperElement, stepDeclaration, defineStepper } from "./stepper";
-export type { StepperElement, StepAttributes } from "./stepper";
+export { stepperElement, stepDeclaration, defineStepper, stepperElementEventNames } from "./stepper";
+export type { StepperElement, StepAttributes, StepperElementEventMap } from "./stepper";

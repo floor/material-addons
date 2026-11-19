@@ -42,6 +42,7 @@ export type {
   StepperConfig,
   StepperErrorEvent,
   StepperEventName,
+  StepperEvents,
   StepperHeaderPlacement,
   StepperLabelPlacement,
   StepperOrientation,

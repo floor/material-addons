@@ -1,6 +1,5 @@
 // src/components/stepper/types.ts
 
-import type { EventCallback } from "material/core/state";
 import type {
   STEPPER_HEADER_PLACEMENTS,
   STEPPER_LABEL_PLACEMENTS,
@@ -130,14 +129,17 @@ export interface StepperOrientationChangeEvent {
   orientation: StepperResolvedOrientation;
 }
 
-/** An event name the component emits */
-export type StepperEventName =
-  | "beforechange"
-  | "change"
-  | "complete"
-  | "error"
-  | "reset"
-  | "orientationchange";
+/** Payloads delivered to the factory's event listeners. */
+export interface StepperEvents {
+  beforechange: StepperBeforeChangeEvent;
+  change: StepperChangeEvent;
+  complete: StepperCompleteEvent;
+  error: StepperErrorEvent;
+  reset: StepperResetEvent;
+  orientationchange: StepperOrientationChangeEvent;
+}
+
+export type StepperEventName = keyof StepperEvents;
 
 /** Configuration for createStepper */
 export interface StepperConfig {
@@ -211,7 +213,7 @@ export interface StepperComponent {
   enable: () => StepperComponent;
   disable: () => StepperComponent;
   isDisabled: () => boolean;
-  on: (event: StepperEventName, handler: EventCallback) => StepperComponent;
-  off: (event: StepperEventName, handler: EventCallback) => StepperComponent;
+  on: <K extends StepperEventName>(event: K, handler: (payload: StepperEvents[K]) => void) => StepperComponent;
+  off: <K extends StepperEventName>(event: K, handler: (payload: StepperEvents[K]) => void) => StepperComponent;
   destroy: () => void;
 }

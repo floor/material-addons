@@ -10,6 +10,24 @@ import { releasePack } from "./release-pack.mjs";
 const EXPECTED_PATHS = [
   "LICENSE",
   "README.md",
+  "dist/adapters/react.d.ts",
+  "dist/adapters/solid.d.ts",
+  "dist/adapters/stepper.d.ts",
+  "dist/adapters/svelte.d.ts",
+  "dist/adapters/vue.d.ts",
+  "dist/react/index.d.ts",
+  "dist/react/index.mjs",
+  "dist/solid/index.d.ts",
+  "dist/solid/index.mjs",
+  "dist/vue/index.d.ts",
+  "dist/vue/index.mjs",
+  "dist/svelte/index.js",
+  "dist/svelte/index.d.ts",
+  "dist/svelte/runtime.mjs",
+  "dist/svelte/Stepper.svelte",
+  "dist/svelte/Stepper.svelte.d.ts",
+  "dist/svelte/Step.svelte",
+  "dist/svelte/Step.svelte.d.ts",
   "dist/components/colorpicker/api.d.ts",
   "dist/components/colorpicker/colorpicker.d.ts",
   "dist/components/colorpicker/config.d.ts",
@@ -111,6 +129,7 @@ const SHIPPED_FIELDS = [
   "types",
   "files",
   "peerDependencies",
+  "peerDependenciesMeta",
   "sideEffects",
   "repository",
   "bugs",
@@ -148,6 +167,7 @@ try {
   }
 
   const specifiers = [];
+  const adapters = new Map([["./react", "react"], ["./vue", "vue"], ["./solid", "solid-js"]]);
   for (const [entry, conditions] of Object.entries(pkg.exports)) {
     const components = entry.includes("*") ? ["form", "colorpicker"] : [""];
     for (const component of components) {
@@ -156,7 +176,7 @@ try {
         assert.ok(existsSync(join(addon, path.replace("*", component))), `Missing export: ${path}`);
       }
       // A stylesheet entry registers CSS and exports nothing, like ./styles
-      if (entry !== "./styles" && !entry.includes("/css/")) {
+      if (entry !== "./styles" && !entry.includes("/css/") && !adapters.has(entry) && entry !== "./svelte") {
         specifiers.push(entry === "." ? pkg.name : pkg.name + entry.slice(1).replace("*", component));
       }
     }
@@ -173,6 +193,24 @@ try {
       assert.throws(() => require(specifier), { code: 'ERR_PACKAGE_PATH_NOT_EXPORTED' }, specifier);
     }
   `], fixture);
+  for (const [entry, peer] of adapters) {
+    symlinkSync(resolve(root, "node_modules", peer), join(modules, peer), "junction");
+    const name = entry === "./vue" ? "MStepper" : "Stepper";
+    const child = entry === "./vue" ? "MStep" : "Step";
+    run(process.execPath, ["--input-type=module", "-e", `
+      import assert from 'node:assert/strict';
+      const adapter = await import(${JSON.stringify(pkg.name + entry.slice(1))});
+      assert.ok(adapter.${name} && adapter.${child});
+    `], fixture);
+  }
+  assert.match(readFileSync(join(addon, "dist/react/index.mjs"), "utf8"), /^"use client";/);
+  run(process.execPath, ["--conditions=svelte", "--input-type=module", "-e", `
+    import assert from 'node:assert/strict';
+    assert.match(import.meta.resolve("material-addons/svelte"), new RegExp("dist/svelte/index[.]js$"));
+  `], fixture);
+  for (const peer of ["react", "vue", "solid-js", "svelte"]) {
+    assert.equal(pkg.peerDependenciesMeta[peer]?.optional, true, peer);
+  }
   console.log(`Packed ${pkg.name}@${pkg.version}: manifest has no scripts or devDependencies; ${packed.files.length} paths; ${specifiers.length} entry points import as ESM and refuse require.`);
 } finally {
   rmSync(fixture, { recursive: true, force: true });
