@@ -66,6 +66,12 @@
     object-fit: cover;
   }
 
+  // A failed image hides; the initials or an authored icon take the shape.
+  &--image &__content > .mtrl-avatar__img--failed,
+  &--image &__content ::slotted(.mtrl-avatar__img--failed) {
+    display: none;
+  }
+
   &--icon &__content > :is(svg, img),
   &--icon &__content ::slotted(:is(svg, img)) {
     inline-size: var(--_avatar-icon-size);

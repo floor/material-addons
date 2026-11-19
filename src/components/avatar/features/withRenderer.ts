@@ -56,6 +56,75 @@ export function withRenderer(settings: AvatarSettings) {
       return nodes.flatMap(node => node.localName === "img" ? [node as HTMLImageElement] : Array.from(node.querySelectorAll("img")));
     }
 
+    // The image fallback: a failed image (error event, or naturalWidth 0
+    // once the browser gave up) hides the broken picture; whatever other
+    // content was authored — an icon beside it — keeps showing, and when
+    // nothing readable remains the initials take the shape instead.
+    const failedImages = new Set<HTMLImageElement>();
+
+    function imageFailed(img: HTMLImageElement): void {
+      if (failedImages.has(img)) return;
+      failedImages.add(img);
+      img.classList.add(`${AVATAR_CLASSES.ROOT}__img--failed`);
+      img.setAttribute("aria-hidden", "true");
+      syncFallback();
+    }
+
+    function imageRecovered(img: HTMLImageElement): void {
+      if (!failedImages.delete(img)) return;
+      img.classList.remove(`${AVATAR_CLASSES.ROOT}__img--failed`);
+      img.removeAttribute("aria-hidden");
+      syncFallback();
+    }
+
+    /** Every image failed, and nothing else in the content is showing. */
+    function contentIsBlank(): boolean {
+      const nodes = slot?.assignedElements({ flatten: true }) ?? Array.from(content.children);
+      const others = nodes.flatMap(node =>
+        node.localName === "img" ? [] : (node.textContent?.trim() || node.localName === "svg" || node.children.length > 0) && node.localName !== "slot" ? [node] : []);
+      const liveImages = images().filter((img) => !failedImages.has(img));
+      return others.length === 0 && liveImages.length === 0;
+    }
+
+    /** The initials the fallback shows: the text, or the label's first letters. */
+    function fallbackInitials(): string {
+      const source = settings.text || (settings.label ?? "");
+      return Array.from(source).slice(0, 2).join("");
+    }
+
+    function syncFallback(): void {
+      if (settings.variant !== "image") return;
+      const blank = contentIsBlank();
+      const initials = fallbackInitials();
+      text.textContent = blank && initials ? initials : Array.from(settings.text).slice(0, 2).join("");
+      const next = blank && initials ? text : content;
+      const previous = shape.firstElementChild;
+      if (previous !== next) {
+        if (previous === content || previous === text) previous.replaceWith(next);
+        else shape.prepend(next);
+      }
+    }
+
+    /** An image element, without an instanceof that a jsdom page cannot name. */
+    const isImage = (node: EventTarget | null): node is HTMLImageElement =>
+      !!node && (node as Element).localName === "img";
+
+    /** Browsers fire error without bubbling; the root hears it in capture. */
+    function imageError(event: Event): void {
+      if (isImage(event.target)) imageFailed(event.target);
+    }
+
+    function checkImagesLoaded(): void {
+      for (const img of images()) {
+        if (failedImages.has(img)) {
+          if (img.complete && img.naturalWidth > 0) imageRecovered(img);
+        } else if (img.complete && img.naturalWidth === 0 && (img.getAttribute("src") ?? "") !== "") {
+          imageFailed(img);
+        }
+      }
+      syncFallback();
+    }
+
     function updateName() {
       const pictures = settings.variant === "image" ? images() : [];
       const first = pictures[0];
@@ -88,11 +157,13 @@ export function withRenderer(settings: AvatarSettings) {
     const imageObserver = new MutationObserver(updateName);
     function observeImages() {
       imageObserver.disconnect();
-      imageObserver.observe(content, { childList: true, subtree: true, attributes: true, attributeFilter: ["alt"] });
+      imageObserver.observe(content, { childList: true, subtree: true, attributes: true, attributeFilter: ["alt", "src"] });
       for (const node of slot?.assignedElements({ flatten: true }) ?? []) {
-        imageObserver.observe(node, { childList: true, subtree: true, attributes: true, attributeFilter: ["alt"] });
+        imageObserver.observe(node, { childList: true, subtree: true, attributes: true, attributeFilter: ["alt", "src"] });
       }
+      checkImagesLoaded();
       updateName();
+      syncFallback();
     }
 
     function setContent(next: AvatarSettings["content"]) {
@@ -157,6 +228,7 @@ export function withRenderer(settings: AvatarSettings) {
         else shape.prepend(next);
       }
       updateName();
+      syncFallback();
     }
 
     function renderText() {
@@ -170,6 +242,10 @@ export function withRenderer(settings: AvatarSettings) {
     }
 
     root.addEventListener("click", click);
+    root.addEventListener("error", imageError, true);
+    root.addEventListener("load", ((event: Event) => {
+      if (isImage(event.target)) checkImagesLoaded();
+    }) as EventListener, true);
     setModifier("variant", settings.variant);
     setModifier("size", settings.size);
     setModifier("shape", settings.shape);
@@ -188,6 +264,7 @@ export function withRenderer(settings: AvatarSettings) {
       setBadge(config: AvatarSettings["badge"]) { badge.set(config); placeBadge(); },
       destroy() {
         imageObserver.disconnect();
+        root.removeEventListener("error", imageError, true);
         slot?.removeEventListener("slotchange", observeImages);
         for (const [img, original] of hiddenImages) restoreImage(img, original);
         root.removeEventListener("click", click);

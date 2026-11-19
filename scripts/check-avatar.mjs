@@ -121,6 +121,50 @@ try {
     await page.close();
     console.log(`${framework}: avatar attributes, styles, native activation and disabled state passed`);
   }
+  // The image fallback: a broken src hides the picture, the initials take
+  // the shape, and the avatar's box never moves.
+  {
+    const page = await browser.newPage();
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto(`http://127.0.0.1:${port}/test/browser/avatar.html`);
+    await page.waitForFunction(() => !!window.createAvatar);
+    const fallback = await page.evaluate(async () => {
+      document.body.innerHTML = "";
+      const below = document.createElement("p");
+      below.textContent = "after";
+      const avatar = window.createAvatar({
+        variant: "image",
+        text: "Ada Lovelace",
+        content: '<img src="/definitely-missing.png" alt="Ada">',
+      });
+      document.body.append(avatar.element, below);
+      const box = avatar.element.getBoundingClientRect();
+      const before = { width: box.width, height: box.height, below: below.getBoundingClientRect().top };
+      const img = avatar.element.querySelector("img");
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      const after = avatar.element.getBoundingClientRect();
+      // The initials taking the shape detach the content node; the img node
+      // itself still carries the failed mark.
+      return {
+        before,
+        after: { width: after.width, height: after.height, below: below.getBoundingClientRect().top },
+        failedClass: img?.classList.contains("mtrl-avatar__img--failed") ?? false,
+        initials: avatar.element.querySelector(".mtrl-avatar__shape .mtrl-avatar__text")?.textContent ?? null,
+        imgDisplayed: img ? img.isConnected && getComputedStyle(img).display !== "none" : false,
+      };
+    });
+    assert.equal(fallback.failedClass, true, `the broken image is marked failed (got ${fallback.failedClass})`);
+    assert.equal(fallback.initials, "Ad", `the initials take the shape (got ${fallback.initials})`);
+    assert.equal(fallback.imgDisplayed, false, "the broken image is not displayed");
+    assert.equal(fallback.after.width, fallback.before.width, `no layout shift in width (got ${fallback.before.width} -> ${fallback.after.width})`);
+    assert.equal(fallback.after.height, fallback.before.height, `no layout shift in height (got ${fallback.before.height} -> ${fallback.after.height})`);
+    assert.equal(fallback.after.below, fallback.before.below, `the page below does not move (got ${fallback.before.below} -> ${fallback.after.below})`);
+    assert.deepEqual(errors, [], "fallback: no page errors");
+    await page.close();
+    console.log("Avatar image fallback: broken src hidden, initials shown, no layout shift");
+  }
+
   console.log("Avatar crop, names, badge direction, colors, and link behavior passed");
 } finally {
   await browser?.close();
