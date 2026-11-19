@@ -437,26 +437,32 @@ export const withNavigation = (
 
   /**
    * Focus where the next step's work starts, after a panel action moved.
-   * "panel": the first eligible control, then the panel itself; "heading": the
-   * panel's heading, then the same. Header navigation never calls this: focus
+   * "panel": the first usable control, else the panel; "heading": the first
+   * usable heading, else the panel. Header navigation never calls this: focus
    * stays on the header it was on.
    */
   const focusPanel = (): void => {
     const panel = renderer.panelElements[activeIndex()];
     if (!panel) return;
-    const heading = queryPanel<HTMLElement>(panel, "h1, h2, h3, h4, h5, h6, [role='heading']")[0];
-    const control = queryPanel<HTMLElement>(
-      panel,
-      "input, select, textarea, button, [href], [tabindex]",
-    ).find((candidate) => !candidate.hasAttribute("disabled") && !candidate.closest("[hidden]"));
-    const target =
-      settings.focusOnAction === "heading" ? heading ?? control : control;
+    // A candidate that cannot take focus is not a target: a hidden input, a
+    // hidden, invisible or inert control, a disabled one
+    const usable = (element: HTMLElement): boolean => {
+      if (element.hasAttribute("disabled") || (element as HTMLButtonElement).disabled) return false;
+      if (element.tagName === "INPUT" && (element as HTMLInputElement).type === "hidden") return false;
+      if (element.closest("[inert]") || element.closest("[hidden]")) return false;
+      const style = getComputedStyle(element);
+      if (style.display === "none" || style.visibility === "hidden") return false;
+      return typeof element.checkVisibility !== "function" || element.checkVisibility();
+    };
+    const selector = settings.focusOnAction === "heading"
+      ? "h1, h2, h3, h4, h5, h6, [role='heading']"
+      : "input, select, textarea, button, [href], [tabindex]";
+    const target = queryPanel<HTMLElement>(panel, selector).find(usable);
     if (target) {
       // A heading is not focusable on its own: give it a temporary tab stop
       if (target.tabIndex < 0 && !target.hasAttribute("tabindex")) target.tabIndex = -1;
       target.focus({ preventScroll: true });
-    }
-    else {
+    } else {
       panel.tabIndex = -1;
       panel.focus({ preventScroll: true });
     }

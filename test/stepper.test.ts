@@ -510,6 +510,57 @@ describe("Stepper guards, callbacks and layout", () => {
     stepper.destroy();
   });
 
+  const focusCase = (label: string, content: string, id: string) => {
+    test(`focusOnAction skips an ineligible candidate: ${label}`, async () => {
+      const stepper = mount({
+        steps: [
+          { value: "account", label: "Account details", content: `<button data-stepper-next>Next</button>` },
+          { value: "address", label: "Shipping address", content },
+        ],
+      });
+      stepper.getPanelElement(0)!.querySelector<HTMLButtonElement>("[data-stepper-next]")!.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(stepper.getValue()).toBe("address");
+      expect(document.activeElement).toBe(stepper.getPanelElement(1)!.querySelector(id));
+      stepper.destroy();
+    });
+  };
+
+  focusCase("a type=hidden input", `<input type="hidden" id="skip"><input id="target">`, "#target");
+  focusCase("a hidden input", `<input hidden id="skip"><input id="target">`, "#target");
+  focusCase("a display:none input", `<input style="display:none" id="skip"><input id="target">`, "#target");
+  focusCase("a visibility:hidden input", `<input style="visibility:hidden" id="skip"><input id="target">`, "#target");
+  focusCase("an input under an inert ancestor", `<div inert><input id="skip"></div><input id="target">`, "#target");
+  focusCase("a disabled control", `<button disabled id="skip">Skip</button><input id="target">`, "#target");
+
+  test("focusOnAction heading mode skips a hidden heading and falls back to the panel", async () => {
+    const stepper = mount({
+      focusOnAction: "heading",
+      steps: [
+        { value: "account", label: "Account details", content: `<button data-stepper-next>Next</button>` },
+        {
+          value: "address",
+          label: "Shipping address",
+          content: `<h2 hidden id="skip">Hidden</h2><h2 id="target">Visible</h2>`,
+        },
+      ],
+    });
+    stepper.getPanelElement(0)!.querySelector<HTMLButtonElement>("[data-stepper-next]")!.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(document.activeElement).toBe(stepper.getPanelElement(1)!.querySelector("#target"));
+
+    stepper.setSteps([
+      { value: "account", label: "Account details", content: `<button data-stepper-next>Next</button>` },
+      { value: "address", label: "Shipping address", content: `<p>No heading here</p><input id="field">` },
+    ]);
+    stepper.setValue("account");
+    stepper.getPanelElement(0)!.querySelector<HTMLButtonElement>("[data-stepper-next]")!.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    // With no usable heading the panel takes focus, not the input
+    expect(document.activeElement).toBe(stepper.getPanelElement(1));
+    stepper.destroy();
+  });
+
   test("getActiveIndex and a declaration update keep the selection", () => {
     const stepper = mount();
     expect(stepper.getActiveIndex()).toBe(0);
