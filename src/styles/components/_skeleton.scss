@@ -136,19 +136,26 @@ $component: "mtrl-skeleton";
   }
 }
 
-// The swap rule: the real component fills the host the shape held.
+// The swap rules. The placeholder fills the host the mapping sized; the
+// real component that replaces it sizes ITSELF — a 100% fill on it would
+// collapse an auto-sized host around it (host from content, content from
+// host) — so the fill is the placeholder's and the fade is the real
+// component's.
 .mtrl-skeleton-host {
   display: block;
+}
 
-  > * {
-    inline-size: 100%;
-    animation: #{$component}-reveal var(--#{$component}-reveal-duration, 200ms) var(--#{$component}-reveal-easing, cubic-bezier(0.2, 0, 0, 1)) both;
+.mtrl-skeleton-host > .#{$component} {
+  inline-size: 100%;
+}
 
-    @keyframes #{$component}-reveal {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-  }
+.mtrl-skeleton-host > *:not(.#{$component}) {
+  animation: #{$component}-reveal var(--#{$component}-reveal-duration, 200ms) var(--#{$component}-reveal-easing, cubic-bezier(0.2, 0, 0, 1)) both;
+}
+
+@keyframes #{$component}-reveal {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -159,7 +166,7 @@ $component: "mtrl-skeleton";
   .#{$component}[data-motion] .#{$component}__shape,
   .#{$component} .#{$component}__line,
   .#{$component}[data-motion] .#{$component}__line,
-  .mtrl-skeleton-host > * {
+  .mtrl-skeleton-host > *:not(.#{$component}) {
     animation: none;
   }
 }

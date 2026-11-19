@@ -396,7 +396,10 @@ export function createSkeletonHost(
   if (mapped.inlineSize) {
     host.style.width = mapped.inlineSize;
     // The mapping owns this box: a row's growing items would otherwise
-    // redistribute it into an even split.
+    // redistribute it into an even split. The flex behaviour is the host's
+    // for its whole life — it is never switched at reveal, so a matched
+    // mapping cannot move anything by changing how the container shares
+    // space between the two phases.
     host.style.flex = "none";
   }
   if (mapped.blockSize) host.style.height = mapped.blockSize;
@@ -413,17 +416,19 @@ export function createSkeletonHost(
       const { layout: _layout, layoutItem: _layoutItem, ...revealOptions } = options;
       const real = createComponentInstance(Component, revealOptions);
       if (real && real.element) {
-        // No pinning, and the mapping's box leaves with the placeholder: a
-        // real component wider than a mapped host would overflow it and
-        // cover its neighbours, which is worse than a one-time shift. The
-        // width, height and flex the mapping put on the host are cleared,
-        // so the host takes the real component's own size and the layout
-        // reflows once; when the mapping matched, the sizes are the same
-        // and nothing moves.
-        host.style.width = "";
-        host.style.height = "";
-        host.style.flex = "";
+        // The mapping's placeholder box is replaced by the real component's
+        // measured box, measured after the swap when the real element is in
+        // the document. The host always carries an explicit inline size and
+        // one flex behaviour, so no container — flex, grid, stack — can
+        // reinterpret the item between the two phases: a matched mapping
+        // writes the same numbers and nothing moves; a mismatch reflows
+        // once, to the real component's own size, covering nothing.
         host.replaceChild(real.element, placeholder.element);
+        const realBox = (real.element as HTMLElement);
+        const realWidth = realBox.offsetWidth;
+        if (realWidth > 0) host.style.width = `${realWidth}px`;
+        const realHeight = realBox.offsetHeight;
+        if (realHeight > 0) host.style.height = `${realHeight}px`;
         placeholder.destroy();
         for (const key of Object.keys(real)) {
           if (key !== "destroy") slot[key] = (real as Record<string, unknown>)[key];

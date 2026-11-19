@@ -452,8 +452,51 @@ try {
   assert.equal(unequalMapped.before.wide.width, 320, `the wide host renders its mapped inline size (got ${unequalMapped.before.wide.width})`);
   assert.equal(unequalMapped.innerWidths.narrow, 144, "the narrow real component takes its own width");
   assert.equal(unequalMapped.innerWidths.wide, 320, "the wide real component takes its own width");
-  assert.equal(unequalMapped.after.below, unequalMapped.before.below, `the row's height does not change (got ${unequalMapped.before.below} -> ${unequalMapped.after.below})`);
-  console.log(`unequal mapped sizes: hosts hold 144px and 320px before reveal, then the real components take their own widths`);
+  console.log(`unequal mapped sizes: hosts hold 144px and 320px before reveal, then the real components take their own widths (one reflow)`);
+
+  // Orion's case: matched mappings in a 600px growing row. The host's flex
+  // behaviour never switches, so the second child cannot move on reveal.
+  const matchedRow = await page.evaluate(() => {
+    const { createLayout, registerSkeleton } = window.skeleton;
+    document.body.innerHTML = "";
+    const makeCreator = (width) => () => {
+      const element = document.createElement("div");
+      element.style.width = width;
+      element.style.height = "40px";
+      return { element, destroy: () => element.remove() };
+    };
+    const first = makeCreator("144px");
+    const second = makeCreator("320px");
+    registerSkeleton(first, () => ({ variant: "rect", blockSize: "40px", inlineSize: "144px" }));
+    registerSkeleton(second, () => ({ variant: "rect", blockSize: "40px", inlineSize: "320px" }));
+    const region = document.createElement("div");
+    region.style.display = "flex";
+    region.style.width = "600px";
+    document.body.appendChild(region);
+    const result = createLayout(
+      ["div", { layout: { type: "row", gap: "0px" } }, [first, "first", {}], [second, "second", {}]],
+      region,
+      { skeleton: true },
+    );
+    const hostOf = (name) => result.get(name).element;
+    const boxOf = (host) => {
+      const box = host.getBoundingClientRect();
+      return { width: box.width, left: box.left };
+    };
+    const firstHost = hostOf("first");
+    const secondHost = hostOf("second");
+    const before = { first: boxOf(firstHost), second: boxOf(secondHost) };
+    result.reveal();
+    const after = { first: boxOf(firstHost), second: boxOf(secondHost) };
+    result.destroy();
+    return { before, after };
+  });
+  assert.equal(matchedRow.before.first.width, 144, `the first host holds its mapped width (got ${matchedRow.before.first.width})`);
+  assert.equal(matchedRow.before.second.width, 320, `the second host holds its mapped width (got ${matchedRow.before.second.width})`);
+  assert.equal(matchedRow.after.first.left, matchedRow.before.first.left, `the first host does not move (got ${matchedRow.before.first.left} -> ${matchedRow.after.first.left})`);
+  assert.equal(matchedRow.after.second.left, matchedRow.before.second.left, `the second child does not move on reveal (got ${matchedRow.before.second.left} -> ${matchedRow.after.second.left})`);
+  assert.equal(matchedRow.after.second.width, 320, "the second host keeps its width");
+  console.log(`matched row: 144px and 320px in a 600px row, the second child stays at ${matchedRow.after.second.left}px`);
 
   // A mismatched mapping is a one-time reflow, never a permanent clip: the
   // even placeholders (232/232) reveal into 184/280, and the real components
@@ -540,6 +583,7 @@ try {
   assert.equal(neighbour.hostBefore, 144, `the mapped box holds before reveal (got ${neighbour.hostBefore})`);
   assert.equal(neighbour.realWidth, 320, `the real component takes its own 320px (got ${neighbour.realWidth})`);
   assert.ok(neighbour.hostWidthAfter >= 320, `the cleared host holds its real component without overflowing (host ${neighbour.hostWidthAfter}, real 320)`);
+  assert.ok(neighbour.hostWidthAfter <= 321, `the constant-flex host wraps its real component exactly, not a stretched share (host ${neighbour.hostWidthAfter})`);
   assert.equal(neighbour.hitIsButton, true, "the button beside a mismatched component is hit-testable after reveal");
   console.log(`mismatched reveal: host 144px with a 320px real component inside ${neighbour.hostWidthAfter}px after clearing, the neighbour button is hit-testable`);
 
