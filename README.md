@@ -172,15 +172,16 @@ Measured as standalone minified ESM bundles, gzipped, with `material` external; 
 
 | Artifact | Measured | Target |
 |----------|----------|--------|
-| `createStepper` | 6.2 KB | 2.2 KB |
+| `createStepper` | 6.5 KB | 2.2 KB |
 | `<m-stepper>` and `<m-step>` | 1.5 KB | 0.7 KB |
 | The compiled stylesheet | 1.6 KB | 1.4 KB |
 
 The targets were estimates made before the implementation, and all three rows
 exceed them; the row records what was measured, not what was hoped for.
 
-Where the factory's bytes go, in source: the navigation and validation
-pipeline is 17 KB and the renderer 10 KB; the rest is 16 KB between them.
+Where the factory's bytes go, in source: the navigation, validation and
+action handling is 19 KB and the renderer 12 KB; the rest is 15 KB between
+them.
 
 The renderer builds fifteen parts and their ARIA state. The navigation runs
 the three validation stages and the completion rules.
