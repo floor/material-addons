@@ -10,37 +10,30 @@
  * @module elements
  */
 
-import {
-  defineElement,
-  type DefineOptions,
-  type ElementSpec,
-} from "material/elements";
+import { defineElement, type DefineOptions, type ElementInstance, type ElementSpec } from "material/elements";
 import createSkeleton from "../components/skeleton";
 import type { SkeletonComponent, SkeletonConfig } from "../components/skeleton/types";
 
-/** An attribute's value as the shared updater hands it over. */
-type SkeletonAttributeValue = NonNullable<NonNullable<ElementSpec<SkeletonComponent>["attributes"]>[string]["update"]> extends (...args: infer A) => unknown ? A[1] : never;
-
-const skeletonSpec = {
+const spec = {
   name: "skeleton",
   ssr: false,
   styles: ["skeleton"],
   hostStyles: ":host{display:block}",
   create: (config: Record<string, unknown>) => createSkeleton(config as SkeletonConfig),
   attributes: {
-    variant: { type: "string", config: "variant", update: (c: SkeletonComponent, value: SkeletonAttributeValue) => void c.setVariant(value === null ? "text" : String(value)) },
-    size: { type: "string", config: "size", update: (c: SkeletonComponent, value: SkeletonAttributeValue) => void c.setSize(value === null ? "medium" : String(value)) },
-    lines: { type: "number", config: "lines", update: (c: SkeletonComponent, value: SkeletonAttributeValue) => void c.setLines(Number(value ?? 1)) },
-    motion: { type: "string", config: "motion", update: (c: SkeletonComponent, value: SkeletonAttributeValue) => void c.setMotion(value === null ? "wave" : String(value)) },
+    variant: { type: "string", config: "variant", update: (c: SkeletonComponent, value: unknown) => c.setVariant(value == null ? "text" : String(value)) },
+    size: { type: "string", config: "size", update: (c: SkeletonComponent, value: unknown) => c.setSize(value == null ? "medium" : String(value)) },
+    lines: { type: "number", config: "lines", update: (c: SkeletonComponent, value: unknown) => c.setLines(Number(value ?? 1)) },
+    motion: { type: "string", config: "motion", update: (c: SkeletonComponent, value: unknown) => c.setMotion(value == null ? "wave" : String(value)) },
     // `no-busy` is the presence opt-out: busy is the default
-    "no-busy": { type: "boolean", update: (c: SkeletonComponent, value: SkeletonAttributeValue) => void c.setBusy(!value) },
+    "no-busy": { type: "boolean", update: (c: SkeletonComponent, value: unknown) => c.setBusy(!value) },
   },
   properties: {
-    variant: { get: (c) => c.getVariant(), set: (c, value) => void c.setVariant(String(value)), config: "variant" },
-    size: { get: (c) => c.getSize(), set: (c, value) => void c.setSize(String(value)), config: "size" },
-    lines: { get: (c) => c.getLines(), set: (c, value) => void c.setLines(Number(value ?? 1)), config: "lines" },
-    motion: { get: (c) => c.getMotion(), set: (c, value) => void c.setMotion(String(value)), config: "motion" },
-    busy: { get: (c) => c.isBusy(), set: (c, value) => void c.setBusy(!!value), config: "busy" },
+    variant: { get: (c) => c.getVariant(), set: (c, value: unknown) => c.setVariant(String(value)), config: "variant" },
+    size: { get: (c) => c.getSize(), set: (c, value: unknown) => c.setSize(String(value)), config: "size" },
+    lines: { get: (c) => c.getLines(), set: (c, value: unknown) => c.setLines(Number(value ?? 1)), config: "lines" },
+    motion: { get: (c) => c.getMotion(), set: (c, value: unknown) => c.setMotion(String(value)), config: "motion" },
+    busy: { get: (c) => c.isBusy(), set: (c, value: unknown) => c.setBusy(Boolean(value)), config: "busy" },
   },
   // The authored opt-out is read before the upgrade builds the component,
   // as the stepper's no-report-validity is
@@ -60,30 +53,20 @@ const skeletonSpec = {
   events: {},
 } satisfies ElementSpec<SkeletonComponent>;
 
-export type SkeletonSpec = typeof skeletonSpec;
-export const skeletonElement = defineElement<SkeletonComponent>(skeletonSpec);
-
+export type SkeletonSpec = typeof spec;
 /** The skeleton element has no events; the map exists so adapters typecheck. */
 export type SkeletonElementEventMap = Record<string, never>;
-
 export const skeletonElementEventNames = [] as const satisfies readonly (keyof SkeletonElementEventMap)[];
+export type SkeletonElement = ElementInstance<SkeletonSpec, SkeletonComponent>;
 
-export interface SkeletonElement extends HTMLElement {
-  component: SkeletonComponent | null;
-  variant: string | null;
-  size: string | null;
-  lines: number | null;
-  motion: string | null;
-  busy: boolean;
-  getVariant: () => SkeletonComponent["getVariant"] extends () => infer V ? V : never;
-  setVariant: (variant: string) => SkeletonComponent;
-  setSize: (size: string) => SkeletonComponent;
-  getLines: () => number;
-  setLines: (lines: number) => SkeletonComponent;
-  getMotion: () => SkeletonComponent["getMotion"] extends () => infer M ? M : never;
-  setMotion: (motion: string) => SkeletonComponent;
-  isBusy: () => boolean;
-  setBusy: (busy: boolean) => SkeletonComponent;
+const definition = defineElement<SkeletonComponent>(spec);
+let prepared = false;
+
+function prepareElement() {
+  const ctor = definition.element;
+  if (prepared) return ctor;
+  prepared = true;
+  return ctor;
 }
 
 /**
@@ -92,7 +75,12 @@ export interface SkeletonElement extends HTMLElement {
  * @param options - The prefix and any definition options
  * @returns The tag name that was defined
  */
-export const defineSkeleton = (options?: DefineOptions): string => skeletonElement.define(options);
+export function defineSkeleton(options: DefineOptions = {}): string {
+  prepareElement();
+  return definition.define(options);
+}
+
+export const skeletonElement = { spec, get element() { return prepareElement(); }, define: defineSkeleton };
 
 declare global {
   /** `document.querySelector("m-…")` and `createElement` return the element's type (the default prefix). */

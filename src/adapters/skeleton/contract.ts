@@ -4,10 +4,12 @@ import { defineSkeleton, skeletonElement, type SkeletonElement, type SkeletonSpe
 
 type Attributes = ElementProps<SkeletonSpec>;
 /** The element chooses the prop names; the factory narrows its option values. */
-export type SkeletonProps = Omit<Attributes, "variant" | "size" | "motion"> & {
+export type SkeletonProps = Omit<Attributes, "variant" | "size" | "motion" | "lines" | "busy"> & {
   variant?: SkeletonVariant | string;
   size?: SkeletonSize | string;
   motion?: SkeletonMotion | string;
+  lines?: number;
+  busy?: boolean;
 };
 
 export const skeletonHost = describe(skeletonElement.spec);
