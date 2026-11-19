@@ -25,10 +25,10 @@ const PREUPGRADE_CSS = join(DIST_DIR, "elements/preupgrade.css");
 // Granular module entry points for tree-shaking
 // Adapter bundles import their public element entry instead of duplicating it.
 const adapterPlugin = {
-  name: "stepper-element-entry",
+  name: "adapter-element-entry",
   setup(build) {
-    build.onResolve({ filter: /^\.\.\/elements\/stepper$/ }, () => ({
-      path: "material-addons/elements/stepper", external: true,
+    build.onResolve({ filter: /^(?:\.\.\/)+elements\/(stepper|autocomplete)$/ }, ({ path }) => ({
+      path: `material-addons/${path.slice(path.lastIndexOf("elements/"))}`, external: true,
     }));
   },
 };
@@ -38,6 +38,7 @@ const MODULES = [
     name: framework, entry: `src/${framework}/index.ts`, outDir: `dist/${framework}`, adapter: true,
   })),
   { name: "svelte runtime", entry: "src/adapters/svelte.ts", outDir: "dist/svelte", basename: "runtime", adapter: true },
+  { name: "svelte autocomplete runtime", entry: "src/adapters/autocomplete/svelte.ts", outDir: "dist/svelte", basename: "autocomplete-runtime", adapter: true },
   {
     name: "form constants",
     entry: "src/components/form/constants.ts",

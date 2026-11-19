@@ -310,6 +310,17 @@ defineAutocomplete();
 document.querySelector('m-autocomplete').open();
 ```
 
+#### Framework adapters
+
+| Framework | Import | Components | Model |
+| --- | --- | --- | --- |
+| React | `material-addons/react` | `Autocomplete`, `AutocompleteOption` | `value` and `onChange` |
+| Vue | `material-addons/vue` | `MAutocomplete`, `MAutocompleteOption` | `v-model` or `v-model:value` |
+| Svelte 5 | `material-addons/svelte` | `Autocomplete`, `AutocompleteOption` | `bind:value` |
+| Solid | `material-addons/solid` | `Autocomplete`, `AutocompleteOption` | `value` and `onChange` |
+
+Use `defaultValue` for an uncontrolled initial selection. The adapters register the elements and shadow styles on the client. Each entry exports `AutocompleteElementEventMap`. Event handlers receive the custom event, and `event.detail.value` carries the selection on `change`. In Svelte use lowercase handler props such as `onchange` and `onselect`. Import `material-addons/styles` for pre-upgrade styles.
+
 The element works in the browser and submits its committed value under its name. Its definition can be imported on the server.
 
 ## Layout

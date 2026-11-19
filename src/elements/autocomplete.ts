@@ -1,5 +1,5 @@
 import { defineElement, type AttributeSpec, type DefineOptions, type ElementHost, type ElementInstance, type ElementSpec } from "material/elements";
-import { createAutocomplete, type AutocompleteComponent, type AutocompleteConfig, type AutocompleteOption } from "../components/autocomplete";
+import { createAutocomplete, type AutocompleteComponent, type AutocompleteConfig, type AutocompleteEvents, type AutocompleteOption } from "../components/autocomplete";
 
 const optionAttributes = {
   value: { type: "string" },
@@ -117,7 +117,28 @@ const spec = {
   },
 } satisfies ElementSpec<AutocompleteComponent>;
 
-export type AutocompleteElement = ElementInstance<typeof spec, AutocompleteComponent>;
+export type AutocompleteSpec = typeof spec;
+export type AutocompleteElementEventMap = {
+  [K in keyof AutocompleteEvents]: CustomEvent<Parameters<AutocompleteEvents[K]>[0]>;
+};
+export const autocompleteElementEventNames = Object.keys(spec.events) as (keyof AutocompleteElementEventMap)[];
+export type AutocompleteOptionAttributes = import("material/elements").ElementAttributes<typeof autocompleteOptionDeclaration>;
+export interface AutocompleteElement extends ElementInstance<AutocompleteSpec, AutocompleteComponent> {
+  value: string | null;
+  addEventListener<K extends keyof AutocompleteElementEventMap>(type: K, listener: (this: AutocompleteElement, event: AutocompleteElementEventMap[K]) => void, options?: boolean | AddEventListenerOptions): void;
+  addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, event: HTMLElementEventMap[K]) => void, options?: boolean | AddEventListenerOptions): void;
+  addEventListener(type: string, listener: EventListenerOrEventListenerObject | null, options?: boolean | AddEventListenerOptions): void;
+  removeEventListener<K extends keyof AutocompleteElementEventMap>(type: K, listener: (this: AutocompleteElement, event: AutocompleteElementEventMap[K]) => void, options?: boolean | EventListenerOptions): void;
+  removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, event: HTMLElementEventMap[K]) => void, options?: boolean | EventListenerOptions): void;
+  removeEventListener(type: string, listener: EventListenerOrEventListenerObject | null, options?: boolean | EventListenerOptions): void;
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "m-autocomplete": AutocompleteElement;
+    "m-autocomplete-option": HTMLElement & AutocompleteOptionAttributes;
+  }
+}
 export const autocompleteElement = defineElement<AutocompleteComponent>(spec);
 
 export function defineAutocomplete(options: DefineOptions = {}): string {
