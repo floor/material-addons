@@ -5,6 +5,7 @@ A form builder, a stepper, an autocomplete, a colour picker, a layout schema and
 - **Form.** Builds a set of fields from a layout and keeps their data: it reads and sets it, knows when it has changed, validates it and submits it.
 - **Autocomplete.** An editable text field with a suggestion popup, keyboard navigation and optional async suggestions.
 - **Stepper.** An ordered list of steps over one panel at a time, with linear or free progression, a validation pipeline and compact displays.
+- **Expansion panel.** A disclosure panel with a header button and a collapsible body, and an accordion that coordinates several of them.
 - **Colour picker.** An HSV area, a hue slider, swatches, a hex field and an eyedropper; inline, as a dropdown or as a dialog.
 - **Layout.** Builds a tree of elements and components from an array, and gives each named component back.
 - **Gestures.** Tap, swipe, long press, pan, pinch and rotate, on touch and mouse.
@@ -224,6 +225,77 @@ The element is 10.7 KB of source for ten attributes and the declaration
 class. The sheet is 8.6 KB minified for the token set, the layout blocks and the four
 displays.
 
+## Expansion panel
+
+An expansion panel shows a header and hides or reveals a body below it. Several panels can sit in an accordion, which closes the open one when another opens unless `multiSelect` is set.
+
+<!-- example: run, shows "Trip details" -->
+```javascript
+import 'material/styles';
+import 'material-addons/styles';
+import { createAccordion } from 'material-addons';
+
+const accordion = createAccordion({
+  panels: [
+    { value: 'dates', label: 'Trip details', supportingText: 'May 12 to May 20', content: 'Start and end dates.' },
+    { value: 'people', label: 'Travelers', content: '2 adults.', open: true },
+  ],
+});
+document.body.append(accordion.element);
+```
+
+Opening and closing each run a cancellable before-event, then emit the state events and a change; the after-events follow the transition. The silent setter changes the state without them.
+
+`lazy` defers a content function until the first open. `divider` draws a line above the body, and `error` paints the header in the error colour.
+
+The accordion exposes its open values and can open or close them all. The arrow keys move focus between enabled headers, wrapping at the ends, with Home and End at the extremes.
+
+### The elements
+
+The children of a panel are its body. A child with a label, supporting-text or actions slot fills that part instead.
+
+| `<m-expansion-panel>` attribute | Value |
+|-----------|-------|
+| `open` | Reflects the expanded state, as `<details>` does |
+| `value` | The panel's identifier |
+| `label`, `supporting-text` | The header's two lines |
+| `variant`, `density`, `placement` | The same options as the factory |
+| `no-toggle`, `divider`, `lazy`, `error`, `disabled` | Presence flags |
+| `leading-icon`, `trailing-icon` | Markup for the header icons |
+| `heading-level`, `aria-label` | The heading level and the button's name |
+
+`<m-accordion>` coordinates its `<m-expansion-panel>` children where they stand:
+
+| `<m-accordion>` attribute | Value |
+|-----------|-------|
+| `value` | The open panel's value, the live model |
+| `multi-select` | Present to keep several panels open |
+| `variant`, `density`, `placement` | Propagated to panels that set none |
+| `separated`, `disabled` | Presence flags |
+
+<!-- example: fragment -->
+```html
+<m-accordion value="dates">
+  <m-expansion-panel value="dates" label="Trip details" supporting-text="May 12 to May 20">
+    <p>Start and end dates.</p>
+    <div slot="actions"><button data-action>Save</button></div>
+  </m-expansion-panel>
+  <m-expansion-panel value="people" label="Travelers"><p>2 adults.</p></m-expansion-panel>
+</m-accordion>
+```
+
+### Size
+
+Measured as standalone minified ESM bundles, gzipped, with `material` external; the element's bundle also has the factories external. `scripts/expansion-panel-size.mjs` prints the row.
+
+| Artifact | Measured | Target |
+|----------|----------|--------|
+| `createExpansionPanel` and `createAccordion` | 4.9 KB | 1.4 KB |
+| `<m-expansion-panel>` and `<m-accordion>` | 1.6 KB | 0.6 KB |
+| The compiled stylesheet | 1.5 KB | 0.9 KB |
+
+The targets were estimates made before the implementation and all three rows exceed them; the row records what was measured.
+
 ## Colour picker
 
 <!-- example: run, shows "#6750a4" -->
@@ -378,6 +450,7 @@ The gestures:
 | The autocomplete's shadow styles | `material-addons/elements/css/autocomplete` |
 | The pre-upgrade styles | `material-addons/elements/preupgrade.css` |
 | The stepper factory | `material-addons/components/stepper` |
+| The expansion panel factories | `material-addons/components/expansion-panel` |
 | The layout | `material-addons/layout` |
 | The gestures | `material-addons/gestures` |
 | The same components, without the layout and gesture exports | `material-addons/components` |
@@ -386,8 +459,10 @@ The gestures:
 | The Solid adapter | `material-addons/solid` |
 | The Svelte 5 adapter | `material-addons/svelte` |
 | The stepper element | `material-addons/elements`, `material-addons/elements/stepper` |
+| The expansion panel elements | `material-addons/elements/expansion-panel` |
 | The stepper's shadow styles | `material-addons/elements/css/stepper` |
-| A component's constants | `material-addons/components/form/constants`, `material-addons/components/colorpicker/constants`, `material-addons/components/autocomplete/constants`, `material-addons/components/stepper/constants` |
+| The expansion panel's shadow styles | `material-addons/elements/css/expansion-panel` |
+| A component's constants | `material-addons/components/form/constants`, `material-addons/components/colorpicker/constants`, `material-addons/components/autocomplete/constants`, `material-addons/components/stepper/constants`, `material-addons/components/expansion-panel/constants` |
 | The stylesheet | `material-addons/styles` |
 
 ## Upgrading
