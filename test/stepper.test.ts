@@ -267,11 +267,12 @@ describe("Stepper validation pipeline", () => {
 });
 
 describe("Stepper compact displays", () => {
-  test("labels is the default and renders no compact status line", () => {
+  test("labels is the default: the read-outs exist but are hidden", () => {
     const stepper = mount();
     expect(stepper.element.classList.contains("mtrl-stepper--display-labels")).toBe(true);
-    expect(stepper.element.querySelector(".mtrl-stepper__count")).toBeNull();
-    expect(stepper.element.querySelector(".mtrl-stepper__progress")).toBeNull();
+    expect(stepper.element.querySelector<HTMLElement>(".mtrl-stepper__count")!.hidden).toBe(true);
+    expect(stepper.element.querySelector<HTMLElement>(".mtrl-stepper__progress")!.hidden).toBe(true);
+    expect(stepper.element.querySelector<HTMLOListElement>(".mtrl-stepper__list")!.hidden).toBe(false);
     stepper.destroy();
   });
 
@@ -299,10 +300,67 @@ describe("Stepper compact displays", () => {
     stepper.destroy();
   });
 
+  test("vertical compact modes keep the active panel out of the hidden list", async () => {
+    for (const display of ["count", "progress"] as const) {
+      document.body.replaceChildren();
+      const stepper = createStepper({ orientation: "vertical", display, steps: steps() });
+      document.body.append(stepper.element);
+      const list = stepper.element.querySelector<HTMLOListElement>(".mtrl-stepper__list")!;
+      expect(list.hidden).toBe(true);
+      const panel = stepper.getPanelElement(0)!;
+      expect(panel.hidden).toBe(false);
+      // The panel is not inside the list a compact display hides
+      expect(panel.closest(".mtrl-stepper__list")).toBeNull();
+      expect(stepper.getHeaderElement(0)!.closest("[hidden]")).not.toBeNull();
+      stepper.destroy();
+    }
+  });
+
+  test("the live region is announced at creation and after reset", async () => {
+    const stepper = mount();
+    const live = stepper.element.querySelector(".mtrl-stepper__live")!;
+    expect(live.textContent).toBe("Step 1 of 3: Account details");
+    await stepper.next();
+    expect(live.textContent).toBe("Step 2 of 3: Shipping address");
+    stepper.reset();
+    expect(live.textContent).toBe("Step 1 of 3: Account details");
+    stepper.destroy();
+  });
+
+  test("progress carries the step text and clears when no step is active", () => {
+    const stepper = mount({ display: "progress" });
+    const progress = stepper.element.querySelector(".mtrl-stepper__progress")!;
+    expect(progress.getAttribute("aria-valuetext")).toBe("Step 1 of 3: Account details");
+    stepper.setSteps([
+      { value: "one", label: "One", disabled: true },
+      { value: "two", label: "Two", disabled: true },
+    ]);
+    expect(progress.getAttribute("aria-valuetext")).toBe("");
+    expect(progress.getAttribute("aria-valuenow")).toBe("0");
+    expect(stepper.element.querySelector(".mtrl-stepper__count")!.textContent).toBe("");
+    stepper.destroy();
+  });
+
+  test("changing the display keeps completion and the linear lock", async () => {
+    const stepper = mount({ linear: true });
+    await stepper.next();
+    stepper.setStepState("account", { editable: false });
+    expect(stepper.getStep("account")!.completed).toBe(true);
+    stepper.setDisplay("dots");
+    expect(stepper.getStep("account")!.completed).toBe(true);
+    expect(stepper.element.classList.contains("mtrl-stepper--display-dots")).toBe(true);
+    expect(await stepper.prev()).toBe(false);
+    stepper.setDisplay("progress");
+    expect(stepper.getStep("account")!.completed).toBe(true);
+    expect(await stepper.prev()).toBe(false);
+    stepper.destroy();
+  });
+
   test("dots keeps the headers interactive with their names", async () => {
     const stepper = mount({ display: "dots" });
     expect(stepper.element.classList.contains("mtrl-stepper--display-dots")).toBe(true);
-    expect(stepper.element.querySelector(".mtrl-stepper__count")).toBeNull();
+    expect(stepper.element.querySelector<HTMLElement>(".mtrl-stepper__count")!.hidden).toBe(true);
+    expect(stepper.element.querySelector<HTMLOListElement>(".mtrl-stepper__list")!.hidden).toBe(false);
     const header = stepper.getHeaderElement(1)!;
     expect(header.querySelector(".mtrl-stepper__label")!.textContent).toBe("Shipping address");
     header.focus();

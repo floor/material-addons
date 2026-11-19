@@ -114,7 +114,15 @@ const stepperSpec = {
       update: (c, value) => c.element.setAttribute("aria-label", value === null ? "Progress" : String(value)),
     },
     disabled: { type: "boolean", config: "disabled", update: (c, value) => void (value ? c.disable() : c.enable()) },
-    display: { type: "string", config: "display" },
+    display: {
+      type: "string",
+      config: "display",
+      // Presentation changes without rebuilding: a rebuild would drop completion
+      // and, in linear mode, unlock a completed no-edit step
+      update: (c, value) => {
+        if (value !== null) c.setDisplay(value as NonNullable<StepperConfig["display"]>);
+      },
+    },
   },
   properties: {
     value: { get: (c) => c.getValue(), set: (c, value) => void c.setValue(value === null || value === undefined ? null : String(value)), config: "value" },
@@ -138,6 +146,7 @@ const stepperSpec = {
     "addStep",
     "removeStep",
     "setOrientation",
+    "setDisplay",
     "getResolvedOrientation",
     "setLinear",
     "enable",

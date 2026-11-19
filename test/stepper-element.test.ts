@@ -257,6 +257,24 @@ describe("<m-stepper> and <m-step>", () => {
     expect(host.display).toBe("progress");
   });
 
+  test("changing display re-presents without rebuilding the step state", async () => {
+    document.body.innerHTML = `
+      <m-stepper linear>
+        <m-step value="a" label="A" no-edit><button data-stepper-next>Next</button></m-step>
+        <m-step value="b" label="B"></m-step>
+      </m-stepper>`;
+    const host = document.querySelector("m-stepper") as unknown as StepperHost;
+    expect(await host.next()).toBe(true);
+    const component = (host as unknown as { component: unknown }).component;
+    host.setAttribute("display", "dots");
+    await flush();
+    // Same component: presentation only, completion and the linear lock stay
+    expect((host as unknown as { component: unknown }).component).toBe(component);
+    expect(host.getSteps()[0]!.completed).toBe(true);
+    expect(await host.prev()).toBe(false);
+    expect(shadow(host).querySelector(".mtrl-stepper")!.classList.contains("mtrl-stepper--display-dots")).toBe(true);
+  });
+
   test("no inline style.order is ever written on the consumer's steps", () => {
     const host = mount();
     const before = steps(host).map((step) => step.getAttribute("style"));

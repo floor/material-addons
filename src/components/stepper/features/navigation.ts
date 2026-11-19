@@ -86,8 +86,10 @@ export const withNavigation = (
 
   const activeIndex = (): number => ctx.steps.findIndex((step) => step.active);
 
-  const live = (step: StepState): void => {
-    renderer.live.textContent = `Step ${step.index + 1} of ${ctx.steps.length}: ${step.label}`;
+  // One announcement path: the first render, every move, reset and a replaced
+  // list all go through here, so the live text is never stale
+  const live = (step: StepState | null): void => {
+    renderer.live.textContent = step ? `Step ${step.index + 1} of ${ctx.steps.length}: ${step.label}` : "";
   };
 
   /** The whole stepper is off: configured so, or disabled since creation */
@@ -361,6 +363,7 @@ export const withNavigation = (
       step.active = index === first;
     });
     sync();
+    live(first >= 0 ? ctx.steps[first]! : null);
     emit<StepperResetEvent>(STEPPER_EVENTS.RESET, {
       value: first >= 0 ? ctx.steps[first].value : null,
       previousValue: from >= 0 ? ctx.steps[from].value : null,
@@ -420,6 +423,7 @@ export const withNavigation = (
     ctx.steps.splice(0, ctx.steps.length, ...states);
     renderer.render(ctx.steps, steps.map((declaration) => declaration.content));
     sync();
+    live(ctx.steps.find((step) => step.active) ?? null);
   };
 
   const addStep = (step: StepConfig, index?: number): void => {
@@ -500,6 +504,7 @@ export const withNavigation = (
   };
 
   component.element.addEventListener("click", onActionClick);
+  live(ctx.steps.find((step) => step.active) ?? null);
 
   return {
     getValue: () => activeValueOf(ctx.steps),

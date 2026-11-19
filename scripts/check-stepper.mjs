@@ -192,6 +192,91 @@ try {
   assert.ok(compact.dots.activeDot > compact.dots.dot, `active dot wider: ${JSON.stringify(compact.dots)}`);
   assert.equal(compact.dotsMoved, "b");
 
+  // Vertical compact modes: the active panel and its action stay visible, and
+  // the hidden list is not a tab stop
+  await reset();
+  const vertical = await page.evaluate(async () => {
+    const results = [];
+    for (const display of ["count", "progress"]) {
+      document.body.innerHTML = "";
+      const stepper = window.stepper.createStepper({
+        orientation: "vertical",
+        display,
+        steps: [
+          { value: "a", label: "First", content: `<button type="button" data-stepper-next>Next</button>` },
+          { value: "b", label: "Second", content: `<input id="second">` },
+        ],
+      });
+      document.body.append(stepper.element);
+      const list = stepper.element.querySelector(".mtrl-stepper__list");
+      const panel = stepper.getPanelElement(0);
+      const button = stepper.element.querySelector("[data-stepper-next]");
+      results.push({
+        display,
+        listHidden: list.hidden,
+        panelVisible: panel.getBoundingClientRect().height > 0,
+        buttonVisible: button.getBoundingClientRect().height > 0,
+        headerTabStop: stepper.getHeaderElement(0).closest("[hidden]") === null,
+      });
+      stepper.element.remove();
+    }
+    return results;
+  });
+  for (const row of vertical) {
+    assert.equal(row.listHidden, true, `vertical ${row.display} list hidden`);
+    assert.equal(row.panelVisible, true, `vertical ${row.display} panel visible`);
+    assert.equal(row.buttonVisible, true, `vertical ${row.display} button visible`);
+    assert.equal(row.headerTabStop, false, `vertical ${row.display} header not a tab stop`);
+  }
+
+  // The compact status is exposed and kept current; a display change does not
+  // touch the step state
+  await reset();
+  const announce = await page.evaluate(async () => {
+    const stepper = window.stepper.createStepper({
+      display: "progress",
+      steps: [
+        { value: "a", label: "First", content: "one" },
+        { value: "b", label: "Second", content: "two" },
+      ],
+    });
+    document.body.append(stepper.element);
+    const progress = stepper.element.querySelector('[role="progressbar"]');
+    const live = stepper.element.querySelector(".mtrl-stepper__live");
+    const creation = { valueText: progress.getAttribute("aria-valuetext"), live: live.textContent };
+    await stepper.next();
+    const moved = { valueText: progress.getAttribute("aria-valuetext"), live: live.textContent };
+    stepper.reset();
+    const reset = { live: live.textContent };
+    stepper.setSteps([
+      { value: "x", label: "X", disabled: true },
+      { value: "y", label: "Y", disabled: true },
+    ]);
+    const empty = { valueText: progress.getAttribute("aria-valuetext"), now: progress.getAttribute("aria-valuenow") };
+    stepper.element.remove();
+
+    document.body.innerHTML = `<m-stepper linear display="labels">
+      <m-step value="a" label="A" no-edit><button type="button" data-stepper-next>Next</button></m-step>
+      <m-step value="b" label="B"></m-step></m-stepper>`;
+    window.stepper.defineStepper();
+    const host = document.querySelector("m-stepper");
+    await host.next();
+    const component = host.component;
+    host.setAttribute("display", "dots");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const switched = {
+      same: host.component === component,
+      completed: host.getSteps()[0].completed,
+      prev: await host.prev(),
+    };
+    return { creation, moved, reset, empty, switched };
+  });
+  assert.deepEqual(announce.creation, { valueText: "Step 1 of 2: First", live: "Step 1 of 2: First" });
+  assert.deepEqual(announce.moved, { valueText: "Step 2 of 2: Second", live: "Step 2 of 2: Second" });
+  assert.deepEqual(announce.reset, { live: "Step 1 of 2: First" });
+  assert.deepEqual(announce.empty, { valueText: "", now: "0" });
+  assert.deepEqual(announce.switched, { same: true, completed: true, prev: false });
+
   assert.deepEqual(errors, []);
   console.log("Stepper passes browser focus eligibility, panel and heading fallbacks, header focus, validationerror, slotted content and the compact displays.");
 } finally {

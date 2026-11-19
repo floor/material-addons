@@ -288,23 +288,20 @@
 // Compact displays. "count" and "progress" replace the header list with a
 // read-only status line; "dots" keeps the headers interactive and moves the
 // labels into the accessible name only.
+// The `hidden` attribute switches the compact read-outs and the list; the
+// list's own `display` would otherwise beat the user agent's [hidden] rule
+.mtrl-stepper [hidden] {
+  display: none !important;
+}
+
+// Shown and hidden by the `hidden` attribute, which keeps a stylesheet-less
+// page honest: a hidden list is out of the tab order and the accessibility tree
 .mtrl-stepper__count,
 .mtrl-stepper__progress {
-  display: none;
   margin: 0;
   padding: var(--mtrl-stepper-header-padding);
   color: var(--mtrl-stepper-label-active-color);
   font-weight: var(--mtrl-stepper-label-active-weight);
-}
-
-.mtrl-stepper--display-count > .mtrl-stepper__count,
-.mtrl-stepper--display-progress > .mtrl-stepper__progress {
-  display: block;
-}
-
-.mtrl-stepper--display-count > .mtrl-stepper__list,
-.mtrl-stepper--display-progress > .mtrl-stepper__list {
-  display: none;
 }
 
 .mtrl-stepper__progress-label {
