@@ -50,6 +50,15 @@ beforeEach(() => {
 /** The collapse settles on transitionend or its duration timer */
 const settle = () => new Promise((resolve) => setTimeout(resolve, 320));
 
+describe("Expansion panel factory surface", () => {
+  test("the coordination helpers stay off the public barrel", async () => {
+    const barrel = await import("../../src/components/expansion-panel");
+    expect("reconcilePanels" in barrel).toBe(false);
+    expect("unregisterPanel" in barrel).toBe(false);
+    expect(typeof barrel.createAccordion).toBe("function");
+  });
+});
+
 describe("Expansion panel anatomy and state", () => {
   test("builds the heading, trigger, toggle and hidden region", () => {
     const panel = createExpansionPanel({ label: "Trip details", supportingText: "Start and end dates" });

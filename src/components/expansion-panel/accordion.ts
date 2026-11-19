@@ -114,6 +114,8 @@ const withAccordionCore =
         panel.disable();
         panel.header.disabled = true;
       }
+      // A registration can arrive open beside an open panel
+      reconcile();
     };
 
     /** A child that left the group keeps no listener and no position */
@@ -156,7 +158,6 @@ const withAccordionCore =
       isPanel(entry) ? entry : createExpansionPanel(inherit(entry));
 
     for (const entry of settings.panels ?? []) attachPanel(build(entry));
-    reconcile();
 
     const keyboardOff = withAccordionKeyboard(component.element, () => panels.map((panel) => panel.header));
 
@@ -288,21 +289,6 @@ const withAccordionAPI =
     return Object.assign(component, api) as unknown as AccordionComponent;
   };
 
-/** The coordination hooks the element boundary uses, off the public surface */
-const internals = new WeakMap<
-  AccordionComponent,
-  {
-    unregister: (panel: ExpansionPanelComponent) => void;
-    reconcile: () => void;
-  }
->();
-
-export const unregisterPanel = (component: AccordionComponent, panel: ExpansionPanelComponent): void =>
-  internals.get(component)?.unregister(panel);
-
-export const reconcilePanels = (component: AccordionComponent): void =>
-  internals.get(component)?.reconcile();
-
 export const createAccordion = (config: AccordionConfig = {}): AccordionComponent => {
   const settings = createAccordionBaseConfig(config);
   const built = pipe(
@@ -320,7 +306,6 @@ export const createAccordion = (config: AccordionConfig = {}): AccordionComponen
     };
   };
   const withMethods = withAccordionAPI(settings)(built);
-  internals.set(withMethods, { unregister: built.accordion.unregister, reconcile: built.accordion.reconcile });
   // The change event reaches the element host once the public component is in
   // place; panels created before it keep their own callbacks
   return withMethods;

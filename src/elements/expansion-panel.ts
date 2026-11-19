@@ -21,7 +21,7 @@ import {
   type ElementHost,
   type ElementSpec,
 } from "material/elements";
-import { createAccordion, createExpansionPanel, reconcilePanels, unregisterPanel } from "../components/expansion-panel";
+import { createAccordion, createExpansionPanel } from "../components/expansion-panel";
 import {
   EXPANSION_PANEL_EVENTS,
   type ExpansionPanelDensity,
@@ -71,9 +71,13 @@ const claimPanels = (host: HTMLElement, component: AccordionComponent): void => 
     const root = panel.element.getRootNode();
     if (host.contains(root instanceof ShadowRoot ? root.host : panel.element)) continue;
     claims.delete(panel);
-    unregisterPanel(component, panel);
+    component.removePanel(component.getPanels().indexOf(panel));
   }
-  reconcilePanels(component);
+  // Registration reconciles one selection; the reflected attributes follow
+  for (const child of Array.from(host.children)) {
+    const panel = (child as unknown as { component: ExpansionPanelComponent | null }).component;
+    if (panel) child.toggleAttribute("open", panel.isOpen());
+  }
 };
 
 const panelSpec = {
