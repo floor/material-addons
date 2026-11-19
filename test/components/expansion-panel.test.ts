@@ -267,6 +267,46 @@ describe("Accordion one-open invariant", () => {
     accordion.destroy();
   });
 
+  test("a vetoed opening changes nothing else", () => {
+    const accordion = setup();
+    document.body.append(accordion.element);
+    accordion.getPanel("a")!.open();
+    accordion.getPanel("b")!.on("beforeopen", (event) => event.preventDefault());
+    accordion.getPanel("b")!.open();
+    expect(accordion.getPanel("a")!.isOpen()).toBe(true);
+    expect(accordion.getPanel("b")!.isOpen()).toBe(false);
+    expect(accordion.getValues()).toEqual(["a"]);
+    accordion.destroy();
+  });
+
+  test("an initial close veto does not leave two open", () => {
+    const first = createExpansionPanel({ value: "a", label: "A", open: true });
+    const second = createExpansionPanel({ value: "b", label: "B", open: true });
+    second.on("beforeclose", (event) => event.preventDefault());
+    const accordion = createAccordion({ panels: [first, second] });
+    document.body.append(accordion.element);
+    expect(first.isOpen()).toBe(true);
+    expect(second.isOpen()).toBe(false);
+    expect(accordion.getValues()).toEqual(["a"]);
+    accordion.destroy();
+  });
+
+  test("a rapid close still reports the transition that settles", async () => {
+    const panel = createExpansionPanel({ label: "One" });
+    document.body.append(panel.element);
+    const after: Array<{ name: string; open: boolean }> = [];
+    panel.on("afteropen", (event) => after.push({ name: "afteropen", open: event.open }));
+    panel.on("afterclose", (event) => after.push({ name: "afterclose", open: event.open }));
+    panel.open();
+    panel.close();
+    await settle();
+    expect(after).toEqual([
+      { name: "afteropen", open: true },
+      { name: "afterclose", open: false },
+    ]);
+    panel.destroy();
+  });
+
   test("two panels that start open converge to the first", () => {
     const accordion = createAccordion({
       panels: [

@@ -286,17 +286,52 @@ try {
     await new Promise((resolve) => setTimeout(resolve, 60));
     const vetoed = { opened, values: accordion.component.getValues(), b: b.isOpen() };
     a.off("beforeclose", vetoClose);
+    // A veto on the destination's own opening leaves the current panel open
+    const vetoOpen = (event) => event.preventDefault();
+    c.on("beforeopen", vetoOpen);
+    c.header.click();
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    const destination = { a: a.isOpen(), c: c.isOpen(), values: accordion.component.getValues() };
+    c.off("beforeopen", vetoOpen);
     accordion.component.setValues([]);
     c.open();
     accordion.component.openAll();
     const openAll = accordion.component.getValues();
+    // A rapid close reports the transition that settles, not the new state
+    const after = [];
+    a.on("afteropen", (event) => after.push(["afteropen", event.open]));
+    a.on("afterclose", (event) => after.push(["afterclose", event.open]));
+    a.open();
+    a.close();
+    await new Promise((resolve) => setTimeout(resolve, 400));
     document.querySelector("m-expansion-panel[value='c']").remove();
     await new Promise((resolve) => setTimeout(resolve, 120));
-    return { vetoed, openAll, panels: accordion.component.getPanels().length };
+    return {
+      vetoed, destination, openAll, after,
+      panels: accordion.component.getPanels().length,
+    };
   });
   assert.deepEqual(switching.vetoed, { opened: 0, values: ["a"], b: false });
+  assert.deepEqual(switching.destination, { a: true, c: false, values: ["a"] });
+  assert.deepEqual(switching.after, [["afteropen", true], ["afterclose", false]]);
   assert.deepEqual(switching.openAll, ["a"]);
   assert.equal(switching.panels, 2);
+
+  // Two children that start open converge, even when the second vetoes its close
+  await reset();
+  const initial = await page.evaluate(async () => {
+    document.body.innerHTML = `<m-accordion>
+      <m-expansion-panel value="a" label="A" open></m-expansion-panel>
+      <m-expansion-panel value="b" label="B" open></m-expansion-panel>
+    </m-accordion>`;
+    const second = document.querySelector("m-expansion-panel[value='b']");
+    second.addEventListener("beforeclose", (event) => event.preventDefault());
+    window.expansion.defineExpansionPanel();
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    const accordion = document.querySelector("m-accordion");
+    return { values: accordion.component.getValues(), a: accordion.component.getPanel("a").isOpen(), b: second.isOpen() };
+  });
+  assert.deepEqual(initial, { values: ["a"], a: true, b: false });
 
   // Forced colours keep the boundary, the focus ring and the disabled colour apart
   await reset();
