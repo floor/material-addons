@@ -59,6 +59,9 @@ try {
   const disabled = await focusAfterAction({}, `<button disabled id="hint">Skip</button><input id="city">`);
   assert.deepEqual(disabled, { value: "address", id: "city", panel: false });
 
+  const fieldset = await focusAfterAction({}, `<fieldset disabled><input id="hint"></fieldset><input id="city">`);
+  assert.deepEqual(fieldset, { value: "address", id: "city", panel: false });
+
   const noTarget = await focusAfterAction({}, `<p>Nothing to focus</p>`);
   assert.deepEqual(noTarget, { value: "address", id: null, panel: true });
 

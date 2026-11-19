@@ -447,7 +447,8 @@ export const withNavigation = (
     // A candidate that cannot take focus is not a target: a hidden input, a
     // hidden, invisible or inert control, a disabled one
     const usable = (element: HTMLElement): boolean => {
-      if (element.hasAttribute("disabled") || (element as HTMLButtonElement).disabled) return false;
+      // :disabled covers the attribute and a disabled fieldset ancestor
+      if (element.matches(":disabled")) return false;
       if (element.tagName === "INPUT" && (element as HTMLInputElement).type === "hidden") return false;
       if (element.closest("[inert]") || element.closest("[hidden]")) return false;
       const style = getComputedStyle(element);

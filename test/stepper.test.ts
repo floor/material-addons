@@ -532,6 +532,7 @@ describe("Stepper guards, callbacks and layout", () => {
   focusCase("a visibility:hidden input", `<input style="visibility:hidden" id="skip"><input id="target">`, "#target");
   focusCase("an input under an inert ancestor", `<div inert><input id="skip"></div><input id="target">`, "#target");
   focusCase("a disabled control", `<button disabled id="skip">Skip</button><input id="target">`, "#target");
+  focusCase("a control disabled by a disabled fieldset", `<fieldset disabled><input id="skip"></fieldset><input id="target">`, "#target");
 
   test("focusOnAction heading mode skips a hidden heading and falls back to the panel", async () => {
     const stepper = mount({
