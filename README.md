@@ -614,7 +614,7 @@ The gestures:
 
 | Import | From |
 |--------|------|
-| The form, the stepper, the autocomplete, the colour picker, the colour conversions, plus the layout and gestures | `material-addons` |
+| The form, the stepper, the autocomplete, the colour picker, the colour conversions, the expansion panel, the skeleton and the avatar, plus the layout and gestures | `material-addons` |
 | The avatar factory and types | `material-addons/components/avatar` |
 | The avatar element and its shadow styles | `material-addons/elements/avatar`, `material-addons/elements/css/avatar` |
 | The autocomplete factory and types | `material-addons/components/autocomplete` |
@@ -622,6 +622,7 @@ The gestures:
 | The autocomplete's shadow styles | `material-addons/elements/css/autocomplete` |
 | The pre-upgrade styles | `material-addons/elements/preupgrade.css` |
 | The stepper factory | `material-addons/components/stepper` |
+| The skeleton factory and types | `material-addons/components/skeleton` |
 | The expansion panel factories | `material-addons/components/expansion-panel` |
 | The layout | `material-addons/layout` |
 | The gestures | `material-addons/gestures` |
@@ -631,10 +632,11 @@ The gestures:
 | The Solid adapter | `material-addons/solid` |
 | The Svelte 5 adapter | `material-addons/svelte` |
 | The stepper element | `material-addons/elements`, `material-addons/elements/stepper` |
+| The skeleton element and its shadow styles | `material-addons/elements/skeleton`, `material-addons/elements/css/skeleton` |
 | The expansion panel elements | `material-addons/elements/expansion-panel` |
 | The stepper's shadow styles | `material-addons/elements/css/stepper` |
 | The expansion panel's shadow styles | `material-addons/elements/css/expansion-panel` |
-| A component's constants | `material-addons/components/form/constants`, `material-addons/components/colorpicker/constants`, `material-addons/components/autocomplete/constants`, `material-addons/components/stepper/constants`, `material-addons/components/expansion-panel/constants` |
+| A component's constants | `material-addons/components/form/constants`, `material-addons/components/colorpicker/constants`, `material-addons/components/autocomplete/constants`, `material-addons/components/stepper/constants`, `material-addons/components/expansion-panel/constants`, `material-addons/components/skeleton/constants`, `material-addons/components/avatar/constants` |
 | The stylesheet | `material-addons/styles` |
 
 ## Upgrading
