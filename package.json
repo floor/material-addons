@@ -38,6 +38,14 @@
       "types": "./dist/components/stepper/index.d.ts",
       "import": "./dist/components/stepper/index.mjs"
     },
+    "./components/skeleton": {
+      "types": "./dist/components/skeleton/index.d.ts",
+      "import": "./dist/components/skeleton/index.mjs"
+    },
+    "./components/skeleton/constants": {
+      "types": "./dist/components/skeleton/constants.d.ts",
+      "import": "./dist/components/skeleton/constants.mjs"
+    },
     "./elements": {
       "types": "./dist/elements/index.d.ts",
       "import": "./dist/elements/index.mjs"
@@ -46,9 +54,17 @@
       "types": "./dist/elements/stepper.d.ts",
       "import": "./dist/elements/stepper.mjs"
     },
+    "./elements/skeleton": {
+      "types": "./dist/elements/skeleton.d.ts",
+      "import": "./dist/elements/skeleton.mjs"
+    },
     "./elements/css/stepper": {
       "types": "./dist/elements/css/stepper.d.ts",
       "import": "./dist/elements/css/stepper.js"
+    },
+    "./elements/css/skeleton": {
+      "types": "./dist/elements/css/skeleton.d.ts",
+      "import": "./dist/elements/css/skeleton.js"
     },
     "./components/autocomplete": {
       "types": "./dist/components/autocomplete/index.d.ts",
@@ -97,6 +113,7 @@
     "check:package": "node scripts/check-package.mjs",
     "readme:check": "node scripts/check-readme.mjs",
     "check:stepper": "node scripts/check-stepper.mjs",
+    "check:skeleton": "node scripts/check-skeleton.mjs",
     "check:autocomplete": "node scripts/check-autocomplete.mjs",
     "adapters:generate": "bun scripts/generate-adapters.mjs",
     "adapters:check": "bun scripts/generate-adapters.mjs --check",

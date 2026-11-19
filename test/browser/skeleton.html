@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en" data-theme="baseline">
+<meta charset="utf-8">
+<title>Skeleton browser fixture</title>
+<body>
+<script type="module">
+  import 'material/styles';
+  import 'material-addons/styles';
+  import 'material-addons/elements/css/skeleton';
+  import { createSkeleton, registerSkeleton } from 'material-addons/components/skeleton';
+  import { createLayout, skeleton as skeletonLayout } from 'material-addons/layout';
+  import { defineSkeleton } from 'material-addons/elements/skeleton';
+  window.skeleton = { createSkeleton, registerSkeleton, createLayout, skeletonLayout, defineSkeleton };
+</script>

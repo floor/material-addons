@@ -250,6 +250,13 @@ export interface FormConfig {
   /** Layout schema defining form structure */
   layout?: LayoutSchema;
 
+  /**
+   * Render the layout's component leaves as skeleton placeholders while the
+   * form's data loads. The form element is the region: `aria-busy` while the
+   * placeholders stand in, cleared by the layout's `reveal()`. Default false.
+   */
+  skeleton?: boolean;
+
   /** System info fields (excluded from form data) */
   sysinfo?: string[];
 

@@ -60,6 +60,13 @@ export interface LayoutOptions {
   /** Default creator function to use if not specified in schema */
   creator?: Function;
   /**
+   * Render the layout's component leaves as skeleton placeholders instead of
+   * calling their creators. The layout itself (stack, row, grid) stays real;
+   * `reveal()` on the result swaps the real components in without moving the
+   * layout classes. Default false.
+   */
+  skeleton?: boolean;
+  /**
    * @deprecated No effect: a layout item's classes (class, className and the
    * deprecated rawClass) are applied as written. Kept so existing code keeps
    * compiling.
@@ -82,6 +89,12 @@ export interface LayoutResult {
   getAll(): Record<string, any>;
   /** Destroys the layout, cleaning up all components */
   destroy(): void;
+  /**
+   * Swaps every skeleton placeholder for its real component, in the same
+   * host, then clears the region's `aria-busy`. A layout that was not built
+   * with `skeleton: true` has nothing to reveal; calling it is a no-op.
+   */
+  reveal(): void;
 }
 
 type ComponentLike = { element: HTMLElement; [key: string]: any };
@@ -123,6 +136,8 @@ const fragmentPool = new FragmentPool();
 const classCache = new Map<string, string>();
 
 // Configuration constants
+import { createSkeleton, skeletonFor } from "../../components/skeleton";
+
 const PREFIX = "mtrl"; // TODO: Make this configurable
 const PREFIX_WITH_DASH = `${PREFIX}-`;
 
@@ -356,13 +371,59 @@ function hasClass(element: HTMLElement, className: string): boolean {
 // ============================================================================
 
 /**
+ * A component leaf stood in as its mapped skeleton placeholder.
+ *
+ * A host div takes the layout classes the real element would have taken and
+ * the mapped placeholder fills it; `reveal()` later creates the real
+ * component with the original options (minus the layout classes, which stay
+ * on the host) and replaces the placeholder in the same turn. The layout's
+ * region carries `aria-busy`; the placeholder inside it does not. Used by
+ * the schema processor's creator path and by JSX's `h()` alike.
+ */
+export function createSkeletonHost(
+  Component: Function,
+  options: Record<string, any> = {},
+): { element: HTMLDivElement; reveal: () => any; destroy: () => void } {
+  const { layout: layoutConfig, layoutItem: layoutItemConfig, ...skeletonOptions } = options;
+  const host = document.createElement("div");
+  host.className = "mtrl-skeleton-host";
+  if (layoutConfig) applyLayoutClasses(host, layoutConfig);
+  if (layoutItemConfig) applyLayoutItemClasses(host, layoutItemConfig);
+  const placeholder = createSkeleton({ ...skeletonFor(Component, skeletonOptions), busy: false });
+  host.appendChild(placeholder.element);
+  return {
+    element: host,
+    reveal(): any {
+      const { layout: _layout, layoutItem: _layoutItem, ...revealOptions } = options;
+      const real = createComponentInstance(Component, revealOptions);
+      if (real && real.element) {
+        host.replaceChild(real.element, placeholder.element);
+        placeholder.destroy();
+      }
+      return real;
+    },
+    destroy(): void {
+      placeholder.destroy();
+      host.remove();
+    },
+  };
+}
+
+/**
  * Creates a component instance with optimized option processing
  * Uses destructuring for cleaner separation of concerns
  */
 function createComponentInstance(
   Component: any,
   options: Record<string, any> = {},
+  skeleton: boolean = false,
 ): any {
+  // The skeleton branch: the component's creator is not called. The internal
+  // element creator is not a skeleton: its plain divs are the layout itself.
+  if (skeleton && typeof Component === "function" && Component !== createElement) {
+    return createSkeletonHost(Component, options);
+  }
+
   try {
     // Destructure special configs in one operation
     const {
@@ -704,7 +765,7 @@ function processArraySchema(
     }
 
     // Create component
-    component = createComponentInstance(creator, processedOptions);
+    component = createComponentInstance(creator, processedOptions, options.skeleton === true);
     const element = isComponent(component) ? component.element : component;
 
     if (level === 1) layout.element = element;
@@ -771,7 +832,9 @@ function processObjectSchema(
     const rootComponent = createComponentInstance(
       createElementFn,
       processedOptions,
+      options.skeleton === true,
     );
+
     layout.element = rootComponent;
     if (elementDef.name) layout[elementDef.name] = rootComponent;
 
@@ -806,7 +869,7 @@ function processObjectSchema(
       def.name = key;
     }
 
-    const created = createComponentInstance(elementCreator, processedOptions);
+    const created = createComponentInstance(elementCreator, processedOptions, options.skeleton === true);
     layout[key] = created;
     if (def.name && def.name !== key) layout[def.name] = created;
 
@@ -877,6 +940,22 @@ function createLayoutResult(layout: Record<string, any>): LayoutResult {
 
     getAll(): Record<string, any> {
       return flattenedComponents;
+    },
+
+    reveal(): void {
+      for (const component of Object.values(flattenedComponents)) {
+        if (
+          component &&
+          typeof component === "object" &&
+          typeof (component as any).reveal === "function"
+        ) {
+          (component as any).reveal();
+        }
+      }
+      const region = isComponent(layout.element) ? layout.element.element : layout.element;
+      if (region && typeof region.removeAttribute === "function") {
+        region.removeAttribute("aria-busy");
+      }
     },
 
     destroy(): void {
@@ -971,21 +1050,35 @@ export function createLayout(
     return createLayoutResult(layout);
   }
 
-  // Handle JSX-like schemas (array with function, string, object pattern)
-  if (
-    Array.isArray(schema) &&
-    schema.length >= 3 &&
-    typeof schema[0] === "function" &&
-    typeof schema[1] === "string" &&
-    isObject(schema[2])
-  ) {
-    return processArraySchema(schema, parentElement, 0, options);
-  }
-
-  // Route to appropriate processor
-  return Array.isArray(schema)
+  // Route to appropriate processor; the JSX-like array (function, string,
+  // object) is the array processor's own triple form, not a separate path
+  const result = Array.isArray(schema)
     ? processArraySchema(schema, parentElement, 0, options)
     : processObjectSchema(schema, parentElement, options);
+
+  if (options.skeleton === true) {
+    // The region is the layout root: the parent this layout was built into,
+    // or the layout's own element when there is none. The region carries
+    // aria-busy while the placeholders stand in; the wave parent attribute
+    // lets one sweep cross the group.
+    const region = (parentElement ?? result.element) as HTMLElement | null;
+    const root = region && isComponent(region) ? (region as any).element : region;
+    if (root && typeof root.setAttribute === "function") {
+      root.setAttribute("aria-busy", "true");
+      if (root.querySelector?.("[data-motion='wave']")) {
+        root.setAttribute("data-mtrl-skeleton-wave", "");
+      }
+      // The region, not the result's own element, is what reveal() clears:
+      // when a parent was given, that parent is the region.
+      const innerReveal = result.reveal;
+      result.reveal = (): void => {
+        innerReveal();
+        root.removeAttribute("aria-busy");
+      };
+    }
+  }
+
+  return result;
 }
 
 // ============================================================================

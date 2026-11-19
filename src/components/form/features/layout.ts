@@ -54,7 +54,9 @@ const processLayoutSchema = (
   }
 
   // Use material-addons createLayout to process the schema
-  const layoutResult = createLayout(schema, form, {});
+  // Form has no skeleton renderer of its own: it forwards the flag, and the
+  // form element is the region the layout marks aria-busy.
+  const layoutResult = createLayout(schema, form, { skeleton: config.skeleton === true });
 
   // Extract named components from layout result
   const ui: Record<string, unknown> = {};

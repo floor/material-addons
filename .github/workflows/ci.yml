@@ -41,5 +41,7 @@ jobs:
         run: bun run check:autocomplete
       - name: Stepper browser behavior
         run: bun run check:stepper
+        run: bun run check:skeleton
       - name: Stepper adapters in Chromium
-        run: bun run check:stepper-adapters
+        run: bun run check:stepper
+        run: bun run check:skeleton-adapters

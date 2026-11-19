@@ -9,5 +9,8 @@
  * @module elements
  */
 
+export { skeletonElement, defineSkeleton, skeletonElementEventNames } from "./skeleton";
+export type { SkeletonElement, SkeletonElementEventMap, SkeletonSpec } from "./skeleton";
+
 export { stepperElement, stepDeclaration, defineStepper, stepperElementEventNames } from "./stepper";
 export type { StepperElement, StepAttributes, StepperElementEventMap } from "./stepper";

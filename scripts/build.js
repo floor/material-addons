@@ -79,6 +79,17 @@ const MODULES = [
     name: "layout",
     entry: "src/core/layout/index.ts",
     outDir: "dist/core/layout",
+    plugins: [{
+      // The skeleton creator map is one instance: the layout module imports
+      // the public component subpath instead of bundling its own copy, so a
+      // registration the consumer made reaches the layout's placeholders.
+      name: "skeleton-map-entry",
+      setup(build) {
+        build.onResolve({ filter: /^\.\.\/\.\.\/components\/skeleton$/ }, () => ({
+          path: "material-addons/components/skeleton", external: true,
+        }));
+      },
+    }],
   },
   {
     name: "gestures",
@@ -89,6 +100,24 @@ const MODULES = [
     name: "components",
     entry: "src/components/index.ts",
     outDir: "dist/components",
+  },
+  {
+    name: "skeleton constants",
+    entry: "src/components/skeleton/constants.ts",
+    outDir: "dist/components/skeleton",
+    basename: "constants",
+  },
+  {
+    name: "skeleton component",
+    entry: "src/components/skeleton/index.ts",
+    outDir: "dist/components/skeleton",
+    basename: "index",
+  },
+  {
+    name: "skeleton element",
+    entry: "src/elements/skeleton.ts",
+    outDir: "dist/elements",
+    basename: "skeleton",
   },
   {
     name: "stepper constants",
@@ -233,6 +262,35 @@ const buildElementStyles = async () => {
     return false;
   }
   await Bun.write(join(dir, "stepper.css"), css);
+
+  // The skeleton's own shadow-root CSS, the same shape as the stepper's.
+  {
+    const source = "src/styles/components/_skeleton.scss";
+    const result = Bun.spawn(
+      ["npx", "sass", source, "--style=compressed", "--no-source-map", "--load-path=node_modules"],
+      { cwd: ROOT_DIR, stdio: ["inherit", "pipe", "pipe"] },
+    );
+    const css = await new Response(result.stdout).text();
+    const stderr = await new Response(result.stderr).text();
+    if ((await result.exited) !== 0) {
+      console.error("❌ Skeleton element stylesheet build failed");
+      if (stderr.trim()) console.error("STDERR:", stderr);
+      return false;
+    }
+    await Bun.write(join(dir, "skeleton.css"), css);
+    await Bun.write(
+      join(dir, "skeleton.js"),
+      'import "material/elements/css/ripple";\n' +
+      'import { registerStyles } from "material/elements";\n' +
+        `registerStyles({ skeleton: ${JSON.stringify(css)} });\n`,
+    );
+    await Bun.write(join(dir, "skeleton.d.ts"), "export {};\n");
+    await Bun.write(
+      join(DIST_DIR, "elements/skeleton.mjs"),
+      'export { skeletonElement, defineSkeleton, skeletonElementEventNames } from "./index.mjs";\n',
+    );
+  }
+
   await Bun.write(
     join(dir, "stepper.js"),
     // The shadow base an element adopts first: material's ripple sheet

@@ -5,7 +5,7 @@
  */
 
 import type { LayoutResult } from "./types";
-import { createLayout } from "./schema";
+import { createLayout, createSkeletonHost } from "./schema";
 
 /**
  * Fragment symbol for JSX fragments
@@ -86,6 +86,13 @@ export function h(
     const allProps = props || {};
     if (children.length > 0) {
       allProps.children = children;
+    }
+    // The skeleton hook: JSX never enters the schema processor's creator
+    // path, so h() itself stands the component in as its mapped placeholder.
+    // String tags stay real elements; only function components stand in.
+    if (allProps.skeleton === true) {
+      const { skeleton: _skeleton, ...skeletonProps } = allProps;
+      return createSkeletonHost(tag, skeletonProps);
     }
     return tag(allProps);
   }

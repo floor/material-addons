@@ -4,6 +4,11 @@ import {
   stepHost, stepperHost, stepperKeys, synchronize, tag, type StepProps, type StepperProps,
 } from "./stepper";
 import { stepperElementEventNames, type StepperElement, type StepperElementEventMap } from "../elements/stepper";
+import {
+  attributes as skeletonAttributes, initialize as initializeSkeleton, skeletonHost,
+  synchronize as synchronizeSkeleton, tag as skeletonTag, type SkeletonProps,
+} from "./skeleton";
+import type { SkeletonElement } from "../elements/skeleton";
 
 export type VueStepperProps = StepperProps & { modelValue?: string | null };
 export type VueStepperEmits = {
@@ -52,4 +57,19 @@ export function createVueStep() {
   Step.displayName = "MStep";
   Step.inheritAttrs = false;
   return Step;
+}
+
+export type VueSkeletonProps = SkeletonProps;
+
+/** `<m-skeleton>` for Vue: attributes in, no events, no model. */
+export function createVueSkeleton(): DefineSetupFnComponent<VueSkeletonProps> {
+  return defineComponent(
+    (props: VueSkeletonProps) => {
+      const element = ref<SkeletonElement | null>(null);
+      onMounted(() => { if (element.value) initializeSkeleton(element.value, props); });
+      onUpdated(() => { if (element.value) synchronizeSkeleton(element.value, props); });
+      return () => h(skeletonTag(), { ...skeletonAttributes(props), ref: element });
+    },
+    { name: "MSkeleton", props: [...skeletonHost.attributes.keys()] as (keyof VueSkeletonProps)[] },
+  );
 }
