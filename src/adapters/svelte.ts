@@ -6,6 +6,13 @@ import {
 import type { StepperElement, StepperElementEventMap } from "../elements/stepper";
 
 export { attributes, hostProps, initialValue, stepHost, stepperHost, svelteEventKeys, tag } from "./stepper";
+// The expansion panel's runtime travels with the same bundle the generated
+// Svelte components import
+export {
+  attributes as expansionAttributes, hostProps as expansionHostProps, panelHost, accordionHost,
+  defineExpansionPanel, connectExpansionPanel, connectAccordion, sveltePanelEventKeys,
+  tag as expansionTag,
+} from "./svelte-expansion";
 export type SvelteStepperEvents = {
   [K in keyof StepperElementEventMap as `on${K}`]?: (event: StepperElementEventMap[K]) => void;
 };

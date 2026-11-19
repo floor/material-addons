@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en" data-theme="baseline">
+<meta charset="utf-8">
+<title>Expansion panel browser fixture</title>
+<body>
+<script type="module">
+  import 'material/styles';
+  import 'material-addons/styles';
+  import 'material-addons/elements/css/expansion-panel';
+  import { createAccordion, createExpansionPanel } from 'material-addons/components/expansion-panel';
+  import { defineExpansionPanel } from 'material-addons/elements/expansion-panel';
+  window.expansion = { createAccordion, createExpansionPanel, defineExpansionPanel };
+</script>

@@ -51,6 +51,24 @@ export type {
   StepperResolvedOrientation,
 } from "./stepper/types";
 
+// Expansion panel and accordion
+export { createAccordion, createExpansionPanel } from "./expansion-panel";
+export type {
+  AccordionChangeEvent,
+  AccordionComponent,
+  AccordionConfig,
+  AccordionEvents,
+  ExpansionPanelActions,
+  ExpansionPanelBeforeEvent,
+  ExpansionPanelComponent,
+  ExpansionPanelConfig,
+  ExpansionPanelContent,
+  ExpansionPanelEvent,
+  ExpansionPanelEvents,
+  ExpansionPanelParts,
+  HeadingLevel,
+} from "./expansion-panel/types";
+
 // ColorPicker component
 export { createColorPicker } from "./colorpicker";
 export type {
