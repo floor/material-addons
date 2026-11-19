@@ -281,7 +281,7 @@ const buildElementStyles = async () => {
     await Bun.write(join(dir, `${name}.js`),
       'import "material/elements/css/ripple";\n' + peerStyle +
       'import { registerStyles } from "material/elements";\n' +
-      `registerStyles({ ${name}: ${JSON.stringify(css)} });\n`,
+      `registerStyles({ ${JSON.stringify(name)}: ${JSON.stringify(css)} });\n`,
     );
     await Bun.write(join(dir, `${name}.d.ts`), "export {};\n");
     console.log(`  Element stylesheet ${name}: ${(css.length / 1024).toFixed(2)} KB`);
