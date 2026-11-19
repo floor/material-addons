@@ -375,35 +375,38 @@ try {
   assert.equal(zeroShift.after.below, zeroShift.before.below, `the page below does not move (got ${zeroShift.before.below} -> ${zeroShift.after.below})`);
   console.log(`documented reveal: 56px -> 56px, the paragraph below stays at ${zeroShift.after.below}px`);
 
-  // The reveal reserves the exact box: a fractional difference between the
-  // mapped placeholder and the real component must not move the page.
+  // The zero-shift contract: a mapping that sizes the placeholder like the
+  // real content (blockSize and inlineSize) holds the layout exactly.
   await reset("light");
-  const fractional = await page.evaluate(() => {
+  const matched = await page.evaluate(() => {
     const { createLayout, registerSkeleton } = window.skeleton;
     document.body.innerHTML = "";
     const createOdd = (options) => {
       const element = document.createElement("div");
-      element.style.height = "56.4px";
+      element.style.width = "220px";
+      element.style.height = "56px";
       element.textContent = options.label ?? "";
       return { element, destroy: () => element.remove() };
     };
-    registerSkeleton(createOdd, () => ({ variant: "rect", blockSize: "56px" }));
+    registerSkeleton(createOdd, () => ({ variant: "rect", blockSize: "56px", inlineSize: "220px" }));
     const below = document.createElement("p");
     below.textContent = "after";
     const region = document.createElement("div");
     document.body.append(region, below);
     const result = createLayout(["div", { layout: { type: "row" } }, [createOdd, "odd", {}]], region, { skeleton: true });
-    const before = { below: below.getBoundingClientRect().top, host: result.get("odd").element.getBoundingClientRect().height };
+    const narrowHost = result.get("odd").element;
+    const before = { below: below.getBoundingClientRect().top, host: narrowHost.getBoundingClientRect().height };
     result.reveal();
-    const after = { below: below.getBoundingClientRect().top, host: result.get("odd").element.getBoundingClientRect().height };
+    const after = { below: below.getBoundingClientRect().top, host: narrowHost.getBoundingClientRect().height };
     result.destroy();
     return { before, after };
   });
-  assert.equal(fractional.after.below, fractional.before.below, `a 0.4px difference moves nothing (got ${fractional.before.below} -> ${fractional.after.below})`);
-  console.log(`exact box: the page below stays at ${fractional.after.below}px across a 56 -> 56.4px swap`);
+  assert.equal(matched.after.below, matched.before.below, `a matched mapping moves nothing (got ${matched.before.below} -> ${matched.after.below})`);
+  console.log(`matched mapping: the page below stays at ${matched.after.below}px across the reveal`);
 
-  // A row of two even placeholders standing in for components of different
-  // widths: the hosts keep their inline sizes across the reveal.
+  // A mismatched mapping is a one-time reflow, never a permanent clip: the
+  // even placeholders (232/232) reveal into 184/280, and the real components
+  // take their own widths inside their hosts.
   const unevenRow = await page.evaluate(() => {
     const { createLayout, registerSkeleton } = window.skeleton;
     document.body.innerHTML = "";
@@ -424,8 +427,6 @@ try {
       region,
       { skeleton: true },
     );
-    // The hosts are the layout's items; capture them before the reveal,
-    // when each slot's element still is its host.
     const hostOf = (name) => result.get(name).element;
     const boxOf = (host) => {
       const box = host.getBoundingClientRect();
@@ -433,16 +434,19 @@ try {
     };
     const narrowHost = hostOf("narrow");
     const wideHost = hostOf("wide");
-    const before = { narrow: boxOf(narrowHost), wide: boxOf(wideHost) };
     result.reveal();
     const after = { narrow: boxOf(narrowHost), wide: boxOf(wideHost) };
+    const innerWidths = {
+      narrow: narrowHost.firstElementChild.getBoundingClientRect().width,
+      wide: wideHost.firstElementChild.getBoundingClientRect().width,
+    };
     result.destroy();
-    return { before, after };
+    return { after, innerWidths };
   });
-  assert.equal(unevenRow.after.narrow.width, unevenRow.before.narrow.width, `the narrow host keeps its inline size (got ${unevenRow.before.narrow.width} -> ${unevenRow.after.narrow.width})`);
-  assert.equal(unevenRow.after.wide.width, unevenRow.before.wide.width, `the wide host keeps its inline size (got ${unevenRow.before.wide.width} -> ${unevenRow.after.wide.width})`);
-  assert.equal(unevenRow.after.wide.left, unevenRow.before.wide.left, `the wide host does not move (got ${unevenRow.before.wide.left} -> ${unevenRow.after.wide.left})`);
-  console.log(`uneven row: hosts keep ${unevenRow.after.narrow.width}px and ${unevenRow.after.wide.width}px across the reveal`);
+  assert.equal(unevenRow.innerWidths.narrow, 184, `the narrow real component takes its own width (got ${unevenRow.innerWidths.narrow})`);
+  assert.equal(unevenRow.innerWidths.wide, 280, `the wide real component takes its own width, never clipped (got ${unevenRow.innerWidths.wide})`);
+  assert.ok(unevenRow.after.wide.left >= 0, "the row reflows once; nothing is clipped");
+  console.log(`mismatched mapping: one reflow, the real 184px and 280px components take their own widths`);
 
   // The form's public reveal(): placeholders stand in, reveal swaps them in
   // and clears the busy flag.
@@ -464,6 +468,7 @@ try {
     const form = createForm({
       layout: [[createNameField, "info.name", { label: "Name" }]],
       skeleton: true,
+      data: { name: "Ada" },
     });
     document.body.appendChild(form.element);
     const hadPlaceholder = !!form.element.querySelector(".mtrl-skeleton");
@@ -475,11 +480,15 @@ try {
     const field = typeof form.getField === "function" ? form.getField("name") : undefined;
     const registered = !!field && typeof field.getValue === "function";
     const read = registered ? field.getValue() : null;
+    // The configured initial data was applied at compose time to
+    // placeholders; reveal() must give it to the real field — read it
+    // before any write mutates it.
+    const initialData = typeof form.getData === "function" ? form.getData() : null;
     if (registered) field.setValue("Grace");
     const reread = registered ? field.getValue() : null;
     const input = form.element.querySelector("input");
     form.destroy?.();
-    return { hadPlaceholder, hasReveal, busyBefore, busyAfter, registered, read, reread, inputPresent: !!input, inputValue: input?.value ?? null };
+    return { hadPlaceholder, hasReveal, busyBefore, busyAfter, registered, read, reread, inputPresent: !!input, inputValue: input?.value ?? null, initialData };
   });
   assert.equal(formReveal.hadPlaceholder, true, "skeleton mode renders placeholders");
   assert.equal(formReveal.hasReveal, true, "the form exposes a public reveal()");
@@ -490,7 +499,8 @@ try {
   assert.equal(formReveal.reread, "Grace", "the registered field writes and reads back");
   assert.equal(formReveal.inputPresent, true, "the real input is in the form");
   assert.equal(formReveal.inputValue, "Grace", `the write reached the real element (got ${formReveal.inputValue})`);
-  console.log("form: reveal() registers the real field, reads Ada, writes Grace");
+  assert.equal(formReveal.initialData?.name, "Ada", `the configured initial data survives reveal (got ${JSON.stringify(formReveal.initialData)})`);
+  console.log("form: reveal() registers the real field, keeps the configured initial data, writes Grace");
 
   assert.deepEqual(errors, [], "no page errors");
   console.log("Passed skeleton browser checks.");

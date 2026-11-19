@@ -44,6 +44,36 @@ const collectFieldData = (fields: FormFieldRegistry): FormData => {
  * Sets values on fields from a data object
  * Supports dot notation for nested values (e.g., { 'user.name': 'John' })
  */
+/**
+ * Re-apply the configured initial data after a skeleton reveal.
+ *
+ * At compose time the fields registry held placeholders, so the initial
+ * data was set on nothing; reveal() re-registers the real fields, and this
+ * gives them the values the form was configured with.
+ */
+/**
+ * Re-apply the configured initial data after a skeleton reveal.
+ *
+ * At compose time the fields registry held placeholders, so the initial
+ * data was set on nothing; reveal() re-registers the real fields, and this
+ * gives them the values the form was configured with.
+ */
+export const reapplyInitialData = (component: {
+  fields?: FormFieldRegistry;
+  config?: FormConfig;
+  state?: { currentData?: FormData; initialData?: FormData };
+  _fieldValueTracker?: Map<string, FieldValue>;
+}): void => {
+  const data = component.config?.data;
+  if (!data || !component.fields) return;
+  setFieldsData(component.fields, data, true);
+  if (component.state) {
+    component.state.currentData = collectFieldData(component.fields);
+    component.state.initialData = { ...component.state.currentData };
+  }
+  syncTrackedFieldValues(component.fields, component._fieldValueTracker);
+};
+
 const setFieldsData = (
   fields: FormFieldRegistry,
   data: FormData,

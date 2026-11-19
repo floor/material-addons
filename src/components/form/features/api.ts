@@ -21,6 +21,7 @@ import type {
 } from "../types";
 import { FORM_EVENTS } from "../constants";
 import { reregisterFields } from "./fields";
+import { reapplyInitialData } from "./data";
 import type { EventCallback } from "material/core/state";
 
 /**
@@ -410,6 +411,9 @@ export const withAPI = (config: FormConfig) => {
         // registry re-registers so getData, submit and change events see
         // the real fields, not the placeholders that held their boxes.
         reregisterFields(component as Parameters<typeof reregisterFields>[0]);
+        // The configured initial data was set at compose time on
+        // placeholders; the real fields get it now.
+        reapplyInitialData(component as Parameters<typeof reapplyInitialData>[0]);
       },
 
       destroy(): void {

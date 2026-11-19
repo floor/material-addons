@@ -359,9 +359,15 @@ layout.reveal();
 
 The stack, row or grid is real; only the component leaves stand in. Each
 placeholder fills a host `div` that carries the layout classes the real
-element would have taken, so `reveal()` replaces the placeholder inside the
-same host and the page does not shift. The region (the parent the layout
-was built into) carries `aria-busy` until `reveal()`.
+element would have taken, and `reveal()` replaces the placeholder inside
+the same host. The region (the parent the layout was built into) carries
+`aria-busy` until `reveal()`.
+
+The page does not shift when the placeholder is sized like the real
+content: an `inlineSize` or `blockSize` from the mapping, or a built-in
+mapping measured to match. A placeholder sized differently lets the real
+component take its own size at the cost of one reflow, never a permanent
+clip.
 
 A form forwards the same flag: `createForm({ layout, skeleton: true })`
 renders its fields as placeholders and its own `reveal()` swaps them in.
