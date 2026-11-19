@@ -2,26 +2,17 @@
 
 /**
  * Stepper component module
+ *
+ * The barrel exports the factory and its public types only. The constants and
+ * the config and feature helpers are internal: read them from
+ * `material-addons/components/stepper/constants`, and call the factory.
+ *
  * @module components/stepper
  */
 
 export { default as createStepper } from "./stepper";
 export { default } from "./stepper";
 
-// Constants
-export {
-  STEPPER_ACTIONS,
-  STEPPER_CLASSES,
-  STEPPER_DEFAULTS,
-  STEPPER_EVENTS,
-  STEPPER_HEADER_PLACEMENTS,
-  STEPPER_ICONS,
-  STEPPER_LABEL_PLACEMENTS,
-  STEPPER_MODIFIERS,
-  STEPPER_ORIENTATIONS,
-} from "./constants";
-
-// Types
 export type {
   StepConfig,
   StepState,
@@ -42,19 +33,3 @@ export type {
   StepperResetEvent,
   StepperResolvedOrientation,
 } from "./types";
-
-// Config helpers
-export {
-  activeValueOf,
-  createBaseConfig,
-  createInitialState,
-  createStepState,
-  defaultConfig,
-  getElementConfig,
-} from "./config";
-export { supportingTextOf } from "./features/renderer";
-export type { StepperSettings } from "./config";
-
-// Features
-export { withAutoOrientation, withKeyboard, withNavigation, withRenderer } from "./features";
-export type { Navigation, Renderer, StepperHost } from "./features";
