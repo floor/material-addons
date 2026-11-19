@@ -1,7 +1,8 @@
 import { defineComponent, h, onBeforeUnmount, onMounted, ref, type DefineSetupFnComponent, type FunctionalComponent, type HTMLAttributes } from "vue";
 import {
-  accordionHost, attributes, defineExpansionPanel, dispatch, expansionPanelEventNames, listen,
-  listenAccordion, panelHost, synchronizeAccordion, tag, type AccordionProps, type ExpansionPanelProps,
+  accordionHost, accordionKeys, attributes, defineExpansionPanel, dispatch, expansionPanelEventNames,
+  listen, listenAccordion, panelHost, panelKeys, synchronizeAccordion, tag,
+  type AccordionProps, type ExpansionPanelProps,
 } from "./expansion-panel";
 import type { AccordionElement, ExpansionPanelElement, ExpansionPanelElementEventMap } from "../elements/expansion-panel";
 
@@ -30,7 +31,7 @@ export function createVueExpansionPanel(): DefineSetupFnComponent<VueExpansionPa
       onBeforeUnmount(() => stop?.());
       return () => h(tag("expansion-panel"), { ...attributes(panelHost, props), ref: element }, slots.default?.());
     },
-    { name: "MExpansionPanel", emits },
+    { name: "MExpansionPanel", props: [...panelKeys] as (keyof VueExpansionPanelProps)[], emits },
   );
 }
 
@@ -52,6 +53,10 @@ export function createVueAccordion(): DefineSetupFnComponent<VueAccordionProps, 
       onBeforeUnmount(() => stop?.());
       return () => h(tag("accordion"), { ...attributes(accordionHost, props), ref: element }, slots.default?.());
     },
-    { name: "MAccordion", emits: { change: () => true, "update:modelValue": () => true } },
+    {
+      name: "MAccordion",
+      props: [...accordionKeys] as (keyof VueAccordionProps)[],
+      emits: { change: () => true, "update:modelValue": () => true },
+    },
   );
 }
