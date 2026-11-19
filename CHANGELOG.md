@@ -19,15 +19,14 @@ Published as `mtrl-addons` up to 0.9.x. This file has written notes from 0.8.0, 
   `material-addons/elements/css/stepper`. Server rendering is deferred.
 - The `_stepper.scss` stylesheet and its pre-upgrade rules, built from the
   `--mtrl-sys-*` tokens, forwarding through `material-addons/styles`.
+- Add an autocomplete factory and client custom elements with keyboard
+  selection, free-form or strict values, and optional async suggestions.
 - Adapters (placeholder): this line is replaced with the adapter notes
   before the tag, when that work has merged.
-- Autocomplete (placeholder): this line is replaced with the autocomplete
-  notes before the tag, when that work has merged.
 
 ### Changed
 
-- The `material` peer range is `^3.15.1`, the version the stepper is built
-  and tested against.
+- Require the tested Material 3.15.1 peer for the stepper and autocomplete element contracts.
 
 ## [3.0.0] - 2026-10-04
 

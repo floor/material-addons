@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en" data-theme="baseline">
+<meta charset="utf-8">
+<title>Autocomplete browser fixture</title>
+<body>
+<script type="module">
+  import 'material/styles';
+  import 'material/styles/listbox';
+  import 'material-addons/styles';
+  import 'material-addons/elements/css/autocomplete';
+  import { createAutocomplete } from 'material-addons/components/autocomplete';
+  import { defineAutocomplete } from 'material-addons/elements/autocomplete';
+  window.autocomplete = { createAutocomplete, defineAutocomplete };
+</script>
