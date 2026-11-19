@@ -402,6 +402,48 @@ try {
   assert.equal(fractional.after.below, fractional.before.below, `a 0.4px difference moves nothing (got ${fractional.before.below} -> ${fractional.after.below})`);
   console.log(`exact box: the page below stays at ${fractional.after.below}px across a 56 -> 56.4px swap`);
 
+  // A row of two even placeholders standing in for components of different
+  // widths: the hosts keep their inline sizes across the reveal.
+  const unevenRow = await page.evaluate(() => {
+    const { createLayout, registerSkeleton } = window.skeleton;
+    document.body.innerHTML = "";
+    const makeCreator = (width) => (options) => {
+      const element = document.createElement("div");
+      element.style.width = width;
+      element.style.height = "40px";
+      return { element, destroy: () => element.remove(), ...options };
+    };
+    const narrow = makeCreator("184px");
+    const wide = makeCreator("280px");
+    registerSkeleton(narrow, () => ({ variant: "rect", blockSize: "40px" }));
+    registerSkeleton(wide, () => ({ variant: "rect", blockSize: "40px" }));
+    const region = document.createElement("div");
+    document.body.appendChild(region);
+    const result = createLayout(
+      ["div", { layout: { type: "row", gap: "0px" } }, [narrow, "narrow", {}], [wide, "wide", {}]],
+      region,
+      { skeleton: true },
+    );
+    // The hosts are the layout's items; capture them before the reveal,
+    // when each slot's element still is its host.
+    const hostOf = (name) => result.get(name).element;
+    const boxOf = (host) => {
+      const box = host.getBoundingClientRect();
+      return { width: box.width, left: box.left };
+    };
+    const narrowHost = hostOf("narrow");
+    const wideHost = hostOf("wide");
+    const before = { narrow: boxOf(narrowHost), wide: boxOf(wideHost) };
+    result.reveal();
+    const after = { narrow: boxOf(narrowHost), wide: boxOf(wideHost) };
+    result.destroy();
+    return { before, after };
+  });
+  assert.equal(unevenRow.after.narrow.width, unevenRow.before.narrow.width, `the narrow host keeps its inline size (got ${unevenRow.before.narrow.width} -> ${unevenRow.after.narrow.width})`);
+  assert.equal(unevenRow.after.wide.width, unevenRow.before.wide.width, `the wide host keeps its inline size (got ${unevenRow.before.wide.width} -> ${unevenRow.after.wide.width})`);
+  assert.equal(unevenRow.after.wide.left, unevenRow.before.wide.left, `the wide host does not move (got ${unevenRow.before.wide.left} -> ${unevenRow.after.wide.left})`);
+  console.log(`uneven row: hosts keep ${unevenRow.after.narrow.width}px and ${unevenRow.after.wide.width}px across the reveal`);
+
   // The form's public reveal(): placeholders stand in, reveal swaps them in
   // and clears the busy flag.
   const formReveal = await page.evaluate(async () => {

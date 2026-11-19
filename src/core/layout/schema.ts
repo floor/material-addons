@@ -402,11 +402,20 @@ export function createSkeletonHost(
       const { layout: _layout, layoutItem: _layoutItem, ...revealOptions } = options;
       const real = createComponentInstance(Component, revealOptions);
       if (real && real.element) {
-        // Reserve the exact box: sub-pixel differences between the mapped
-        // placeholder and the real component must not move the page, so the
-        // host keeps the height it was laid out at.
-        const reserved = host.offsetHeight;
-        if (reserved > 0) host.style.height = `${reserved}px`;
+        // Reserve the exact box: sub-pixel and width differences between
+        // the mapped placeholder and the real component must not move the
+        // page — in a row, two even placeholders (232/232) can stand in for
+        // components of different widths (184/280) — so the host keeps both
+        // the block and inline size it was laid out at.
+        const reservedHeight = host.offsetHeight;
+        if (reservedHeight > 0) host.style.height = `${reservedHeight}px`;
+        const reservedWidth = host.offsetWidth;
+        if (reservedWidth > 0) {
+          host.style.width = `${reservedWidth}px`;
+          // A flex row redistributes a plain width; the reserved box is the
+          // layout's, not the real component's to negotiate.
+          host.style.flex = "none";
+        }
         host.replaceChild(real.element, placeholder.element);
         placeholder.destroy();
         for (const key of Object.keys(real)) {
