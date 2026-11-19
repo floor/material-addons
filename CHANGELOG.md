@@ -2,21 +2,27 @@
 
 Published as `mtrl-addons` up to 0.9.x. This file has written notes from 0.8.0, and the commit history below for everything earlier.
 
-## [Unreleased]
+## [3.1.0] - 2026-11-19
 
 ### Added
 
-- The stepper, planned for 3.1.0: `createStepper`, exported from the
-  package root and from `material-addons/components/stepper`, with steps,
-  linear or free progression, a three-stage validation pipeline, a
-  cancellable `beforechange`, declarative `data-stepper-*` actions and an
-  auto orientation that follows the container width.
+- The stepper: `createStepper`, exported from the package root and from
+  `material-addons/components/stepper`, with steps, linear or free
+  progression, a three-stage validation pipeline, a cancellable
+  `beforechange`, declarative `data-stepper-*` actions, an auto orientation
+  that follows the container width, `focusOnAction` for where focus goes
+  after a panel action, and the compact displays `count`, `dots` and
+  `progress` beside the default `labels`.
 - `<m-stepper>` and `<m-step>`, client custom elements built on
   `material/elements`, exported from `material-addons/elements` and
   `material-addons/elements/stepper`. Their shadow stylesheet is
   `material-addons/elements/css/stepper`. Server rendering is deferred.
 - The `_stepper.scss` stylesheet and its pre-upgrade rules, built from the
   `--mtrl-sys-*` tokens, forwarding through `material-addons/styles`.
+- Adapters (placeholder): this line is replaced with the adapter notes
+  before the tag, when that work has merged.
+- Autocomplete (placeholder): this line is replaced with the autocomplete
+  notes before the tag, when that work has merged.
 
 ### Changed
 

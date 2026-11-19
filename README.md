@@ -3,7 +3,7 @@
 A form builder, a stepper, a colour picker, a layout schema and gesture recognition for [material](https://github.com/floor/material), the Material Design 3 component library. Written in TypeScript; its only dependency is `material`, as a peer.
 
 - **Form.** Builds a set of fields from a layout and keeps their data: it reads and sets it, knows when it has changed, validates it and submits it.
-- **Stepper.** An ordered list of steps over one panel at a time, with linear or free progression and a validation pipeline.
+- **Stepper.** An ordered list of steps over one panel at a time, with linear or free progression, a validation pipeline and compact displays.
 - **Colour picker.** An HSV area, a hue slider, swatches, a hex field and an eyedropper; inline, as a dropdown or as a dialog.
 - **Layout.** Builds a tree of elements and components from an array, and gives each named component back.
 - **Gestures.** Tap, swipe, long press, pan, pinch and rotate, on touch and mouse.
@@ -308,10 +308,11 @@ The gestures:
 
 | Import | From |
 |--------|------|
-| The form, the colour picker, the colour conversions | `material-addons` |
+| The form, the stepper, the colour picker, the colour conversions | `material-addons` |
 | The layout | `material-addons/layout` |
 | The gestures | `material-addons/gestures` |
-| The same three, without the layout and gesture exports | `material-addons/components` |
+| The same components, without the layout and gesture exports | `material-addons/components` |
+| The stepper factory | `material-addons/components/stepper` |
 | The stepper element | `material-addons/elements`, `material-addons/elements/stepper` |
 | The stepper's shadow styles | `material-addons/elements/css/stepper` |
 | A component's constants | `material-addons/components/form/constants`, `material-addons/components/colorpicker/constants`, `material-addons/components/stepper/constants` |
