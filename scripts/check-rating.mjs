@@ -76,6 +76,7 @@ try {
   assert.equal(await paint("#medium .mtrl-rating__star--full .mtrl-rating__star-fill", "color"), await paint("#forced-reference", "outlineColor"));
   assert.equal(await paint("#medium .mtrl-rating__star--empty .mtrl-rating__star-empty", "color"), await reference.evaluate(node => getComputedStyle(node).borderTopColor));
   assert.equal(await paint("#disabled .mtrl-rating__star-fill", "color"), await reference.evaluate(node => getComputedStyle(node).color));
+  await page.evaluate(() => document.activeElement?.blur());
   await page.keyboard.press("Tab");
   assert.equal(await page.locator("#small .mtrl-rating__stop").first().evaluate(node => node.matches(":focus-visible")), true);
   assert.equal(await page.locator("#small .mtrl-rating__stop").first().evaluate(node => getComputedStyle(node).outlineColor), await paint("#forced-reference", "outlineColor"));
