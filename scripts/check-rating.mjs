@@ -76,11 +76,29 @@ try {
   assert.equal(await paint("#medium .mtrl-rating__star--full .mtrl-rating__star-fill", "color"), await paint("#forced-reference", "outlineColor"));
   assert.equal(await paint("#medium .mtrl-rating__star--empty .mtrl-rating__star-empty", "color"), await reference.evaluate(node => getComputedStyle(node).borderTopColor));
   assert.equal(await paint("#disabled .mtrl-rating__star-fill", "color"), await reference.evaluate(node => getComputedStyle(node).color));
-  const smallStop = page.locator("#small .mtrl-rating__stop[tabindex='0']");
-  await page.locator("#medium .mtrl-rating__stop[tabindex='0']").focus();
-  await page.keyboard.press("Shift+Tab");
-  assert.equal(await smallStop.evaluate(node => node.matches(":focus-visible")), true);
-  assert.equal(await smallStop.evaluate(node => getComputedStyle(node).outlineColor), await paint("#forced-reference", "outlineColor"));
+  for (const id of ["small", "medium", "large", "half", "hit"]) {
+    assert.equal(await page.locator(`#${id} .mtrl-rating__group [tabindex="0"]`).count(), 1, id);
+  }
+  assert.equal(await page.locator("#disabled .mtrl-rating__group [tabindex='0']").count(), 0);
+  const tabFromBefore = async (id) => {
+    await page.evaluate(target => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = "Before";
+      document.getElementById(target).before(button);
+      button.focus();
+    }, id);
+    await page.keyboard.press("Tab");
+    const landed = page.locator(`#${id} .mtrl-rating__group [tabindex="0"]`);
+    assert.equal(await landed.evaluate(node => node === document.activeElement && node.matches(":focus-visible")), true, id);
+    const checked = page.locator(`#${id} .mtrl-rating__stop[aria-checked="true"]`);
+    const onChecked = (await checked.count()) === 1;
+    const expected = onChecked ? checked : page.locator(`#${id} .mtrl-rating__stop`).first();
+    assert.equal(await expected.evaluate(node => node === document.activeElement), true, id);
+  };
+  await tabFromBefore("small");
+  await tabFromBefore("medium");
+  assert.equal(await page.locator("#medium .mtrl-rating__group [tabindex='0']").evaluate(node => getComputedStyle(node).outlineColor), await paint("#forced-reference", "outlineColor"));
   assert.deepEqual(errors, []);
   await page.close();
 
