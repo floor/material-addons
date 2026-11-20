@@ -55,7 +55,7 @@ try {
       document.documentElement.style.colorScheme = color === "rgb(10, 20, 30)" ? "light" : "dark";
       document.documentElement.style.setProperty("--mtrl-sys-color-primary", color);
     }, [background, foreground]);
-    assert.equal(await page.locator("#medium .mtrl-rating__star--full .mtrl-rating__star-fill").evaluate(node => getComputedStyle(node).color), background);
+    assert.equal(await page.locator("#medium .mtrl-rating__star--full .mtrl-rating__star-fill").first().evaluate(node => getComputedStyle(node).color), background);
   }
 
   await clickRatio(page, "hit", 4, 0.25);
@@ -72,7 +72,7 @@ try {
   await page.evaluate(() => { document.documentElement.dir = "ltr"; });
   await page.emulateMedia({ forcedColors: "active" });
   const reference = page.locator("#forced-reference");
-  const paint = (selector, prop) => page.locator(selector).evaluate((node, name) => getComputedStyle(node)[name], prop);
+  const paint = (selector, prop) => page.locator(selector).first().evaluate((node, name) => getComputedStyle(node)[name], prop);
   assert.equal(await paint("#medium .mtrl-rating__star--full .mtrl-rating__star-fill", "color"), await paint("#forced-reference", "outlineColor"));
   assert.equal(await paint("#medium .mtrl-rating__star--empty .mtrl-rating__star-empty", "color"), await reference.evaluate(node => getComputedStyle(node).borderTopColor));
   assert.equal(await paint("#disabled .mtrl-rating__star-fill", "color"), await reference.evaluate(node => getComputedStyle(node).color));
