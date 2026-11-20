@@ -27,3 +27,8 @@ import { createSolidSkeleton } from "../adapters/skeleton/solid";
 export const Skeleton = /*#__PURE__*/ createSolidSkeleton();
 export type { SolidSkeletonProps } from "../adapters/skeleton/solid";
 export type { SkeletonElementEventMap } from "../elements/skeleton";
+import "material-addons/elements/css/alert";
+import { createSolidAlert } from "../adapters/alert/solid";
+export const Alert = /*#__PURE__*/ createSolidAlert();
+export type { SolidAlertProps } from "../adapters/alert/solid";
+export type { AlertElementEventMap } from "../elements/alert";

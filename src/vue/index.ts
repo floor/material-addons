@@ -27,3 +27,8 @@ import { createVueSkeleton } from "../adapters/skeleton/vue";
 export const MSkeleton = /*#__PURE__*/ createVueSkeleton();
 export type { VueSkeletonProps } from "../adapters/skeleton/vue";
 export type { SkeletonElementEventMap } from "../elements/skeleton";
+import "material-addons/elements/css/alert";
+import { createVueAlert } from "../adapters/alert/vue";
+export const MAlert = /*#__PURE__*/ createVueAlert();
+export type { VueAlertProps, VueAlertEmits } from "../adapters/alert/vue";
+export type { AlertElementEventMap } from "../elements/alert";

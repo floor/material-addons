@@ -27,7 +27,7 @@ const PREUPGRADE_CSS = join(DIST_DIR, "elements/preupgrade.css");
 const adapterPlugin = {
   name: "adapter-element-entry",
   setup(build) {
-    build.onResolve({ filter: /^(?:\.\.\/)+elements\/(stepper|autocomplete|avatar)$/ }, ({ path }) => ({
+    build.onResolve({ filter: /^(?:\.\.\/)+elements\/(stepper|autocomplete|avatar|alert)$/ }, ({ path }) => ({
       path: `material-addons/${path.slice(path.lastIndexOf("elements/"))}`, external: true,
     }));
   },
@@ -46,6 +46,17 @@ const MODULES = [
   { name: "svelte autocomplete runtime", entry: "src/adapters/autocomplete/svelte.ts", outDir: "dist/svelte", basename: "autocomplete-runtime", adapter: true },
   { name: "svelte avatar runtime", entry: "src/adapters/avatar/svelte.ts", outDir: "dist/svelte", basename: "avatar-runtime", adapter: true },
   { name: "svelte skeleton runtime", entry: "src/adapters/skeleton/svelte.ts", outDir: "dist/svelte", basename: "skeleton-runtime", adapter: true },
+  { name: "svelte alert runtime", entry: "src/adapters/alert/svelte.ts", outDir: "dist/svelte", basename: "alert-runtime", adapter: true },
+  {
+    name: "alert", entry: "src/components/alert/index.ts", outDir: "dist/components/alert",
+  },
+  {
+    name: "alert constants", entry: "src/components/alert/constants.ts", outDir: "dist/components/alert", basename: "constants",
+  },
+  {
+    name: "alert element", entry: "src/elements/alert.ts", outDir: "dist/elements", basename: "alert",
+    plugins: [externalEntry(/^\.\.\/components\/alert$/, "../components/alert/index.mjs")],
+  },
   {
     name: "avatar", entry: "src/components/avatar/index.ts", outDir: "dist/components/avatar",
   },
@@ -179,7 +190,7 @@ const MODULES = [
     entry: "src/elements/index.ts",
     outDir: "dist/elements",
     basename: "index",
-    plugins: [externalEntry(/^\.\/avatar$/, "./avatar.mjs")],
+    plugins: [externalEntry(/^\.\/avatar$/, "./avatar.mjs"), externalEntry(/^\.\/alert$/, "./alert.mjs")],
   },
 ];
 
@@ -293,7 +304,7 @@ const buildStyles = async () => {
 const buildElementStyles = async () => {
   const dir = join(DIST_DIR, "elements/css");
   await mkdir(dir, { recursive: true });
-  for (const name of ["stepper", "expansion-panel", "avatar", "skeleton"]) {
+  for (const name of ["stepper", "expansion-panel", "avatar", "skeleton", "alert"]) {
     const source = `src/styles/components/_${name}.scss`;
     const result = Bun.spawn(
       ["npx", "sass", source, "--style=compressed", "--no-source-map", "--load-path=node_modules"],

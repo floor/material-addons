@@ -1,0 +1,262 @@
+@use "material/src/styles/abstract/theme" as t;
+
+@mixin alert-font($role, $size, $line, $weight) {
+  font: var(--mtrl-sys-typescale-#{$role}-font-weight, #{$weight})
+    var(--mtrl-sys-typescale-#{$role}-font-size, #{$size}) /
+    var(--mtrl-sys-typescale-#{$role}-line-height, #{$line})
+    var(--mtrl-sys-typescale-#{$role}-font, system-ui);
+  letter-spacing: var(--mtrl-sys-typescale-#{$role}-letter-spacing, normal);
+}
+
+.mtrl-alert {
+  --_alert-shape: var(--mtrl-alert-shape, var(--mtrl-sys-shape-corner-medium, 12px));
+  --_alert-padding: var(--mtrl-alert-padding, 12px 16px);
+  --_alert-gap: var(--mtrl-alert-gap, 12px);
+  --_alert-icon-size: var(--mtrl-alert-icon-size, 24px);
+
+  --_info-container: var(--mtrl-alert-info-container-color, var(--mtrl-sys-color-secondary-container));
+  --_info-content: var(--mtrl-alert-info-content-color, var(--mtrl-sys-color-on-secondary-container));
+  --_info-solid: var(--mtrl-alert-info-solid-color, var(--mtrl-sys-color-secondary));
+  --_info-on-solid: var(--mtrl-alert-info-on-solid-color, var(--mtrl-sys-color-on-secondary));
+
+  --_error-container: var(--mtrl-alert-error-container-color, var(--mtrl-sys-color-error-container));
+  --_error-content: var(--mtrl-alert-error-content-color, var(--mtrl-sys-color-on-error-container));
+  --_error-solid: var(--mtrl-alert-error-solid-color, var(--mtrl-sys-color-error));
+  --_error-on-solid: var(--mtrl-alert-error-on-solid-color, var(--mtrl-sys-color-on-error));
+
+  --_success-container: var(--mtrl-alert-success-container-color, color-mix(in srgb, #2e7d32 18%, var(--mtrl-sys-color-surface)));
+  --_success-content: var(--mtrl-alert-success-content-color, color-mix(in srgb, #2e7d32 72%, var(--mtrl-sys-color-on-surface)));
+  --_success-solid: var(--mtrl-alert-success-solid-color, #2e7d32);
+  --_success-on-solid: var(--mtrl-alert-success-on-solid-color, #ffffff);
+
+  --_warning-container: var(--mtrl-alert-warning-container-color, color-mix(in srgb, #ef6c00 18%, var(--mtrl-sys-color-surface)));
+  --_warning-content: var(--mtrl-alert-warning-content-color, color-mix(in srgb, #ef6c00 76%, var(--mtrl-sys-color-on-surface)));
+  --_warning-solid: var(--mtrl-alert-warning-solid-color, #ef6c00);
+  --_warning-on-solid: var(--mtrl-alert-warning-on-solid-color, #ffffff);
+
+  --_bg: var(--_info-container);
+  --_fg: var(--_info-content);
+  --_icon-color: var(--_info-content);
+  --_border-color: transparent;
+
+  display: flex;
+  align-items: center;
+  gap: var(--_alert-gap);
+  box-sizing: border-box;
+  padding: var(--_alert-padding);
+  border-radius: var(--_alert-shape);
+  border: 1px solid var(--_border-color);
+  background-color: var(--_bg);
+  color: var(--_fg);
+  position: relative;
+  transition: opacity var(--mtrl-sys-motion-spring-fast-effects-duration, 150ms)
+    var(--mtrl-sys-motion-spring-fast-effects-easing, ease-out);
+
+  &[hidden],
+  &--closed {
+    display: none;
+  }
+
+  &--multiline {
+    align-items: flex-start;
+  }
+
+  &--info {
+    --_sev-container: var(--_info-container);
+    --_sev-content: var(--_info-content);
+    --_sev-solid: var(--_info-solid);
+    --_sev-on-solid: var(--_info-on-solid);
+  }
+
+  &--success {
+    --_sev-container: var(--_success-container);
+    --_sev-content: var(--_success-content);
+    --_sev-solid: var(--_success-solid);
+    --_sev-on-solid: var(--_success-on-solid);
+  }
+
+  &--warning {
+    --_sev-container: var(--_warning-container);
+    --_sev-content: var(--_warning-content);
+    --_sev-solid: var(--_warning-solid);
+    --_sev-on-solid: var(--_warning-on-solid);
+  }
+
+  &--error {
+    --_sev-container: var(--_error-container);
+    --_sev-content: var(--_error-content);
+    --_sev-solid: var(--_error-solid);
+    --_sev-on-solid: var(--_error-on-solid);
+  }
+
+  &--tonal {
+    --_bg: var(--_sev-container);
+    --_fg: var(--_sev-content);
+    --_icon-color: var(--_sev-content);
+    --_border-color: transparent;
+  }
+
+  &--outlined {
+    --_bg: var(--mtrl-sys-color-surface);
+    --_fg: var(--mtrl-sys-color-on-surface);
+    --_icon-color: var(--_sev-solid);
+    --_border-color: var(--_sev-solid);
+  }
+
+  &--filled {
+    --_bg: var(--_sev-solid);
+    --_fg: var(--_sev-on-solid);
+    --_icon-color: var(--_sev-on-solid);
+    --_border-color: transparent;
+  }
+
+  &__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    inline-size: var(--_alert-icon-size);
+    block-size: var(--_alert-icon-size);
+    color: var(--_icon-color);
+
+    > svg,
+    > span > svg,
+    ::slotted(svg) {
+      inline-size: 100%;
+      block-size: 100%;
+      fill: currentColor;
+    }
+
+    > span {
+      display: inline-flex;
+      inline-size: 100%;
+      block-size: 100%;
+
+      &[hidden] {
+        display: none;
+      }
+    }
+  }
+
+  &__content {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    display: grid;
+    gap: 2px;
+    text-align: start;
+  }
+
+  &__sr-severity {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  &__label {
+    @include alert-font(title-small, 0.875rem, 1.25rem, 500);
+    color: inherit;
+  }
+
+  &__supporting-text {
+    @include alert-font(body-medium, 0.875rem, 1.25rem, 400);
+    color: inherit;
+
+    &[hidden] {
+      display: none;
+    }
+  }
+
+  &__actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex: none;
+    margin-inline-start: auto;
+
+    &[hidden] {
+      display: none;
+    }
+  }
+
+  &__action,
+  &__dismiss {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    min-inline-size: 48px;
+    min-block-size: 48px;
+    border: 0;
+    border-radius: var(--mtrl-sys-shape-corner-full, 9999px);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    padding: 0 12px;
+    @include alert-font(label-large, 0.875rem, 1.25rem, 500);
+
+    &::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: currentColor;
+      opacity: var(--_btn-state, 0);
+      pointer-events: none;
+    }
+
+    &:hover {
+      --_btn-state: #{t.state('hover-state-layer-opacity')};
+    }
+
+    &:focus-visible {
+      --_btn-state: #{t.state('focus-state-layer-opacity')};
+      outline: var(--mtrl-alert-focus-outline, 2px solid var(--mtrl-sys-color-secondary));
+      outline-offset: 2px;
+    }
+
+    &:active {
+      --_btn-state: #{t.state('pressed-state-layer-opacity')};
+    }
+  }
+
+  &__dismiss {
+    padding: 0;
+    inline-size: 48px;
+    block-size: 48px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+
+  @media (forced-colors: active) {
+    border: 1px solid CanvasText;
+    background-color: Canvas;
+    color: CanvasText;
+
+    &--warning,
+    &--error {
+      border-width: 2px;
+    }
+
+    &__icon {
+      color: CanvasText;
+    }
+
+    &__action,
+    &__dismiss {
+      color: ButtonText;
+
+      &:focus-visible {
+        outline: 2px solid Highlight;
+      }
+    }
+  }
+}
