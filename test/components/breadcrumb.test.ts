@@ -98,26 +98,20 @@ describe("createBreadcrumb", () => {
     plain.destroy();
   });
 
-  test("focus leaving the menu closes it without pulling focus back", () => {
+  test("the overflow only appears while items are collapsed", () => {
     const crumb = createBreadcrumb({ items: [...items, { value: "desk", label: "Desk" }] });
     document.body.append(crumb.element);
     const list = crumb.element.querySelector("ol")!;
     Object.defineProperty(crumb.element, "clientWidth", { value: 120, configurable: true });
     Object.defineProperty(list, "scrollWidth", { value: 600, configurable: true });
     crumb.setItems(crumb.getItems().map((item) => ({ value: item.value, label: item.label })));
-    crumb.open();
-    expect(crumb.isOpen()).toBe(true);
-    const overflow = crumb.element.querySelector(".mtrl-breadcrumb__item--overflow")!;
-    const menuitem = overflow.querySelector('[role="menuitem"]') as HTMLElement;
-    menuitem.focus();
-    // A focus move inside the overflow keeps it open
-    const overflowButton = overflow.querySelector(".mtrl-breadcrumb__overflow") as HTMLElement;
-    menuitem.dispatchEvent(new window.FocusEvent("focusout", { bubbles: true, relatedTarget: overflowButton }));
-    expect(crumb.isOpen()).toBe(true);
-    // A focus move out of the overflow closes it
-    menuitem.dispatchEvent(new window.FocusEvent("focusout", { bubbles: true, relatedTarget: document.body }));
+    expect(crumb.element.querySelector(".mtrl-breadcrumb__item--overflow")).not.toBeNull();
     expect(crumb.isOpen()).toBe(false);
-    expect(overflow.querySelector(".mtrl-breadcrumb__menu")?.hasAttribute("hidden")).toBe(true);
+    // A trail of two items has no overflow, so open() is a no-op
+    crumb.setItems([{ value: "a", label: "A" }, { value: "b", label: "B" }]);
+    expect(crumb.element.querySelector(".mtrl-breadcrumb__item--overflow")).toBeNull();
+    crumb.open();
+    expect(crumb.isOpen()).toBe(false);
     crumb.destroy();
   });
 

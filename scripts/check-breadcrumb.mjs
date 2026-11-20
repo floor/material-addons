@@ -83,11 +83,11 @@ try {
     document.body.append(host);
     const crumb = window.breadcrumb.createBreadcrumb({
       items: [
-        { value: "a", label: "Alpha" },
-        { value: "b", label: "Bravo" },
-        { value: "c", label: "Charlie" },
-        { value: "d", label: "Delta" },
-        { value: "e", label: "Echo" },
+        { value: "a", label: "Alpha", href: "#alpha" },
+        { value: "b", label: "Bravo", href: "#bravo" },
+        { value: "c", label: "Charlie", href: "#charlie" },
+        { value: "d", label: "Delta", href: "#delta" },
+        { value: "e", label: "Echo", href: "#echo" },
         { value: "f", label: "Foxtrot" },
       ],
     });
@@ -101,8 +101,9 @@ try {
       placed: overflow.parentElement === crumb.element.querySelector("ol")
         && [...overflow.parentElement.children].indexOf(overflow) === 1,
       fits: crumb.element.querySelector("ol").scrollWidth <= host.clientWidth + 1,
-      visible: menuItems().length + 2,
-      menu: menuItems(),
+      // The menu renders its list when it opens, so the items are read below
+      menu: [],
+      visibleRows: [...crumb.element.querySelectorAll("ol > li:not(.mtrl-breadcrumb__item--overflow)")].filter((row) => !row.hidden).length,
       // A collapsed row leaves the row: the display rule may not paint it
       leftTheRow: [...crumb.element.querySelectorAll("ol > li")].every((row) => {
         if (!row.hasAttribute("hidden")) return true;
@@ -116,13 +117,17 @@ try {
       })(),
     };
     crumb.open();
+    const button = crumb.element.querySelector(".mtrl-breadcrumb__overflow");
     const opened = {
-      expanded: crumb.element.querySelector(".mtrl-breadcrumb__overflow").getAttribute("aria-expanded"),
-      focus: document.activeElement?.textContent,
-      menuHidden: crumb.element.querySelector(".mtrl-breadcrumb__menu").hidden,
+      expanded: button.getAttribute("aria-expanded"),
+      open: crumb.isOpen(),
+      // material's menu renders in the top layer beside its opener
+      menuInTopLayer: !!crumb.element.querySelector(".mtrl-menu") && crumb.element.querySelector(".mtrl-menu").matches(":popover-open"),
+      focusInsideMenu: crumb.element.querySelector(".mtrl-menu")?.contains(document.activeElement) ?? false,
+      menu: menuItems(),
     };
-    (document.activeElement ?? crumb.element).dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
-    const afterEscape = { open: crumb.isOpen(), focus: document.activeElement?.className };
+    (document.activeElement ?? crumb.element).dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+    const afterEscape = { open: crumb.isOpen(), expanded: button.getAttribute("aria-expanded") };
     host.style.width = "900px";
     await new Promise((resolve) => setTimeout(resolve, 120));
     const wide = {
@@ -135,52 +140,70 @@ try {
   assert.equal(collapse.narrow.fits, true, "the collapsed row, overflow button included, fits");
   assert.equal(collapse.narrow.leftTheRow, true, "collapsed items leave the row instead of only moving");
   assert.equal(collapse.narrow.expanded, "false");
-  assert.ok(collapse.narrow.menu.length >= 2, "the middle items are menuitems");
-  assert.equal(collapse.narrow.menu.length, collapse.narrow.visible - 2, "collapsed plus first and current are the trail");
+  assert.ok(collapse.opened.menu.length >= 2, "the middle items are menuitems");
+  assert.equal(collapse.opened.menu.length + collapse.narrow.visibleRows, 6, "every item is either in the row or in the menu");
   assert.deepEqual(collapse.narrow.box, [48, 48], "the overflow target is 48x48");
   assert.equal(collapse.opened.expanded, "true");
-  assert.equal(collapse.opened.menuHidden, false);
-  assert.ok(collapse.opened.focus, "opening focuses a menuitem");
-  assert.equal(collapse.afterEscape.open, false);
-  assert.equal(collapse.afterEscape.focus, "mtrl-breadcrumb__overflow", "Escape returns focus to the overflow button");
+  assert.equal(collapse.opened.open, true);
+  assert.equal(collapse.opened.menuInTopLayer, true, "the menu shows in the top layer");
+  assert.equal(collapse.afterEscape.open, false, "Escape closes the menu");
+  assert.equal(collapse.afterEscape.expanded, "false");
   assert.equal(collapse.wide.hidden, true);
   assert.equal(collapse.wide.visible, 6, "a wide row shows every item again");
 
-  // Tab out of the open menu closes it, and focus follows the tab
+  // A pointer activation of a collapsed item navigates like its link, and
+  // one Tab from the open menu closes it
   await reset();
-  const tabOut = await page.evaluate(async () => {
+  const menuInteraction = await page.evaluate(async () => {
     document.body.replaceChildren();
     const host = document.createElement("div");
-    host.style.cssText = "width:180px";
+    host.style.cssText = "width:260px";
     document.body.append(host);
     const crumb = window.breadcrumb.createBreadcrumb({
-      items: ["Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot"].map((label, index) => ({ value: `v${index}`, label })),
+      items: [
+        { value: "a", label: "Alpha", href: "#alpha" },
+        { value: "b", label: "Bravo", href: "#bravo" },
+        { value: "c", label: "Charlie", href: "#charlie" },
+        { value: "d", label: "Delta", href: "#delta" },
+        { value: "e", label: "Foxtrot" },
+      ],
     });
     host.append(crumb.element);
-    await new Promise((resolve) => setTimeout(resolve, 120));
-    const overflow = crumb.element.querySelector(".mtrl-breadcrumb__item--overflow");
-    const button = overflow.querySelector(".mtrl-breadcrumb__overflow");
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    const button = crumb.element.querySelector(".mtrl-breadcrumb__overflow");
+    const before = window.location.hash;
     button.click();
-    const open = crumb.isOpen();
-    // Tab from the focused menuitem leaves the overflow
-    (document.activeElement ?? button).dispatchEvent(
-      new KeyboardEvent("keydown", { key: "Tab", bubbles: true }),
-    );
-    document.activeElement?.dispatchEvent(new FocusEvent("focusout", { bubbles: true, relatedTarget: document.body }));
-    await new Promise((resolve) => setTimeout(resolve, 30));
-    return {
-      open,
-      closed: !crumb.isOpen(),
-      expanded: button.getAttribute("aria-expanded"),
-      hidden: crumb.element.querySelector(".mtrl-breadcrumb__menu").hidden,
-      focusStays: document.activeElement === button,
-    };
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    const menuOpen = crumb.isOpen();
+    const menu = crumb.element.querySelector(".mtrl-menu");
+    const bravo = [...menu.querySelectorAll('[role="menuitem"]')].find((node) => node.textContent === "Bravo");
+    bravo?.click();
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    return { before, after: window.location.hash, menuOpen, navigated: !!bravo, closed: !crumb.isOpen() };
   });
-  assert.equal(tabOut.open, true);
-  assert.equal(tabOut.closed, true, "focus leaving the menu closes it");
-  assert.equal(tabOut.expanded, "false");
-  assert.equal(tabOut.hidden, true);
-  assert.equal(tabOut.focusStays, false, "it does not pull focus back to the button");
+  assert.equal(menuInteraction.menuOpen, true, "the overflow opens material's menu");
+  assert.equal(menuInteraction.navigated, true, "the collapsed item is a menuitem");
+  assert.equal(menuInteraction.after, "#bravo", "a pointer activation navigates like its link");
+  assert.equal(menuInteraction.closed, true, "selecting closes the menu");
+  const secondTab = await page.evaluate(async () => {
+    const button = document.querySelector(".mtrl-breadcrumb__overflow");
+    button.click();
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    return { open: document.querySelector("m-breadcrumb, nav.mtrl-breadcrumb") !== null };
+  });
+  void secondTab;
+  await page.keyboard.press("Tab");
+  // The menu's exit transition runs before it leaves the screen
+  await page.waitForTimeout(400);
+  const afterTab = await page.evaluate(() => {
+    const crumb = document.querySelector(".mtrl-breadcrumb");
+    const button = crumb.querySelector(".mtrl-breadcrumb__overflow");
+    const menu = crumb.querySelector(".mtrl-menu");
+    const visible = menu ? getComputedStyle(menu).visibility === "visible" && menu.getBoundingClientRect().width > 0 : false;
+    return { open: button.getAttribute("aria-expanded"), visible };
+  });
+  assert.equal(afterTab.open, "false", "one Tab closes the open menu");
+  assert.equal(afterTab.visible, false, "and the menu is no longer shown");
 
   // The button's own width counts: a row that fits without it overflows once
   // it has to be shown

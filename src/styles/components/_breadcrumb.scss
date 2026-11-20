@@ -20,8 +20,6 @@ $-breadcrumb: "mtrl-breadcrumb";
   --#{$-breadcrumb}-separator-color: var(--mtrl-sys-color-on-surface-variant);
   --#{$-breadcrumb}-disabled-color: color-mix(in srgb, var(--mtrl-sys-color-on-surface) 38%, transparent);
   --#{$-breadcrumb}-focus-outline: 2px solid var(--mtrl-sys-color-secondary);
-  --#{$-breadcrumb}-menu-bg: var(--mtrl-sys-color-surface-container);
-  --#{$-breadcrumb}-menu-shape: var(--mtrl-sys-shape-corner-medium, 12px);
   --#{$-breadcrumb}-state-hover: 0.08;
   --#{$-breadcrumb}-state-pressed: 0.1;
 
@@ -140,53 +138,13 @@ $-breadcrumb: "mtrl-breadcrumb";
   cursor: default;
 }
 
-.#{$-breadcrumb}__menu {
-  position: absolute;
-  z-index: 2;
-  margin-block-start: calc(var(--#{$-breadcrumb}-min-height) / 2 + 4px);
-  min-inline-size: 160px;
-  padding: 8px 0;
-  border-radius: var(--#{$-breadcrumb}-menu-shape);
-  background: var(--#{$-breadcrumb}-menu-bg);
-  box-shadow: 0 2px 6px 2px rgba(0, 0, 0, 0.15);
-}
-
-.#{$-breadcrumb}__item--overflow {
-  position: relative;
-}
-
-.#{$-breadcrumb}__menu-item {
-  display: block;
-  inline-size: 100%;
-  min-block-size: var(--#{$-breadcrumb}-target);
-  padding: 0 16px;
-  border: 0;
-  background: none;
-  color: var(--#{$-breadcrumb}-current-color);
-  font: inherit;
-  text-align: start;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.#{$-breadcrumb}__menu-item:disabled {
-  color: var(--#{$-breadcrumb}-disabled-color);
-  cursor: default;
-}
-
-.#{$-breadcrumb}.mtrl-breadcrumb--disabled .#{$-breadcrumb}__link {
-  color: var(--#{$-breadcrumb}-disabled-color);
-  cursor: default;
-}
-
 // The separator chevron points along the reading direction
 [dir="rtl"] .#{$-breadcrumb}__separator svg {
   transform: scaleX(-1);
 }
 
 @media (forced-colors: active) {
-  .#{$-breadcrumb}__link,
-  .#{$-breadcrumb}__menu-item {
+  .#{$-breadcrumb}__link {
     color: LinkText;
   }
 
@@ -205,16 +163,10 @@ $-breadcrumb: "mtrl-breadcrumb";
   }
 
   .#{$-breadcrumb}__link:disabled,
-  .#{$-breadcrumb}__menu-item:disabled,
   .#{$-breadcrumb}__overflow:disabled {
     color: GrayText;
   }
 
-  .#{$-breadcrumb}__menu {
-    background: Canvas;
-    color: CanvasText;
-    border: 1px solid ButtonText;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

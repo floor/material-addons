@@ -580,7 +580,7 @@ trail.on('change', (event) => {
 
 An ancestor with `href` is a link and one without it is a button. `goTo(value)` emits `beforechange`, and a cancelled event leaves the trail unchanged; the component never rewrites the items, the caller sets the new trail with `setItems`. `setValue` and `setItems` are silent.
 
-When the row overflows, the middle items collapse into a menu behind an overflow button, and the first item and the current page stay visible. `collapse: false` skips that and lets the row scroll, as `no-collapse` does on the element.
+When the row overflows, the middle items collapse into material's menu behind an overflow button, so the popup sits in the top layer, and the first item and the current page stay visible. `collapse: false` skips that and lets the row scroll, as `no-collapse` does on the element.
 
 <!-- example: fragment -->
 ```html
@@ -613,10 +613,10 @@ Measured as standalone minified ESM bundles, gzipped, with `material` external; 
 
 | Artifact | Gzip | Spec estimate |
 | --- | ---: | ---: |
-| Factory | 3,230 B | 1,800 B |
+| Factory | 2,809 B | 1,800 B |
 | Client elements | 1,296 B | 800 B |
-| Compiled stylesheet | 1,131 B | 900 B |
-| Combined | 5,657 B | 3,500 B |
+| Compiled stylesheet | 911 B | 900 B |
+| Combined | 5,016 B | 3,500 B |
 
 ## Layout
 
