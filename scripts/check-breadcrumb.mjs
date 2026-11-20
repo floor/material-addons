@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { compile } from "svelte/compiler";
 import { createServer } from "vite";
+import { MATERIAL_DEPS } from "./vite-deps.mjs";
 
 const server = await createServer({
   configFile: false,
@@ -16,7 +17,7 @@ const server = await createServer({
   },
   resolve: { conditions: ["svelte", "module", "browser", "development"] },
   cacheDir: "node_modules/.vite-breadcrumb",
-  optimizeDeps: { entries: ["test/browser/breadcrumb-adapters.html"], exclude: ["material-addons/svelte", "svelte"] },
+  optimizeDeps: { include: MATERIAL_DEPS, entries: ["test/browser/breadcrumb-adapters.html"], exclude: ["material-addons/svelte", "svelte"] },
   server: { host: "127.0.0.1", port: 0, hmr: false },
   plugins: [{
     name: "compile-svelte-fixture",
@@ -38,7 +39,10 @@ try {
   page.on("pageerror", (error) => errors.push(error.stack ?? error.message));
   const reset = async () => {
     await page.goto(`${base}/test/browser/breadcrumb.html`);
-    await page.waitForFunction(() => !!window.breadcrumb);
+    // A dependency discovered mid-run reloads the page: settle the network
+    // before waiting for the fixture, with room for a slow cold start
+    await page.waitForLoadState("networkidle");
+    await page.waitForFunction(() => !!window.breadcrumb, {}, { timeout: 60000 });
   };
 
   // Themes and direction: the current page is marked and the chevrons mirror
