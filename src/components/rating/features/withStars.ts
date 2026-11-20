@@ -185,7 +185,8 @@ export function withStars(settings: RatingSettings) {
       });
 
       const selected = state.value > 0 ? state.value : (state.half ? 0.5 : 1);
-      for (const button of group.querySelectorAll<HTMLButtonElement>(`.${RATING_CLASSES.STOP}`)) {
+      const stops = Array.from(group.querySelectorAll<HTMLButtonElement>(`.${RATING_CLASSES.STOP}`));
+      for (const button of stops) {
         const value = Number(button.dataset.value);
         button.setAttribute("aria-checked", near(value, state.value) ? "true" : "false");
         button.setAttribute("aria-label", starLabel(state, value));
