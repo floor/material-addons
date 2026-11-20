@@ -74,6 +74,13 @@ export function withStars(settings: RatingSettings) {
       if (state.hover !== null && near(state.hover, value)) return;
       view.handleHover(value, event);
     };
+    // Chromium commits a radio checked flag after click listeners return, which
+    // undoes the assignment in paint. Write the model again once that
+    // activation has finished.
+    const syncChecked = () => {
+      const inputs = Array.from(group.querySelectorAll<HTMLInputElement>(`input.${RATING_CLASSES.STOP}`));
+      for (const input of inputs) input.checked = near(Number(input.dataset.value), state.value);
+    };
     const onClick = (event: Event) => {
       if (view.suppressClick) {
         view.suppressClick = false;
@@ -83,6 +90,7 @@ export function withStars(settings: RatingSettings) {
       const value = Number((event.currentTarget as HTMLElement).dataset.value);
       const clear = near(value, state.value) && !state.required && !state.noClear;
       view.handleCommit(clear ? 0 : value, event);
+      if (event.currentTarget instanceof HTMLInputElement) queueMicrotask(syncChecked);
     };
     const onLeave = (event: Event) => {
       if (state.hover === null) return;

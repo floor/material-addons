@@ -137,7 +137,12 @@ test("client rating submits its named value and validates a required miss", asyn
   key("Home");
   expect(halfHost.value).toBe(0.5);
   expect(halfFirst.checked).toBe(true);
+  // Chromium sets the clicked radio checked after listeners return.
+  halfFirst.addEventListener("click", () => {
+    halfFirst.checked = true;
+  }, { once: true });
   halfFirst.click();
+  await Promise.resolve();
   expect(halfHost.value).toBe(0);
   expect(halfFirst.checked).toBe(false);
   halfFirst.click();

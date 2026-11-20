@@ -118,7 +118,7 @@ describe("createRating", () => {
     disabled.destroy();
   });
 
-  test("moves by arrow keys in both writing directions", () => {
+  test("moves by arrow keys in both writing directions", async () => {
     const rating = createRating({ value: 2 });
     const group = rating.element.querySelector<HTMLElement>(".mtrl-rating__group")!;
     press(group, "ArrowRight");
@@ -146,7 +146,12 @@ describe("createRating", () => {
     press(steppedGroup, "Home");
     expect(stepped.getValue()).toBe(0.5);
     expect(steppedFirst.checked).toBe(true);
+    // Chromium sets the clicked radio checked after listeners return.
+    steppedFirst.addEventListener("click", () => {
+      steppedFirst.checked = true;
+    }, { once: true });
     steppedFirst.click();
+    await Promise.resolve();
     expect(stepped.getValue()).toBe(0);
     expect(steppedFirst.checked).toBe(false);
     steppedFirst.click();
