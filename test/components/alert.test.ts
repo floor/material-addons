@@ -155,30 +155,33 @@ describe("createAlert", () => {
     const prevBtn = document.createElement("button");
     prevBtn.textContent = "Previous";
     const alert = createAlert({ label: "Focusable alert", dismissible: true });
-    const hiddenWrap = document.createElement("div");
-    hiddenWrap.style.display = "none";
-    const hiddenBtn = document.createElement("button");
-    hiddenWrap.append(hiddenBtn);
+    const unfocusableBtn = document.createElement("button");
+    unfocusableBtn.focus = () => {}; // Simulate browser rejecting focus (e.g. display:none / inert / visibility:hidden)
     const disabledFieldset = document.createElement("fieldset");
     disabledFieldset.disabled = true;
-    const fieldsetBtn = document.createElement("button");
-    disabledFieldset.append(fieldsetBtn);
-    const inertWrap = document.createElement("div");
-    inertWrap.setAttribute("inert", "");
-    const inertBtn = document.createElement("button");
-    inertWrap.append(inertBtn);
-    const visHiddenWrap = document.createElement("div");
-    visHiddenWrap.style.visibility = "hidden";
-    const visHiddenBtn = document.createElement("button");
-    visHiddenWrap.append(visHiddenBtn);
+    disabledFieldset.append(document.createElement("button"));
+    const visOverrideWrap = document.createElement("div");
+    visOverrideWrap.style.visibility = "hidden";
+    const visOverrideBtn = document.createElement("button");
+    visOverrideBtn.style.visibility = "visible";
+    visOverrideWrap.append(visOverrideBtn);
     const nextBtn = document.createElement("button");
     nextBtn.textContent = "Next";
-    document.body.append(prevBtn, alert.element, hiddenWrap, disabledFieldset, inertWrap, visHiddenWrap, nextBtn);
+    document.body.append(prevBtn, alert.element, unfocusableBtn, disabledFieldset, visOverrideWrap, nextBtn);
 
     const dismissBtn = alert.element.querySelector<HTMLButtonElement>(".mtrl-alert__dismiss")!;
     dismissBtn.focus();
     expect(document.activeElement).toBe(dismissBtn);
 
+    // Focuses the visibility:visible button inside visibility:hidden wrapper first
+    dismissBtn.click();
+    expect(alert.isOpen()).toBe(false);
+    expect(document.activeElement).toBe(visOverrideBtn);
+
+    // When the visibility:visible override button is removed, focuses nextBtn
+    visOverrideWrap.remove();
+    alert.show();
+    dismissBtn.focus();
     dismissBtn.click();
     expect(alert.isOpen()).toBe(false);
     expect(document.activeElement).toBe(nextBtn);

@@ -62,27 +62,33 @@ test("<m-alert> reflects attributes, slots body content, and dispatches cancelab
   host.severity = "success";
   expect(root().getAttribute("role")).toBe("status");
 
-  // Focus handoff on custom element dismissal: skips ineligible wrappers, moves to next focusable, else previous
+  // Focus handoff on custom element dismissal: skips ineligible wrappers, focuses visibility:visible child, then next, else previous
   const prevBtn = document.createElement("button");
   prevBtn.id = "prev-btn";
-  const hiddenWrap = document.createElement("div");
-  hiddenWrap.style.display = "none";
-  hiddenWrap.append(document.createElement("button"));
+  const unfocusableBtn = document.createElement("button");
+  unfocusableBtn.focus = () => {};
   const disabledFieldset = document.createElement("fieldset");
   disabledFieldset.disabled = true;
   disabledFieldset.append(document.createElement("button"));
-  const inertWrap = document.createElement("div");
-  inertWrap.setAttribute("inert", "");
-  inertWrap.append(document.createElement("button"));
-  const visHiddenWrap = document.createElement("div");
-  visHiddenWrap.style.visibility = "hidden";
-  visHiddenWrap.append(document.createElement("button"));
+  const visOverrideWrap = document.createElement("div");
+  visOverrideWrap.style.visibility = "hidden";
+  const visOverrideBtn = document.createElement("button");
+  visOverrideBtn.id = "vis-override-btn";
+  visOverrideBtn.style.visibility = "visible";
+  visOverrideWrap.append(visOverrideBtn);
   const nextBtn = document.createElement("button");
   nextBtn.id = "next-btn";
   host.before(prevBtn);
-  host.after(hiddenWrap, disabledFieldset, inertWrap, visHiddenWrap, nextBtn);
+  host.after(unfocusableBtn, disabledFieldset, visOverrideWrap, nextBtn);
 
   const dismissBtn = root().querySelector<HTMLButtonElement>(".mtrl-alert__dismiss")!;
+  dismissBtn.focus();
+  dismissBtn.click();
+  expect(host.open).toBe(false);
+  expect(document.activeElement).toBe(visOverrideBtn);
+
+  visOverrideWrap.remove();
+  host.open = true;
   dismissBtn.focus();
   dismissBtn.click();
   expect(host.open).toBe(false);

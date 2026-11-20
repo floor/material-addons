@@ -18,29 +18,6 @@ function isShadow(node: Node): node is ShadowRoot {
   return "host" in node && Boolean((node as ShadowRoot).host);
 }
 
-function isEligibleFocusable(node: HTMLElement, container: HTMLElement, root: HTMLElement): boolean {
-  if (node === container || node === root || container.contains(node) || root.contains(node)) return false;
-  if (node.tabIndex < 0) return false;
-  if ((node as HTMLButtonElement).disabled || node.hasAttribute("disabled") || node.matches?.(":disabled")) return false;
-  if (node.closest("[hidden], [inert], [no-open], .mtrl-alert--closed, [aria-hidden='true']")) return false;
-  const view = node.ownerDocument.defaultView;
-  if (view) {
-    let current: HTMLElement | null = node;
-    while (current) {
-      const style = view.getComputedStyle(current);
-      if (style.display === "none" || style.visibility === "hidden") return false;
-      const parent: HTMLElement | null = current.parentElement;
-      if (parent) {
-        current = parent;
-      } else {
-        const rootNode = current.getRootNode();
-        current = isShadow(rootNode) ? (rootNode.host as HTMLElement) : null;
-      }
-    }
-  }
-  return true;
-}
-
 function activeElementOf(scope: Node, doc: Document): Element | null {
   if (isShadow(scope) && scope.activeElement) return scope.activeElement;
   return doc.activeElement;
@@ -58,6 +35,7 @@ function focusAdjacent(container: HTMLElement, root: HTMLElement): void {
   const preceding: HTMLElement[] = [];
   for (const candidate of all) {
     if (candidate === container || candidate === root || container.contains(candidate) || root.contains(candidate)) continue;
+    if (candidate.tabIndex < 0) continue;
     const pos = container.compareDocumentPosition(candidate);
     if (pos & 4) following.push(candidate); // Node.DOCUMENT_POSITION_FOLLOWING
     else if (pos & 2) preceding.push(candidate); // Node.DOCUMENT_POSITION_PRECEDING
@@ -65,7 +43,6 @@ function focusAdjacent(container: HTMLElement, root: HTMLElement): void {
   preceding.reverse();
 
   for (const candidate of [...following, ...preceding]) {
-    if (!isEligibleFocusable(candidate, container, root)) continue;
     candidate.focus();
     const active = activeElementOf(candidate.getRootNode(), doc);
     if (active === candidate || doc.activeElement === candidate) return;

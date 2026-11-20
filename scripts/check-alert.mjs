@@ -154,8 +154,15 @@ try {
         visHiddenWrap.style.visibility = "hidden";
         visHiddenWrap.append(Object.assign(document.createElement("button"), { id: "factory-vis-hidden-btn", textContent: "Visibility hidden" }));
 
+        const visOverrideWrap = document.createElement("div");
+        visOverrideWrap.id = "factory-vis-override-wrap";
+        visOverrideWrap.style.visibility = "hidden";
+        const visOverrideBtn = Object.assign(document.createElement("button"), { id: "factory-vis-override-btn", textContent: "Visibility override" });
+        visOverrideBtn.style.visibility = "visible";
+        visOverrideWrap.append(visOverrideBtn);
+
         const next = Object.assign(document.createElement("button"), { id: "factory-next", textContent: "Next" });
-        container.append(prev, alert.element, displayNoneWrap, disabledFieldset, inertWrap, visHiddenWrap, next);
+        container.append(prev, alert.element, displayNoneWrap, disabledFieldset, inertWrap, visHiddenWrap, visOverrideWrap, next);
         window.__factoryFocusTest = { alert, setVeto(v) { veto = v; } };
       });
       const factoryDismiss = page.locator("#factory-focus-alert .mtrl-alert__dismiss");
@@ -163,6 +170,13 @@ try {
       await page.keyboard.press("Enter");
       assert.equal(await page.evaluate(() => document.activeElement?.classList.contains("mtrl-alert__dismiss")), true, `${mode}/${dir}: vetoed factory dismiss keeps focus on dismiss button`);
       await page.evaluate(() => window.__factoryFocusTest.setVeto(false));
+      await page.keyboard.press("Enter");
+      assert.equal(await page.evaluate(() => document.activeElement?.id), "factory-vis-override-btn", `${mode}/${dir}: factory dismiss focuses visibility:visible button inside visibility:hidden wrapper`);
+      await page.evaluate(() => {
+        document.getElementById("factory-vis-override-wrap").remove();
+        window.__factoryFocusTest.alert.show();
+      });
+      await factoryDismiss.focus();
       await page.keyboard.press("Enter");
       assert.equal(await page.evaluate(() => document.activeElement?.id), "factory-next", `${mode}/${dir}: factory dismiss skips ineligible wrappers and moves focus to next focusable`);
       await page.evaluate(() => {
@@ -173,7 +187,7 @@ try {
       await page.keyboard.press("Space");
       assert.equal(await page.evaluate(() => document.activeElement?.id), "factory-prev", `${mode}/${dir}: factory dismiss skips ineligible following wrappers and falls back to previous focusable`);
 
-      // Custom element <m-alert>: skips display:none ancestor, disabled fieldset, inert, visibility:hidden; focuses next focusable, then previous
+      // Custom element <m-alert>: skips display:none ancestor, disabled fieldset, inert, visibility:hidden; focuses visibility:visible override, then next, then previous
       await page.evaluate(() => {
         const container = document.getElementById("focus-handoff");
         container.replaceChildren();
@@ -204,8 +218,15 @@ try {
         visHiddenWrap.style.visibility = "hidden";
         visHiddenWrap.append(Object.assign(document.createElement("button"), { id: "el-vis-hidden-btn", textContent: "Visibility hidden" }));
 
+        const visOverrideWrap = document.createElement("div");
+        visOverrideWrap.id = "el-vis-override-wrap";
+        visOverrideWrap.style.visibility = "hidden";
+        const visOverrideBtn = Object.assign(document.createElement("button"), { id: "el-vis-override-btn", textContent: "Visibility override" });
+        visOverrideBtn.style.visibility = "visible";
+        visOverrideWrap.append(visOverrideBtn);
+
         const next = Object.assign(document.createElement("button"), { id: "el-next", textContent: "Next" });
-        container.append(prev, host, displayNoneWrap, disabledFieldset, inertWrap, visHiddenWrap, next);
+        container.append(prev, host, displayNoneWrap, disabledFieldset, inertWrap, visHiddenWrap, visOverrideWrap, next);
         window.__elFocusTest = { host, setVeto(v) { veto = v; } };
       });
       const elDismiss = page.locator("#el-focus-alert").locator(".mtrl-alert__dismiss");
@@ -213,6 +234,13 @@ try {
       await page.keyboard.press("Enter");
       assert.equal(await page.evaluate(() => document.getElementById("el-focus-alert")?.shadowRoot?.activeElement?.classList.contains("mtrl-alert__dismiss")), true, `${mode}/${dir}: vetoed <m-alert> dismiss keeps focus on dismiss button`);
       await page.evaluate(() => window.__elFocusTest.setVeto(false));
+      await page.keyboard.press("Enter");
+      assert.equal(await page.evaluate(() => document.activeElement?.id), "el-vis-override-btn", `${mode}/${dir}: <m-alert> dismiss focuses visibility:visible button inside visibility:hidden wrapper`);
+      await page.evaluate(() => {
+        document.getElementById("el-vis-override-wrap").remove();
+        window.__elFocusTest.host.show();
+      });
+      await elDismiss.focus();
       await page.keyboard.press("Enter");
       assert.equal(await page.evaluate(() => document.activeElement?.id), "el-next", `${mode}/${dir}: <m-alert> dismiss skips ineligible wrappers and moves focus to next focusable`);
       await page.evaluate(() => {
