@@ -201,7 +201,10 @@ export function withStars(settings: RatingSettings) {
         button.setAttribute("aria-label", starLabel(state, value));
         button.tabIndex = !state.disabled && near(value, selected) ? 0 : -1;
         button.disabled = state.disabled;
-        if (button instanceof HTMLInputElement) button.setCustomValidity(missing ? "Please select a rating." : "");
+        if (button instanceof HTMLInputElement) {
+          button.checked = near(value, state.value);
+          button.setCustomValidity(missing ? "Please select a rating." : "");
+        }
       }
       view.syncField(false);
     };

@@ -44,8 +44,16 @@ describe("createRating", () => {
   test("selects whole and half stars and clears on a second click", () => {
     const rating = createRating();
     const root = rating.element;
+    const first = root.querySelector<HTMLInputElement>("input.mtrl-rating__stop");
+    stop(root, "1")?.click();
+    expect(first?.checked).toBe(true);
+    stop(root, "4")?.click();
+    expect(rating.getValue()).toBe(4);
+    expect(first?.checked).toBe(false);
+    expect(first?.getAttribute("aria-checked")).toBe("false");
     stop(root, "3")?.click();
     expect(rating.getValue()).toBe(3);
+    expect(first?.checked).toBe(false);
     for (const index of [1, 2, 3]) expect(star(root, index)?.classList.contains("mtrl-rating__star--full")).toBe(true);
     for (const index of [4, 5]) expect(star(root, index)?.classList.contains("mtrl-rating__star--empty")).toBe(true);
     for (const button of root.querySelectorAll<HTMLButtonElement>(".mtrl-rating__stop")) {

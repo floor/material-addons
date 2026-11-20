@@ -99,6 +99,11 @@ try {
   await tabFromBefore("small");
   await tabFromBefore("medium");
   assert.equal(await page.locator("#medium .mtrl-rating__group [tabindex='0']").evaluate(node => getComputedStyle(node).outlineColor), await paint("#forced-reference", "outlineColor"));
+  await clickRatio(page, "large", 1, 0.5);
+  await clickRatio(page, "large", 4, 0.5);
+  const largeNames = await page.locator("#large .mtrl-rating__group").ariaSnapshot();
+  assert.match(largeNames, /radio "1 star"(?! \[checked\])/);
+  assert.match(largeNames, /radio "4 stars" \[checked\]/);
 
   assert.equal(await page.locator("#guest .mtrl-rating__group").getAttribute("aria-label"), "Guest rating: 3.7 of 5 stars");
   assert.equal(await page.locator("#critic .mtrl-rating__group").getAttribute("aria-label"), "Critic rating: 3.7 of 5 stars");
