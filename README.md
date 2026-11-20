@@ -554,6 +554,60 @@ Production CI measures each artifact separately at gzip level 9. Material depend
 | Compiled stylesheet | 1,244 B | 800 B |
 | Combined | 4,977 B | 2,500 B |
 
+## Paginator
+
+One page of a set: a rows-per-page select, the live range, and first, previous, next and last. Material Design 3 publishes no paginator; the row geometry and the 25-row page follow the MD2 data-table behavior, on the shipped system roles. `page` is the model, 1-based and clamped to the page count.
+
+<!-- example: run, shows "26–50 of 100" -->
+```javascript
+import 'material/styles';
+import 'material-addons/styles';
+import { createPaginator } from 'material-addons/components/paginator';
+
+const paginator = createPaginator({ page: 2, pageSize: 25, total: 100 });
+document.body.append(paginator.element);
+
+const status = document.createElement('p');
+status.textContent = paginator.range.textContent;
+paginator.on('change', (event) => { status.textContent = `${event.page} / ${event.pageSize}`; });
+document.body.append(status);
+```
+
+`goTo(page)` is the guarded move: it emits `beforechange`, and only then `change`. `setPage`, `setPageSize` and `setTotal` are silent and clamp. `numbered` adds page buttons between previous and next, with `siblingCount` and `boundaryCount` around the current page. `ends: false` drops first and last, as `no-ends` does on the element.
+
+<!-- example: fragment -->
+```html
+<m-paginator page="2" page-size="25" total="100" numbered></m-paginator>
+```
+
+<!-- example: fragment -->
+```javascript
+import 'material-addons/elements/css/paginator';
+import { definePaginator } from 'material-addons/elements/paginator';
+
+definePaginator();
+```
+
+The element dispatches one cancelable `change` whose `detail` is `{ page, pageSize }`, raised from the factory's `beforechange`: calling `preventDefault()` leaves the page where it was. `pageSizes` is a property. The data grid composes this contract.
+
+| Framework | Import | Component | Event |
+| --- | --- | --- | --- |
+| React | `material-addons/react` | `Paginator` | `onChange` |
+| Vue | `material-addons/vue` | `MPaginator` | `@change` |
+| Svelte 5 | `material-addons/svelte` | `Paginator` | `onchange` |
+| Solid | `material-addons/solid` | `Paginator` | `onChange` |
+
+### Size
+
+Measured as standalone minified ESM bundles, gzipped, with `material` external; the element's bundle also has the factory external. `scripts/paginator-size.mjs` prints the row.
+
+| Artifact | Gzip | Spec estimate |
+| --- | ---: | ---: |
+| Factory | 3,195 B | 1,600 B |
+| Client element | 914 B | 700 B |
+| Compiled stylesheet | 1,072 B | 900 B |
+| Combined | 5,181 B | 3,200 B |
+
 ## Layout
 
 `createLayout` takes an array: a tag or a factory, a name when the item is to be read back, its options, then its children. It returns the root element and each named component.
@@ -633,6 +687,8 @@ The gestures:
 | The Svelte 5 adapter | `material-addons/svelte` |
 | The stepper element | `material-addons/elements`, `material-addons/elements/stepper` |
 | The skeleton element and its shadow styles | `material-addons/elements/skeleton`, `material-addons/elements/css/skeleton` |
+| The paginator factory | `material-addons/components/paginator` |
+| The paginator element and its shadow styles | `material-addons/elements/paginator`, `material-addons/elements/css/paginator` |
 | The expansion panel elements | `material-addons/elements/expansion-panel` |
 | The stepper's shadow styles | `material-addons/elements/css/stepper` |
 | The expansion panel's shadow styles | `material-addons/elements/css/expansion-panel` |
