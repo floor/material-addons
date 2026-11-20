@@ -116,6 +116,14 @@ const EXPECTED_PATHS = [
   "dist/components/form/types.d.ts",
   "dist/components/index.d.ts",
   "dist/components/index.mjs",
+  "dist/components/data-grid/columns.d.ts",
+  "dist/components/data-grid/config.d.ts",
+  "dist/components/data-grid/constants.d.ts",
+  "dist/components/data-grid/constants.mjs",
+  "dist/components/data-grid/data-grid.d.ts",
+  "dist/components/data-grid/index.d.ts",
+  "dist/components/data-grid/index.mjs",
+  "dist/components/data-grid/types.d.ts",
   "dist/components/stepper/api.d.ts",
   "dist/components/stepper/config.d.ts",
   "dist/components/stepper/constants.d.ts",
@@ -261,6 +269,9 @@ try {
   mkdirSync(addon, { recursive: true });
   run("tar", ["-xzf", packed.tarball, "--strip-components=1", "-C", addon], root);
   symlinkSync(resolve(root, "node_modules/material"), join(modules, "material"), "junction");
+  // The package's one runtime dependency installs with it; the fixture links
+  // the copy the checkout tested against
+  symlinkSync(resolve(root, "node_modules/vlist"), join(modules, "vlist"), "junction");
   const pkg = JSON.parse(readFileSync(join(addon, "package.json"), "utf8"));
   assert.equal(Object.hasOwn(pkg, "scripts"), false);
   assert.equal(Object.hasOwn(pkg, "devDependencies"), false);
@@ -292,7 +303,7 @@ try {
       }
     }
   }
-  assert.equal(specifiers.length, 27);
+  assert.equal(specifiers.length, 28);
   run(process.execPath, ["--input-type=module", "-e", `
     import assert from 'node:assert/strict';
     import { createRequire } from 'node:module';
