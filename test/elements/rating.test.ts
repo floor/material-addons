@@ -23,7 +23,7 @@ test("client rating submits its named value and validates a required miss", asyn
   const input = host.querySelector<HTMLInputElement>("input.mtrl-rating__input");
   expect(input?.parentElement).toBe(host);
   expect(input?.value).toBe("3.5");
-  expect(new FormData(form).get("score")).toBe("3.5");
+  expect(new window.FormData(form).get("score")).toBe("3.5");
 
   const seen: Array<{ value: number; previousValue: number }> = [];
   host.addEventListener("change", ((event: CustomEvent<{ value: number; previousValue: number }>) => {

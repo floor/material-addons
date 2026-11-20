@@ -44,8 +44,9 @@ export function withForm() {
 
     const onReset = (event: Event) => {
       const form = event.target;
+      const FormElement = component.element.ownerDocument.defaultView?.HTMLFormElement;
       const node = input?.isConnected ? input : component.element;
-      if (!(form instanceof HTMLFormElement) || !form.contains(node)) return;
+      if (!FormElement || !(form instanceof FormElement) || !form.contains(node)) return;
       view.handleCommit(view.state.initialValue, undefined, true);
       view.syncField(true);
     };

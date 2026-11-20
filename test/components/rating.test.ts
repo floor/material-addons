@@ -96,7 +96,7 @@ describe("createRating", () => {
     disabled.element.querySelector<HTMLButtonElement>(".mtrl-rating__stop")?.dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
     expect(disabled.getValue()).toBe(2);
     expect(disabled.element.querySelector("input")?.disabled).toBe(true);
-    expect(new FormData(form).get("score")).toBe(null);
+    expect(new window.FormData(form).get("score")).toBe(null);
     rating.destroy();
     fraction.destroy();
     disabled.destroy();
@@ -160,7 +160,7 @@ describe("createRating", () => {
     form.append(rating.element);
     document.body.append(form);
     expect(rating.element.querySelector("input")?.value).toBe("3.5");
-    expect(new FormData(form).get("score")).toBe("3.5");
+    expect(new window.FormData(form).get("score")).toBe("3.5");
     let changes = 0;
     rating.on("change", () => { changes += 1; });
     rating.setValue(4);
@@ -168,13 +168,13 @@ describe("createRating", () => {
     form.reset();
     expect(rating.getValue()).toBe(1);
     expect(changes).toBe(1);
-    expect(new FormData(form).get("score")).toBe("1");
+    expect(new window.FormData(form).get("score")).toBe("1");
 
     const empty = createRating({ name: "score" });
     const emptyForm = document.createElement("form");
     emptyForm.append(empty.element);
     document.body.append(emptyForm);
-    expect(new FormData(emptyForm).get("score")).toBe("");
+    expect(new window.FormData(emptyForm).get("score")).toBe("");
 
     const required = createRating({ required: true, label: "Quality" });
     expect(required.checkValidity()).toBe(false);
