@@ -1,0 +1,147 @@
+// src/styles/components/_tree.scss
+//
+// The tree: the lists guidelines' folder pattern, the WAI-ARIA Tree View
+// interaction model, and the list overview's 56/72/88 row heights. M3
+// publishes no tree component; indent and inline padding are library
+// choices carried by tokens (tree-spec.md section 10).
+
+$component: "mtrl-tree";
+
+.#{$component} {
+  --#{$component}-row-one-line-size: 56px;
+  --#{$component}-row-two-line-size: 72px;
+  --#{$component}-row-three-line-size: 88px;
+  --#{$component}-indent: 24px;
+  --#{$component}-padding-inline: 16px;
+  --#{$component}-label-color: var(--mtrl-sys-color-on-surface);
+  --#{$component}-supporting-text-color: var(--mtrl-sys-color-on-surface-variant);
+  --#{$component}-selected-color: color-mix(in srgb, var(--mtrl-sys-color-primary) 12%, transparent);
+  --#{$component}-hover-color: color-mix(in srgb, var(--mtrl-sys-color-on-surface) 8%, transparent);
+  --#{$component}-focus-color: var(--mtrl-sys-color-secondary);
+  --#{$component}-disabled-opacity: 0.38;
+  --#{$component}-toggle-size: 24px;
+  --#{$component}-duration: 150ms;
+
+  display: block;
+  color: var(--#{$component}-label-color);
+}
+
+.#{$component}__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  block-size: var(--#{$component}-row-one-line-size);
+  padding-inline: var(--#{$component}-padding-inline);
+  cursor: pointer;
+  position: relative;
+
+  &:hover {
+    background: var(--#{$component}-hover-color);
+  }
+}
+
+.#{$component}__item {
+  display: block;
+
+  &:focus-visible {
+    outline: 2px solid var(--#{$component}-focus-color);
+    outline-offset: -2px;
+  }
+
+  &[aria-selected="true"] > .#{$component}__row,
+  &[aria-checked="true"] > .#{$component}__row {
+    background: var(--#{$component}-selected-color);
+  }
+
+  &[aria-disabled="true"] {
+    opacity: var(--#{$component}-disabled-opacity);
+    pointer-events: none;
+  }
+}
+
+.#{$component}__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--#{$component}-toggle-size);
+  block-size: var(--#{$component}-toggle-size);
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1;
+  color: inherit;
+  transition: transform var(--#{$component}-duration) ease;
+
+  [aria-expanded="true"] > & {
+    transform: rotate(90deg);
+  }
+}
+
+.#{$component}__label {
+}
+
+.#{$component}__label {
+  font-size: var(--mtrl-sys-typescale-body-medium-size, 14px);
+  line-height: var(--mtrl-sys-typescale-body-medium-line-height, 20px);
+  font-weight: var(--mtrl-sys-typescale-body-medium-weight, 400);
+}
+
+.#{$component}__supporting-text {
+  font-size: var(--mtrl-sys-typescale-body-small-size, 12px);
+  line-height: var(--mtrl-sys-typescale-body-small-line-height, 16px);
+  color: var(--#{$component}-supporting-text-color);
+}
+
+.#{$component}__item--two-line .#{$component}__row {
+  block-size: var(--#{$component}-row-two-line-size);
+}
+
+.#{$component}__group {
+  display: block;
+}
+
+// The virtual rows: vlist sets its own --vlist-tree-* variables; the
+// Material tokens map onto them so both trees read the same sheet.
+.#{$component}--virtual {
+  --vlist-tree-indent: var(--#{$component}-indent);
+
+  .vlist-row {
+    display: flex;
+    align-items: center;
+    block-size: var(--#{$component}-row-one-line-size);
+    padding-inline: var(--#{$component}-padding-inline);
+    cursor: pointer;
+
+    &:hover {
+      background: var(--#{$component}-hover-color);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .#{$component} {
+    --#{$component}-duration: 0ms;
+  }
+}
+
+@media (forced-colors: active) {
+  .#{$component}__row {
+    color: CanvasText;
+  }
+
+  .#{$component}__item[aria-selected="true"] > .#{$component}__row,
+  .#{$component}__item[aria-checked="true"] > .#{$component}__row {
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .#{$component}__item:focus-visible {
+    outline-color: Highlight;
+  }
+
+  .#{$component}__item[aria-disabled="true"] {
+    color: GrayText;
+    opacity: 1;
+  }
+}

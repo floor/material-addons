@@ -46,6 +46,18 @@
       "types": "./dist/components/skeleton/constants.d.ts",
       "import": "./dist/components/skeleton/constants.mjs"
     },
+    "./components/tree": {
+      "types": "./dist/components/tree/index.d.ts",
+      "import": "./dist/components/tree/index.mjs"
+    },
+    "./components/tree/constants": {
+      "types": "./dist/components/tree/constants.d.ts",
+      "import": "./dist/components/tree/constants.mjs"
+    },
+    "./components/tree/virtual": {
+      "types": "./dist/components/tree/virtual.d.ts",
+      "import": "./dist/components/tree/virtual.mjs"
+    },
     "./elements": {
       "types": "./dist/elements/index.d.ts",
       "import": "./dist/elements/index.mjs"
@@ -58,6 +70,10 @@
       "types": "./dist/elements/skeleton.d.ts",
       "import": "./dist/elements/skeleton.mjs"
     },
+    "./elements/tree": {
+      "types": "./dist/elements/tree.d.ts",
+      "import": "./dist/elements/tree.mjs"
+    },
     "./elements/css/stepper": {
       "types": "./dist/elements/css/stepper.d.ts",
       "import": "./dist/elements/css/stepper.js"
@@ -65,6 +81,10 @@
     "./elements/css/skeleton": {
       "types": "./dist/elements/css/skeleton.d.ts",
       "import": "./dist/elements/css/skeleton.js"
+    },
+    "./elements/css/tree": {
+      "types": "./dist/elements/css/tree.d.ts",
+      "import": "./dist/elements/css/tree.js"
     },
     "./components/autocomplete": {
       "types": "./dist/components/autocomplete/index.d.ts",
@@ -139,6 +159,7 @@
     "check:stepper": "node scripts/check-stepper.mjs",
     "check:skeleton": "node scripts/check-skeleton.mjs",
     "check:skeleton-adapters": "node scripts/check-skeleton-adapters.mjs",
+    "check:tree": "node scripts/check-tree.mjs",
     "check:avatar": "node scripts/check-avatar.mjs",
     "check:autocomplete": "node scripts/check-autocomplete.mjs",
     "adapters:generate": "bun scripts/generate-adapters.mjs",
@@ -203,5 +224,8 @@
     "solid-js": {
       "optional": true
     }
+  },
+  "dependencies": {
+    "vlist": "^3.8.6"
   }
 }

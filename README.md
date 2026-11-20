@@ -398,6 +398,64 @@ external. `scripts/skeleton-size.mjs` prints the rows.
 The targets were the spec note's estimates; the row records what was
 measured.
 
+## Tree
+
+<!-- example: fragment -->
+```javascript
+import 'material/styles';
+import 'material-addons/styles';
+import { createTree } from 'material-addons/components/tree';
+
+const tree = createTree({
+  nodes: [
+    { value: 'src', label: 'src', children: [
+      { value: 'tree', label: 'tree.ts' },
+    ] },
+    { value: 'readme', label: 'README', supportingText: 'Notes' },
+  ],
+  selection: 'multiple',
+  expanded: ['src'],
+});
+
+document.body.append(tree.element);
+```
+
+A tree is the lists guidelines' folder: list items containing other list
+items expand and collapse in place. Material Design 3 publishes no tree
+component, so the interaction model is the WAI-ARIA Tree View pattern and
+every unpublished number — the indent, the inline padding — is a
+`--mtrl-tree-*` token. Row heights follow the list overview: 56px for a
+label, 72px with supporting text.
+
+Selection is none by default, single through `value`, or multiple through
+`values`. Multiple shows a check graphic and sets `aria-checked`. Arrow
+keys move focus, Space toggles in multiple mode, Enter activates, and
+type-ahead is on by default. Lazy parents load their children on first
+expand.
+
+The element is `<m-tree>` with item declarations in the light DOM;
+`defineTree()` registers both tags.
+
+Large trees opt in through the separate tree/virtual subpath of the package
+entry, whose virtual factory renders the same row on `vlist`'s tree plugin,
+which owns the window, flatten and partial-DOM ARIA. The default entry
+never imports `vlist` — the package check asserts it.
+
+### Size
+
+Measured as standalone minified ESM bundles, gzipped, with `material`
+(and for the virtual row, `vlist`) external. `scripts/tree-size.mjs`
+prints the rows.
+
+| Artifact | Measured | Target |
+|----------|----------|--------|
+| `createTree` | 3.5 KB | 2.2 KB |
+| The virtual entry (vlist external) | 1.3 KB | 0.8 KB |
+| The compiled stylesheet | 0.8 KB | 1.4 KB |
+
+The targets were the spec note's estimates; the row records what was
+measured.
+
 ## Colour picker
 
 <!-- example: run, shows "#6750a4" -->

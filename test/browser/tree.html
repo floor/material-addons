@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en" data-theme="baseline">
+<meta charset="utf-8">
+<title>Tree browser fixture</title>
+<body>
+<div id="fixture"></div>
+<script type="module">
+  import "material/styles";
+  import "material-addons/styles";
+  import "material-addons/elements/css/tree";
+  import { createTree } from "material-addons/components/tree";
+  import { defineTree } from "material-addons/elements/tree";
+  window.tree = { createTree, defineTree };
+</script>
