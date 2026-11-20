@@ -104,6 +104,37 @@ try {
   const largeNames = await page.locator("#large .mtrl-rating__group").ariaSnapshot();
   assert.match(largeNames, /radio "1 star"(?! \[checked\])/);
   assert.match(largeNames, /radio "4 stars" \[checked\]/);
+  const checkedPaths = async (id) => {
+    const group = page.locator(`#${id} .mtrl-rating__group`);
+    const read = async (step) => {
+      const snapshot = await group.ariaSnapshot();
+      const checked = await group.locator("input.mtrl-rating__stop").evaluate(node => node.checked);
+      return { snapshot, checked, step };
+    };
+    await page.evaluate((target) => {
+      const host = document.getElementById(target);
+      if (host.tagName === "M-RATING") host.value = 2;
+      else window.hit.setValue(2);
+    }, id);
+    await group.locator('[tabindex="0"]').focus();
+    await page.keyboard.press("Home");
+    const home = await read("home");
+    assert.match(home.snapshot, /radio "0\.5 stars" \[checked\]/, `${id} home`);
+    assert.equal(home.checked, true, `${id} home`);
+    await clickRatio(page, id, 1, 0.25);
+    const cleared = await read("clear");
+    assert.doesNotMatch(cleared.snapshot, /radio "0\.5 stars" \[checked\]/, `${id} clear`);
+    assert.equal(cleared.checked, false, `${id} clear`);
+    await clickRatio(page, id, 1, 0.25);
+    await group.locator('[tabindex="0"]').focus();
+    await page.keyboard.press("ArrowUp");
+    const up = await read("up");
+    assert.doesNotMatch(up.snapshot, /radio "0\.5 stars" \[checked\]/, `${id} up`);
+    assert.match(up.snapshot, /radio "1 star" \[checked\]/, `${id} up`);
+    assert.equal(up.checked, false, `${id} up`);
+  };
+  await checkedPaths("hit");
+  await checkedPaths("element-half");
 
   assert.equal(await page.locator("#guest .mtrl-rating__group").getAttribute("aria-label"), "Guest rating: 3.7 of 5 stars");
   assert.equal(await page.locator("#critic .mtrl-rating__group").getAttribute("aria-label"), "Critic rating: 3.7 of 5 stars");

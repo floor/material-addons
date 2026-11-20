@@ -107,6 +107,12 @@
     elementScore.id = "element-score-form";
     elementScore.innerHTML = '<m-rating id="element-score" name="score" value="1" half required label="Score"></m-rating><button type="submit">Submit element score</button>';
     fixture.append(elementScore);
+    const elementHalf = document.createElement("m-rating");
+    elementHalf.id = "element-half";
+    elementHalf.setAttribute("half", "");
+    elementHalf.setAttribute("value", "2");
+    elementHalf.setAttribute("label", "Half element");
+    fixture.append(elementHalf);
     const elementGuest = document.createElement("m-rating");
     elementGuest.id = "element-guest";
     elementGuest.setAttribute("read-only", "");

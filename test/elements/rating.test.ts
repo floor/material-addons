@@ -126,6 +126,26 @@ test("client rating submits its named value and validates a required miss", asyn
   await Promise.resolve();
   expect(critic.shadowRoot!.querySelector(".mtrl-rating__group")?.getAttribute("aria-label")).toBe("Critic rating: 3.7 of 5 stars");
 
+  const halfHost = document.createElement("m-rating");
+  halfHost.setAttribute("half", "");
+  halfHost.setAttribute("value", "2");
+  document.body.append(halfHost);
+  await Promise.resolve();
+  const halfGroup = halfHost.shadowRoot!.querySelector<HTMLElement>(".mtrl-rating__group")!;
+  const halfFirst = halfHost.shadowRoot!.querySelector<HTMLInputElement>("input.mtrl-rating__stop")!;
+  const key = (name: string) => halfGroup.dispatchEvent(new window.KeyboardEvent("keydown", { key: name, bubbles: true, cancelable: true }));
+  key("Home");
+  expect(halfHost.value).toBe(0.5);
+  expect(halfFirst.checked).toBe(true);
+  halfFirst.click();
+  expect(halfHost.value).toBe(0);
+  expect(halfFirst.checked).toBe(false);
+  halfFirst.click();
+  expect(halfHost.value).toBe(0.5);
+  key("ArrowUp");
+  expect(halfHost.value).toBe(1);
+  expect(halfFirst.checked).toBe(false);
+
   host.readOnly = true;
   expect(group().getAttribute("role")).toBe("img");
   expect(group().querySelectorAll("[role=radio]").length).toBe(0);

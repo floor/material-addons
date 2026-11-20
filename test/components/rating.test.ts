@@ -140,6 +140,22 @@ describe("createRating", () => {
     press(stop(rating.element, "1")!, " ");
     expect(rating.getValue()).toBe(0);
 
+    const stepped = createRating({ half: true, value: 2 });
+    const steppedGroup = stepped.element.querySelector<HTMLElement>(".mtrl-rating__group")!;
+    const steppedFirst = stepped.element.querySelector<HTMLInputElement>("input.mtrl-rating__stop")!;
+    press(steppedGroup, "Home");
+    expect(stepped.getValue()).toBe(0.5);
+    expect(steppedFirst.checked).toBe(true);
+    steppedFirst.click();
+    expect(stepped.getValue()).toBe(0);
+    expect(steppedFirst.checked).toBe(false);
+    steppedFirst.click();
+    expect(stepped.getValue()).toBe(0.5);
+    press(steppedGroup, "ArrowUp");
+    expect(stepped.getValue()).toBe(1);
+    expect(steppedFirst.checked).toBe(false);
+    stepped.destroy();
+
     const half = createRating({ half: true, value: 1 });
     const halfGroup = half.element.querySelector<HTMLElement>(".mtrl-rating__group")!;
     press(halfGroup, "ArrowRight");
