@@ -32,6 +32,31 @@ const EXPECTED_PATHS = [
   "src/styles/components/_skeleton.scss",
   "LICENSE",
   "README.md",
+  "dist/adapters/breadcrumb.d.ts",
+  "dist/adapters/breadcrumb/svelte.d.ts",
+  "dist/adapters/react-breadcrumb.d.ts",
+  "dist/adapters/solid-breadcrumb.d.ts",
+  "dist/adapters/vue-breadcrumb.d.ts",
+  "dist/components/breadcrumb/api.d.ts",
+  "dist/components/breadcrumb/breadcrumb.d.ts",
+  "dist/components/breadcrumb/config.d.ts",
+  "dist/components/breadcrumb/constants.d.ts",
+  "dist/components/breadcrumb/constants.mjs",
+  "dist/components/breadcrumb/features/withCollapse.d.ts",
+  "dist/components/breadcrumb/features/withTrail.d.ts",
+  "dist/components/breadcrumb/index.d.ts",
+  "dist/components/breadcrumb/index.mjs",
+  "dist/components/breadcrumb/types.d.ts",
+  "dist/elements/breadcrumb.d.ts",
+  "dist/elements/breadcrumb.mjs",
+  "dist/elements/css/breadcrumb.css",
+  "dist/elements/css/breadcrumb.d.ts",
+  "dist/elements/css/breadcrumb.js",
+  "dist/svelte/Breadcrumb.svelte",
+  "dist/svelte/Breadcrumb.svelte.d.ts",
+  "dist/svelte/breadcrumb-runtime.mjs",
+  "src/styles/components/_breadcrumb.scss",
+  "src/styles/elements/_breadcrumb.scss",
   "dist/adapters/autocomplete/contract.d.ts",
   "dist/adapters/autocomplete/react.d.ts",
   "dist/adapters/autocomplete/solid.d.ts",
@@ -292,7 +317,7 @@ try {
       }
     }
   }
-  assert.equal(specifiers.length, 27);
+  assert.equal(specifiers.length, 31);
   run(process.execPath, ["--input-type=module", "-e", `
     import assert from 'node:assert/strict';
     import { createRequire } from 'node:module';
