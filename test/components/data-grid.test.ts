@@ -214,14 +214,91 @@ describe("createDataGrid", () => {
     grid.destroy();
   });
 
-  test("the selection root is a tab stop and the namespaced methods read and write", async () => {
+  test("the namespaced methods read and write", async () => {
     const grid = await mount({ columns, items, selection: "multiple" });
-    expect(grid.element.querySelector(".vlist")!.getAttribute("tabindex")).toBe("0");
+    expect(grid.element.querySelector<HTMLElement>(".vlist-table-cell[tabindex='0']")).not.toBeNull();
     grid.setValues(["1", "3"]);
     expect(grid.getValues().sort()).toEqual(["1", "3"]);
     expect(grid.getValue()).toBe("3");
     grid.setValue("2");
     expect(grid.getValues()).toEqual(["2"]);
+    grid.destroy();
+  });
+
+  test("the body holds one tab stop, the active cell, in every selection mode", async () => {
+    for (const selection of ["none", "single", "multiple"] as const) {
+      const grid = await mount({ columns, items, selection });
+      const stops = Array.from(grid.element.querySelectorAll<HTMLElement>(".vlist-table-cell")).filter((cell) => cell.tabIndex === 0);
+      expect(stops.length).toBe(1);
+      expect(grid.element.querySelector(".vlist")!.hasAttribute("tabindex")).toBe(false);
+      grid.destroy();
+    }
+  });
+
+  test("the arrows move the active cell by column in the reading order", async () => {
+    const grid = await mount({ columns, items });
+    const active = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      const cell = grid.element.querySelector<HTMLElement>(".vlist-table-cell[tabindex='0']");
+      return cell ? Array.from(cell.parentElement!.querySelectorAll(".vlist-table-cell")).indexOf(cell) : -1;
+    };
+    const press = async (key: string) => {
+      grid.element.querySelector<HTMLElement>(".vlist-table-cell[tabindex='0']")!.dispatchEvent(
+        new window.KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }),
+      );
+      await new Promise((resolve) => setTimeout(resolve, 30));
+    };
+    expect(await active()).toBe(0);
+    await press("ArrowRight");
+    expect(await active()).toBe(1);
+    await press("ArrowRight");
+    expect(await active()).toBe(1);
+    await press("ArrowLeft");
+    expect(await active()).toBe(0);
+    await press("End");
+    expect(await active()).toBe(1);
+    await press("Home");
+    expect(await active()).toBe(0);
+    grid.destroy();
+  });
+
+  test("the arrows mirror under RTL", async () => {
+    document.documentElement.dir = "rtl";
+    try {
+      const grid = await mount({ columns, items, selection: "multiple" });
+      const press = async (key: string) => {
+        grid.element.querySelector<HTMLElement>(".vlist-table-cell[tabindex='0']")!.dispatchEvent(
+          new window.KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }),
+        );
+        await new Promise((resolve) => setTimeout(resolve, 30));
+      };
+      await press("ArrowRight");
+      const cell = grid.element.querySelector<HTMLElement>(".vlist-table-cell[tabindex='0']")!;
+      const index = Array.from(cell.parentElement!.querySelectorAll(".vlist-table-cell")).indexOf(cell);
+      // reading order runs backwards in RTL: Right moves toward the row's start
+      expect(index).toBe(0);
+      grid.destroy();
+    } finally {
+      document.documentElement.removeAttribute("dir");
+    }
+  });
+
+  test("Ctrl+Home and Ctrl+End reach the grid's corners", async () => {
+    const grid = await mount({ columns, items: Array.from({ length: 40 }, (_, index) => ({ id: String(index + 1), name: `N${index + 1}`, role: "R" })) });
+    const press = async (key: string, modifier = false) => {
+      grid.element.querySelector<HTMLElement>(".vlist-table-cell[tabindex='0']")!.dispatchEvent(
+        new window.KeyboardEvent("keydown", { key, ctrlKey: modifier, bubbles: true, cancelable: true }),
+      );
+      await new Promise((resolve) => setTimeout(resolve, 40));
+    };
+    await press("End", true);
+    const cell = grid.element.querySelector<HTMLElement>(".vlist-table-cell[tabindex='0']");
+    const row = cell?.closest<HTMLElement>(".vlist-table-row");
+    expect(row?.getAttribute("data-index")).toBe("39");
+    expect(Array.from(row!.querySelectorAll(".vlist-table-cell")).indexOf(cell!)).toBe(1);
+    await press("Home", true);
+    const first = grid.element.querySelector<HTMLElement>(".vlist-table-cell[tabindex='0']");
+    expect(first?.closest<HTMLElement>(".vlist-table-row")?.getAttribute("data-index")).toBe("0");
     grid.destroy();
   });
 

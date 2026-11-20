@@ -18,6 +18,7 @@ import { DATA_GRID_EVENTS, DATA_GRID_SELECTIONS } from "./constants";
 import type { DataGridSettings } from "./config";
 import { createBaseConfig, getElementConfig, heightsFor } from "./config";
 import { createSelectionColumn, toTableColumn } from "./columns";
+import { withCellFocus } from "./features/withCellFocus";
 import type {
   DataGridComponent,
   DataGridConfig,
@@ -102,7 +103,7 @@ const withDataGridCore =
     const plugins = [
       table(tableConfig as never),
       ...(selectionColumn
-        ? [vlistSelection({ mode: state.selection === "multiple" ? "multiple" : "single" })]
+        ? [vlistSelection({ mode: state.selection === "multiple" ? "multiple" : "single", keyboard: false })]
         : []),
     ];
 
@@ -194,11 +195,42 @@ const withDataGridCore =
       emitChange();
     };
 
+    // The body holds one tab stop, the active cell, in every selection mode;
+    // the root's own tab stop is removed so the two never both sit in the
+    // tab order
+    const listRoot = list.element as HTMLElement;
+    // vlist sets the root's tab stop while it registers the focus owner; the
+    // active cell is the body's tab stop instead
+    const stripRootTabStop = (): void => {
+      if (listRoot.hasAttribute("tabindex")) listRoot.removeAttribute("tabindex");
+    };
+    stripRootTabStop();
+    const tabStopWatcher = new MutationObserver(stripRootTabStop);
+    tabStopWatcher.observe(listRoot, { attributes: true, attributeFilter: ["tabindex"] });
+    const cellFocus = withCellFocus({
+      root: component.element,
+      content: () => listEl.querySelector(".vlist-content"),
+      rowCount: () => rendered.length,
+      columnCount: () => (selectionColumn ? 1 : 0) + settings.columns.length,
+      scrollToIndex: (index) => list.scrollToIndex(index),
+      rowIdAt: (index) => (rendered[index] ? String(rendered[index].id) : undefined),
+      selection: state.selection,
+      toggleRow,
+      isRtl: () => {
+        const scope = component.element.closest("[dir]");
+        const value = scope?.getAttribute("dir") ?? document.documentElement.getAttribute("dir");
+        return value === "rtl";
+      },
+    });
+    list.on("range:change", () => cellFocus.sync() as never);
+    list.on("scroll", () => cellFocus.sync() as never);
+
     const sortItems = (key: string | null, direction: DataGridSortDirection): void => {
       const cleared = key === null || direction === null;
       state.sort = cleared ? { key: null, direction: null } : { key, direction };
       rendered = cleared ? authored : (settings.sort ?? defaultSort)(authored, key, direction);
       list.setItems([...rendered]);
+      cellFocus.sync();
       if (cleared) list.setSort(null);
       else list.setSort(key, direction ?? undefined);
       syncCheckboxes();
@@ -303,6 +335,8 @@ const withDataGridCore =
       destroy: () => {
         if (destroyed) return;
         destroyed = true;
+        tabStopWatcher.disconnect();
+        cellFocus.destroy();
         offSelection();
         list.destroy();
         component.element.replaceChildren();
