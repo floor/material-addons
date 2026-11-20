@@ -49,6 +49,12 @@ $-breadcrumb: "mtrl-breadcrumb";
   flex: none;
 }
 
+// A collapsed item leaves the row entirely: the display rule above would
+// otherwise beat the user agent's [hidden] rule
+.#{$-breadcrumb}__item[hidden] {
+  display: none;
+}
+
 .#{$-breadcrumb}__separator {
   display: inline-grid;
   place-items: center;

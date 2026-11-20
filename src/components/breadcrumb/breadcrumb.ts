@@ -95,7 +95,7 @@ const withBreadcrumbCore =
       settings, component.getClass, component.element, trail,
       (value) => goTo(value), () => ({ value: state.value, disabled: state.disabled }),
     );
-    component.element.append(trail.element, collapse.element);
+    component.element.append(trail.element);
 
     const ask = (item: BreadcrumbItemState): boolean => {
       let prevented = false;

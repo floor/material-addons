@@ -88,13 +88,56 @@ describe("createBreadcrumb", () => {
   test("the overflow is absent with two items and with no-collapse", () => {
     const two = createBreadcrumb({ items: items.slice(1) });
     document.body.append(two.element);
-    expect(two.element.querySelector(".mtrl-breadcrumb__item--overflow")?.hasAttribute("hidden")).toBe(true);
+    expect(two.element.querySelector(".mtrl-breadcrumb__item--overflow")).toBeNull();
     two.open();
     expect(two.isOpen()).toBe(false);
     const plain = createBreadcrumb({ items, collapse: false });
     document.body.append(plain.element);
-    expect(plain.element.querySelector(".mtrl-breadcrumb__item--overflow")?.hasAttribute("hidden")).toBe(true);
+    expect(plain.element.querySelector(".mtrl-breadcrumb__item--overflow")).toBeNull();
     two.destroy();
     plain.destroy();
+  });
+
+  test("focus leaving the menu closes it without pulling focus back", () => {
+    const crumb = createBreadcrumb({ items: [...items, { value: "desk", label: "Desk" }] });
+    document.body.append(crumb.element);
+    const list = crumb.element.querySelector("ol")!;
+    Object.defineProperty(crumb.element, "clientWidth", { value: 120, configurable: true });
+    Object.defineProperty(list, "scrollWidth", { value: 600, configurable: true });
+    crumb.setItems(crumb.getItems().map((item) => ({ value: item.value, label: item.label })));
+    crumb.open();
+    expect(crumb.isOpen()).toBe(true);
+    const overflow = crumb.element.querySelector(".mtrl-breadcrumb__item--overflow")!;
+    const menuitem = overflow.querySelector('[role="menuitem"]') as HTMLElement;
+    menuitem.focus();
+    // A focus move inside the overflow keeps it open
+    const overflowButton = overflow.querySelector(".mtrl-breadcrumb__overflow") as HTMLElement;
+    menuitem.dispatchEvent(new window.FocusEvent("focusout", { bubbles: true, relatedTarget: overflowButton }));
+    expect(crumb.isOpen()).toBe(true);
+    // A focus move out of the overflow closes it
+    menuitem.dispatchEvent(new window.FocusEvent("focusout", { bubbles: true, relatedTarget: document.body }));
+    expect(crumb.isOpen()).toBe(false);
+    expect(overflow.querySelector(".mtrl-breadcrumb__menu")?.hasAttribute("hidden")).toBe(true);
+    crumb.destroy();
+  });
+
+  test("the overflow item sits inside the list, after the first item", () => {
+    const crumb = createBreadcrumb({ items: items.slice(0, 3).concat([{ value: "desk", label: "Desk" }]) });
+    document.body.append(crumb.element);
+    const list = crumb.element.querySelector("ol")!;
+    // The measurement needs a layout jsdom has none of: give it one
+    Object.defineProperty(crumb.element, "clientWidth", { value: 120, configurable: true });
+    Object.defineProperty(list, "scrollWidth", { value: 600, configurable: true });
+    crumb.setItems(crumb.getItems().map((item) => ({ value: item.value, label: item.label })));
+    const overflow = crumb.element.querySelector(".mtrl-breadcrumb__item--overflow");
+    expect(overflow).not.toBeNull();
+    expect(overflow!.parentElement).toBe(list);
+    expect(Array.from(list.children).indexOf(overflow as HTMLLIElement)).toBe(1);
+    expect(overflow!.hasAttribute("hidden")).toBe(false);
+    // A row that fits has no overflow item at all
+    Object.defineProperty(list, "scrollWidth", { value: 60, configurable: true });
+    crumb.setItems(crumb.getItems().map((item) => ({ value: item.value, label: item.label })));
+    expect(crumb.element.querySelector(".mtrl-breadcrumb__item--overflow")).toBeNull();
+    crumb.destroy();
   });
 });

@@ -75,19 +75,19 @@ export const withCollapse = (
     menuItems().find((node) => !(node as HTMLButtonElement).disabled)?.focus();
   };
 
-  const close = (): void => {
+  const close = (restoreFocus = true): void => {
     if (!open) return;
     open = false;
     menu.hidden = true;
     button.setAttribute("aria-expanded", "false");
     if (outside) document.removeEventListener("pointerdown", outside, true);
     outside = undefined;
-    button.focus();
+    if (restoreFocus) button.focus();
   };
 
   const show = (): void => {
     // Without an overflow button there is nothing to open
-    if (open || element.hidden) return;
+    if (open || element.parentElement !== trail.element) return;
     open = true;
     menu.hidden = false;
     button.setAttribute("aria-expanded", "true");
@@ -99,6 +99,13 @@ export const withCollapse = (
   };
 
   button.addEventListener("click", () => (open ? close() : show()));
+  // Tab or a click that takes focus out of the overflow closes it, as the
+  // material menu does; focus follows the reader, so it is not pulled back
+  element.addEventListener("focusout", (event) => {
+    if (!open) return;
+    const next = (event as FocusEvent).relatedTarget as Node | null;
+    if (!next || !element.contains(next)) close(false);
+  });
   button.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && open) {
       event.preventDefault();
@@ -147,33 +154,42 @@ export const withCollapse = (
     menu.replaceChildren(...items.map(menuItem));
   };
 
+  /** The overflow item lives inside the list, directly after the first item */
+  const place = (): void => {
+    element.hidden = false;
+    if (element.parentElement === trail.element) return;
+    const first = trail.element.children[0];
+    if (first) first.after(element);
+    else trail.element.prepend(element);
+  };
+  const remove = (): void => {
+    close();
+    element.remove();
+  };
+
   const measure = (items: BreadcrumbItemState[], value: string | null, disabled: boolean): void => {
     void value;
     button.disabled = disabled;
-    // Reset: every item visible, no overflow
+    // Reset: every item visible, no overflow, the button out of the row
     for (const row of trail.entries.values()) row.hidden = false;
-    element.hidden = true;
+    remove();
     if (!settings.collapse || items.length <= 2) {
       collapsed = [];
       renderMenu([]);
-      close();
       return;
     }
     if (typeof root.getBoundingClientRect !== "function") return;
+    // The fitted check runs with the button in the row, so its width counts
     const overflow = (): boolean => trail.element.scrollWidth > root.clientWidth + 1;
     if (!overflow()) {
       collapsed = [];
       renderMenu([]);
-      close();
       return;
     }
     // Collapse from the root side until the row fits, keeping first and last
     const middle = items.slice(1, -1);
     const hidden: BreadcrumbItemState[] = [];
-    const restore = (): void => {
-      for (const row of trail.entries.values()) row.hidden = false;
-    };
-    element.hidden = false;
+    place();
     for (const item of middle) {
       const row = trail.entries.get(item.value);
       if (!row) continue;
@@ -184,11 +200,6 @@ export const withCollapse = (
     // If hiding every middle item still overflows, the row scrolls
     collapsed = hidden;
     renderMenu(collapsed);
-    if (!collapsed.length) {
-      element.hidden = true;
-      restore();
-      close();
-    }
   };
 
   return { element, measure, open: show, close, isOpen: () => open, destroy: () => close() };
