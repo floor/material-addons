@@ -104,3 +104,19 @@ export {
 
 export * from "./autocomplete";
 export * from "./avatar";
+export { createDataGrid } from "./data-grid";
+export type {
+  DataGridAlign,
+  DataGridChange,
+  DataGridColumn,
+  DataGridComponent,
+  DataGridConfig,
+  DataGridDensity,
+  DataGridFill,
+  DataGridItem,
+  DataGridMotion,
+  DataGridSelection,
+  DataGridSort,
+  DataGridSortDirection,
+  DataGridSortState,
+} from "./data-grid";

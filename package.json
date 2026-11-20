@@ -34,6 +34,10 @@
       "import": "./dist/components/*/constants.mjs"
     },
     "./styles": "./dist/styles.css",
+    "./components/data-grid": {
+      "types": "./dist/components/data-grid/index.d.ts",
+      "import": "./dist/components/data-grid/index.mjs"
+    },
     "./components/stepper": {
       "types": "./dist/components/stepper/index.d.ts",
       "import": "./dist/components/stepper/index.mjs"
@@ -144,7 +148,8 @@
     "adapters:generate": "bun scripts/generate-adapters.mjs",
     "adapters:check": "bun scripts/generate-adapters.mjs --check",
     "check:stepper-adapters": "node scripts/check-stepper-adapters.mjs",
-    "check:expansion-panel": "node scripts/check-expansion-panel.mjs"
+    "check:expansion-panel": "node scripts/check-expansion-panel.mjs",
+    "check:data-grid": "node scripts/check-data-grid.mjs"
   },
   "repository": {
     "type": "git",
@@ -203,5 +208,8 @@
     "solid-js": {
       "optional": true
     }
+  },
+  "dependencies": {
+    "vlist": ">=3.8.6 <4.0.0"
   }
 }

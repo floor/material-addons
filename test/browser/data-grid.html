@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en" data-theme="baseline">
+<meta charset="utf-8">
+<title>Data grid browser fixture</title>
+<body>
+<script type="module">
+  import 'material/styles';
+  import 'vlist/styles';
+  import 'vlist/styles/table';
+  import 'material-addons/styles';
+  import 'material/elements/css/checkbox';
+  import { defineCheckbox } from 'material/elements';
+  import { createDataGrid } from 'material-addons/components/data-grid';
+  defineCheckbox();
+  window.dataGrid = { createDataGrid };
+</script>
