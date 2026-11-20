@@ -89,19 +89,22 @@ export function withStars(settings: RatingSettings) {
       view.handleHover(null, event);
     };
 
-    const stop = (value: number, half: boolean) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = half ? `${RATING_CLASSES.STOP} ${RATING_CLASSES.STOP_HALF}` : `${RATING_CLASSES.STOP} ${RATING_CLASSES.STOP_FULL}`;
-      button.dataset.value = formatRating(value);
-      button.setAttribute("role", "radio");
-      button.addEventListener("click", onClick);
-      button.addEventListener("pointerenter", onEnter);
-      return button;
+    const stop = (value: number, half: boolean, primary: boolean) => {
+      // The first star is the input that carries setCustomValidity. The other
+      // stars stay buttons. No extra control is added for the form.
+      const control = primary ? document.createElement("input") : document.createElement("button");
+      control.type = primary ? "radio" : "button";
+      control.className = half ? `${RATING_CLASSES.STOP} ${RATING_CLASSES.STOP_HALF}` : `${RATING_CLASSES.STOP} ${RATING_CLASSES.STOP_FULL}`;
+      control.dataset.value = formatRating(value);
+      control.setAttribute("role", "radio");
+      control.addEventListener("click", onClick);
+      control.addEventListener("pointerenter", onEnter);
+      return control;
     };
 
     const rebuild = () => {
       group.replaceChildren();
+      let primary = true;
       for (let index = 1; index <= state.max; index += 1) {
         const star = document.createElement("span");
         star.className = RATING_CLASSES.STAR;
@@ -118,8 +121,12 @@ export function withStars(settings: RatingSettings) {
         visual.append(empty, fill);
         star.append(visual);
         if (!state.readOnly) {
-          if (state.half) star.append(stop(index - 0.5, true));
-          star.append(stop(index, false));
+          if (state.half) {
+            star.append(stop(index - 0.5, true, primary));
+            primary = false;
+          }
+          star.append(stop(index, false, primary));
+          primary = false;
         }
         group.append(star);
       }
@@ -186,13 +193,15 @@ export function withStars(settings: RatingSettings) {
       });
 
       const selected = state.value > 0 ? state.value : (state.half ? 0.5 : 1);
-      const stops = Array.from(group.querySelectorAll<HTMLButtonElement>(`.${RATING_CLASSES.STOP}`));
+      const missing = state.required && !state.disabled && state.value === 0;
+      const stops = Array.from(group.querySelectorAll<HTMLButtonElement | HTMLInputElement>(`.${RATING_CLASSES.STOP}`));
       for (const button of stops) {
         const value = Number(button.dataset.value);
         button.setAttribute("aria-checked", near(value, state.value) ? "true" : "false");
         button.setAttribute("aria-label", starLabel(state, value));
         button.tabIndex = !state.disabled && near(value, selected) ? 0 : -1;
         button.disabled = state.disabled;
+        if (button instanceof HTMLInputElement) button.setCustomValidity(missing ? "Please select a rating." : "");
       }
       view.syncField(false);
     };

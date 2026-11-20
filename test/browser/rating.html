@@ -87,6 +87,14 @@
     requiredSubmit.textContent = "Submit required";
     requiredForm.append(window.requiredRating.element, requiredSubmit);
     fixture.append(requiredForm);
+    const scoreForm = document.createElement("form");
+    scoreForm.id = "factory-score-form";
+    window.factoryScore = mount("factory-score", { name: "score", half: true, value: 1, label: "Score" });
+    const scoreSubmit = document.createElement("button");
+    scoreSubmit.type = "submit";
+    scoreSubmit.textContent = "Submit score";
+    scoreForm.append(window.factoryScore.element, scoreSubmit);
+    fixture.append(scoreForm);
     mount("guest", { readOnly: true, value: 3.7, ariaLabel: "Guest rating" });
     mount("critic", { readOnly: true, value: 3.7, label: "Critic rating" });
     const { defineRating } = await import("material-addons/elements/rating");
@@ -95,6 +103,10 @@
     elementForm.id = "element-required-form";
     elementForm.innerHTML = '<m-rating id="element-required" name="score" required label="Required"></m-rating><button type="submit" id="element-required-submit">Submit element</button>';
     fixture.append(elementForm);
+    const elementScore = document.createElement("form");
+    elementScore.id = "element-score-form";
+    elementScore.innerHTML = '<m-rating id="element-score" name="score" value="1" half required label="Score"></m-rating><button type="submit">Submit element score</button>';
+    fixture.append(elementScore);
     const elementGuest = document.createElement("m-rating");
     elementGuest.id = "element-guest";
     elementGuest.setAttribute("read-only", "");

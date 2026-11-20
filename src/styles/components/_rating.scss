@@ -25,18 +25,6 @@
   }
 }
 
-.mtrl-rating__validity {
-  position: fixed;
-  appearance: none;
-  inline-size: 1px;
-  block-size: 1px;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  pointer-events: none;
-  border: 0;
-}
 .mtrl-rating__row { display: inline-flex; align-items: center; gap: 8px; }
 .mtrl-rating__group { display: inline-flex; align-items: center; gap: var(--mtrl-rating-gap); }
 .mtrl-rating__supporting-text { color: var(--mtrl-rating-supporting-color); font-size: 0.75rem; font-weight: 400; }
@@ -77,6 +65,7 @@
 .mtrl-rating__stop {
   position: absolute;
   z-index: 1;
+  appearance: none;
   inset-block: 0;
   inset-inline-start: 0;
   inline-size: 100%;

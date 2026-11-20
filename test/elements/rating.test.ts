@@ -9,6 +9,16 @@ installAutocompleteDom();
 // jsdom ElementInternals has neither setFormValue nor setValidity. Record the
 // call the element makes so a required miss can be asserted without a browser.
 const validityRecords = new WeakMap<HTMLElement, { flags: ValidityStateFlags; message?: string; anchor?: HTMLElement }>();
+const formValues = new WeakMap<HTMLElement, string>();
+
+function scoreEntries(form: HTMLFormElement) {
+  const native = [...new window.FormData(form).getAll("score")].map(String);
+  const submitted = [...form.querySelectorAll("m-rating")].flatMap((host) => {
+    const value = formValues.get(host);
+    return value == null ? [] : [value];
+  });
+  return [...native, ...submitted];
+}
 
 beforeEach(() => {
   const prototype = HTMLElement.prototype as HTMLElement & { attachInternals?: () => ElementInternals };
@@ -16,7 +26,9 @@ beforeEach(() => {
   if (!original) return;
   prototype.attachInternals = function (this: HTMLElement) {
     const internals = original.call(this);
-    internals.setFormValue = () => {};
+    internals.setFormValue = (value) => {
+      formValues.set(this, value == null ? "" : String(value));
+    };
     internals.setValidity = (flags, message, anchor) => {
       validityRecords.set(this, { flags, message, anchor: anchor ?? undefined });
     };
@@ -38,10 +50,9 @@ test("client rating submits its named value and validates a required miss", asyn
   expect(root().classList.contains("mtrl-rating--medium")).toBe(true);
   expect(group().getAttribute("role")).toBe("radiogroup");
   expect(host.value).toBe(3.5);
-  const input = host.querySelector<HTMLInputElement>("input.mtrl-rating__input");
-  expect(input?.parentElement).toBe(host);
-  expect(input?.value).toBe("3.5");
-  expect(new window.FormData(form).get("score")).toBe("3.5");
+  expect(host.querySelector("input.mtrl-rating__input")).toBeNull();
+  expect(host.shadowRoot!.querySelectorAll("[name]").length).toBe(0);
+  expect(scoreEntries(form)).toEqual(["3.5"]);
 
   const seen: Array<{ value: number; previousValue: number }> = [];
   host.addEventListener("change", ((event: CustomEvent<{ value: number; previousValue: number }>) => {
@@ -50,7 +61,7 @@ test("client rating submits its named value and validates a required miss", asyn
   group().querySelector<HTMLButtonElement>('[data-value="4"]')?.click();
   expect(seen).toEqual([{ value: 4, previousValue: 3.5 }]);
   expect(host.value).toBe(4);
-  expect(input?.value).toBe("4");
+  expect(scoreEntries(form)).toEqual(["4"]);
 
   let hovers: Array<number | null> = [];
   host.addEventListener("hover", ((event: CustomEvent<{ value: number | null }>) => {
@@ -83,6 +94,22 @@ test("client rating submits its named value and validates a required miss", asyn
   expect(blockedRecord?.anchor).toBe(blockedAnchor);
   blocked.value = 2;
   expect(validityRecords.get(blocked)?.flags.valueMissing).toBeUndefined();
+
+  const scoreForm = document.createElement("form");
+  scoreForm.innerHTML = '<m-rating name="score" value="1" half required></m-rating>';
+  document.body.append(scoreForm);
+  const scored = scoreForm.querySelector("m-rating")!;
+  await Promise.resolve();
+  expect(scoreEntries(scoreForm)).toEqual(["1"]);
+  scored.value = 3.5;
+  expect(scoreEntries(scoreForm)).toEqual(["3.5"]);
+  expect(scored.querySelectorAll("[name]").length).toBe(0);
+  expect(scored.shadowRoot!.querySelectorAll("[name]").length).toBe(0);
+  (scored as HTMLElement & { formResetCallback(): void }).formResetCallback();
+  expect(scored.value).toBe(1);
+  expect(scoreEntries(scoreForm)).toEqual(["1"]);
+  scored.value = 2;
+  expect(scoreEntries(scoreForm)).toEqual(["2"]);
 
   const guest = document.createElement("m-rating");
   guest.setAttribute("read-only", "");

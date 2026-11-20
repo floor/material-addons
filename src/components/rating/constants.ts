@@ -28,7 +28,6 @@ export const RATING_CLASSES = {
   VALUE: "mtrl-rating__value",
   SUPPORTING_TEXT: "mtrl-rating__supporting-text",
   INPUT: "mtrl-rating__input",
-  VALIDITY: "mtrl-rating__validity",
   HOVERING: "mtrl-rating--hovering",
   READ_ONLY: "mtrl-rating--read-only",
   DISABLED: "mtrl-rating--disabled",

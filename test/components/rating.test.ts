@@ -100,7 +100,8 @@ describe("createRating", () => {
     disabled.element.querySelector<HTMLButtonElement>(".mtrl-rating__stop")?.dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
     expect(disabled.getValue()).toBe(2);
     expect(disabled.element.querySelector<HTMLInputElement>("input.mtrl-rating__input")?.disabled).toBe(true);
-    expect(disabled.element.querySelector<HTMLInputElement>("input.mtrl-rating__validity")?.disabled).toBe(true);
+    expect(disabled.element.querySelector<HTMLInputElement>("input.mtrl-rating__stop")?.disabled).toBe(true);
+    expect(disabled.element.querySelector(".mtrl-rating__validity")).toBeNull();
     expect(new window.FormData(form).get("score")).toBe(null);
     rating.destroy();
     guest.destroy();
@@ -167,15 +168,18 @@ describe("createRating", () => {
     form.append(rating.element);
     document.body.append(form);
     expect(rating.element.querySelector<HTMLInputElement>("input.mtrl-rating__input")?.value).toBe("3.5");
-    expect(new window.FormData(form).get("score")).toBe("3.5");
+    expect([...new window.FormData(form).getAll("score")]).toEqual(["3.5"]);
     let changes = 0;
     rating.on("change", () => { changes += 1; });
     rating.setValue(4);
     expect(changes).toBe(1);
+    expect([...new window.FormData(form).getAll("score")]).toEqual(["4"]);
     form.reset();
     expect(rating.getValue()).toBe(1);
     expect(changes).toBe(1);
-    expect(new window.FormData(form).get("score")).toBe("1");
+    expect([...new window.FormData(form).getAll("score")]).toEqual(["1"]);
+    rating.setValue(2);
+    expect([...new window.FormData(form).getAll("score")]).toEqual(["2"]);
 
     const empty = createRating({ name: "score" });
     const emptyForm = document.createElement("form");
@@ -189,12 +193,13 @@ describe("createRating", () => {
     blockedSubmit.type = "submit";
     requiredForm.append(blocked.element, blockedSubmit);
     document.body.append(requiredForm);
-    const gate = blocked.element.querySelector<HTMLInputElement>("input.mtrl-rating__validity");
-    expect(gate?.required).toBe(true);
-    expect(gate?.checked).toBe(false);
+    const gate = blocked.element.querySelector<HTMLInputElement>("input.mtrl-rating__stop");
+    expect(gate).toBe(blocked.element.querySelector(".mtrl-rating__stop"));
+    expect(blocked.element.querySelector(".mtrl-rating__group")?.contains(gate!)).toBe(true);
+    expect(blocked.element.querySelector(".mtrl-rating__validity")).toBeNull();
     expect(gate?.name).toBe("");
-    expect(gate?.tabIndex).toBe(-1);
-    expect(blocked.element.querySelector(".mtrl-rating__group")?.contains(gate!)).toBe(false);
+    expect(gate?.validationMessage).toBe("Please select a rating.");
+    expect(gate?.getAttribute("aria-label")).toBe("1 star");
     expect(requiredForm.checkValidity()).toBe(false);
     let submitted = 0;
     requiredForm.addEventListener("submit", (event) => {
@@ -205,6 +210,7 @@ describe("createRating", () => {
     expect(submitted).toBe(0);
     expect([...new window.FormData(requiredForm).keys()]).toEqual(["score"]);
     blocked.setValue(2);
+    expect(gate?.validationMessage).toBe("");
     expect(requiredForm.checkValidity()).toBe(true);
     expect(new window.FormData(requiredForm).get("score")).toBe("2");
     blockedSubmit.click();

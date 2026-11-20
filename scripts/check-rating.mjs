@@ -103,6 +103,7 @@ try {
   assert.equal(await page.locator("#guest .mtrl-rating__group").getAttribute("aria-label"), "Guest rating: 3.7 of 5 stars");
   assert.equal(await page.locator("#critic .mtrl-rating__group").getAttribute("aria-label"), "Critic rating: 3.7 of 5 stars");
   assert.equal(await page.locator("#element-guest .mtrl-rating__group").getAttribute("aria-label"), "Guest rating: 3.7 of 5 stars");
+  assert.equal(await page.locator(".mtrl-rating__validity").count(), 0);
   const blockedSubmit = async (formId) => {
     const result = await page.evaluate((id) => {
       const form = document.getElementById(id);
@@ -112,13 +113,47 @@ try {
         submitted += 1;
       });
       form.querySelector("[type=submit]").click();
-      return { valid: form.checkValidity(), submitted };
+      const host = document.getElementById(id === "required-form" ? "required" : "element-required");
+      const focused = id === "required-form" ? document.activeElement : host.shadowRoot.activeElement;
+      const first = host.matches(".mtrl-rating")
+        ? host.querySelector(".mtrl-rating__stop")
+        : host.shadowRoot.querySelector(".mtrl-rating__stop");
+      return {
+        valid: form.checkValidity(),
+        submitted,
+        focusedFirst: focused === first,
+        label: focused?.getAttribute("aria-label") ?? "",
+      };
     }, formId);
     assert.equal(result.valid, false, formId);
     assert.equal(result.submitted, 0, formId);
+    assert.equal(result.focusedFirst, true, formId);
+    assert.equal(result.label, "1 star", formId);
   };
   await blockedSubmit("required-form");
   await blockedSubmit("element-required-form");
+  for (const formId of ["factory-score-form", "element-score-form"]) {
+    const sequence = await page.evaluate((id) => {
+      const form = document.getElementById(id);
+      const read = () => [...new FormData(form).getAll("score")];
+      const set = (value) => {
+        if (id === "factory-score-form") window.factoryScore.setValue(value);
+        else document.getElementById("element-score").value = value;
+      };
+      const shown = () => id === "factory-score-form" ? window.factoryScore.getValue() : document.getElementById("element-score").value;
+      set(3.5);
+      const changed = read();
+      form.reset();
+      const restored = read();
+      const value = shown();
+      set(2);
+      return { changed, restored, value, again: read() };
+    }, formId);
+    assert.deepEqual(sequence.changed, ["3.5"], formId);
+    assert.deepEqual(sequence.restored, ["1"], formId);
+    assert.equal(sequence.value, 1, formId);
+    assert.deepEqual(sequence.again, ["2"], formId);
+  }
   assert.equal(await page.evaluate(() => {
     window.requiredRating.setValue(2);
     document.getElementById("element-required").value = 2;

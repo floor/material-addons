@@ -53,7 +53,7 @@ const spec = {
       detail: (payload: unknown) => ({ value: (payload as { value: number | null }).value }),
     },
   },
-  // The submitted value. An empty required rating is valueMissing on the first star.
+  // One submitted value, from setFormValue. Inner fields stay unnamed.
   form: {
     value: (component: RatingController) => {
       validitySync.get(component)?.();
@@ -74,14 +74,10 @@ const spec = {
       if (anchor) internals.setValidity({ valueMissing: true }, message, anchor);
       else internals.setValidity({ valueMissing: true }, message);
     });
-    const move = () => {
-      const field = component.element.querySelector<HTMLInputElement>(`.${RATING_CLASSES.INPUT}`);
-      if (field && field.parentElement !== host) host.append(field);
-    };
-    move();
-    const observer = new MutationObserver(move);
-    observer.observe(component.element, { childList: true, subtree: true });
-    return () => observer.disconnect();
+    // A named inner field would submit beside setFormValue, and a rebuild
+    // would leave the previous field behind with a stale value.
+    for (const field of Array.from(component.element.querySelectorAll<HTMLElement>("[name]"))) field.removeAttribute("name");
+    component.element.querySelector(`.${RATING_CLASSES.INPUT}`)?.remove();
   },
 } satisfies ElementSpec<RatingController>;
 

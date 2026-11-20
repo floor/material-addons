@@ -11,28 +11,16 @@ export function withForm() {
   return <T extends Host>(component: T): T => {
     const { view } = component;
     let input: HTMLInputElement | undefined;
-    let gate: HTMLInputElement | undefined;
     const fieldValue = (value: number) => (value > 0 ? formatRating(value) : "");
-    // A hidden input is barred from constraint validation. This unnamed radio
-    // is what stops a native form from submitting an empty required rating.
-    const syncGate = () => {
-      if (!gate) {
-        gate = component.element.ownerDocument.createElement("input");
-        gate.type = "radio";
-        gate.className = RATING_CLASSES.VALIDITY;
-        gate.tabIndex = -1;
-        gate.setAttribute("aria-hidden", "true");
-        component.element.prepend(gate);
-      }
-      const missing = view.state.required && !view.state.disabled && view.state.value === 0;
-      gate.disabled = view.state.disabled;
-      gate.required = missing;
-      gate.checked = view.state.value > 0;
-      gate.setCustomValidity(missing ? "Please select a rating." : "");
+    // Inside a custom element the shadow value is not submitted. setFormValue is.
+    const fieldName = () => {
+      const root = component.element.getRootNode();
+      if (root !== component.element && "host" in root) return undefined;
+      return view.state.name;
     };
 
     const ensure = () => {
-      const name = view.state.name;
+      const name = fieldName();
       if (!name) {
         input?.remove();
         input = undefined;
@@ -52,7 +40,6 @@ export function withForm() {
 
     view.syncField = (resetDefault = false) => {
       ensure();
-      syncGate();
       if (!input) return;
       // A hidden input stores its submitted value in the value attribute.
       // defaultValue writes that same attribute, so the live value is last.
