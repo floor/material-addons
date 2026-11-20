@@ -51,18 +51,8 @@ const spec = {
       detail: (payload: unknown) => ({ value: (payload as { value: number | null }).value }),
     },
   },
-  // The light-DOM input is the submitted control. A null form value keeps the
-  // form-associated host from submitting a second entry under the same name.
-  form: {
-    value: () => null,
-    state: (c: RatingController) => String(c.getValue()),
-    restore: (c: RatingController, value: string) => c.setValue(Number(value) || 0, true),
-    disable: (c: RatingController, disabled: boolean) => c.setDisabled(disabled),
-    activate: (c: RatingController) => {
-      const stop = c.element.querySelector<HTMLElement>(`.${RATING_CLASSES.STOP}[tabindex="0"]`);
-      stop?.focus();
-    },
-  },
+  // The light-DOM input is the submitted control. The host stays out of the
+  // form-associated custom element path so that input joins the ancestor form.
   setup(host, component) {
     const move = () => {
       const field = component.element.querySelector<HTMLInputElement>(`.${RATING_CLASSES.INPUT}`);

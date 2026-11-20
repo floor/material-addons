@@ -35,9 +35,11 @@ export function withForm() {
     view.syncField = (resetDefault = false) => {
       ensure();
       if (!input) return;
+      // A hidden input stores its submitted value in the value attribute.
+      // defaultValue writes that same attribute, so the live value is last.
+      if (resetDefault) input.defaultValue = fieldValue(view.state.initialValue);
       input.value = fieldValue(view.state.value);
       input.disabled = view.state.disabled;
-      if (resetDefault) input.defaultValue = fieldValue(view.state.initialValue);
     };
 
     const onReset = (event: Event) => {
