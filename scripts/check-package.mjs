@@ -9,6 +9,30 @@ import { releasePack } from "./release-pack.mjs";
 // Recorded before the first commit on this branch, from
 // `fnm exec --using=22 -- npm pack --dry-run --json` after a production build.
 const EXPECTED_PATHS = [
+  "dist/adapters/alert/contract.d.ts",
+  "dist/adapters/alert/react.d.ts",
+  "dist/adapters/alert/solid.d.ts",
+  "dist/adapters/alert/svelte.d.ts",
+  "dist/adapters/alert/vue.d.ts",
+  "dist/components/alert/alert.d.ts",
+  "dist/components/alert/config.d.ts",
+  "dist/components/alert/constants.d.ts",
+  "dist/components/alert/constants.mjs",
+  "dist/components/alert/features/withDismiss.d.ts",
+  "dist/components/alert/features/withRenderer.d.ts",
+  "dist/components/alert/index.d.ts",
+  "dist/components/alert/index.mjs",
+  "dist/components/alert/types.d.ts",
+  "dist/elements/alert.d.ts",
+  "dist/elements/alert.mjs",
+  "dist/elements/css/alert.css",
+  "dist/elements/css/alert.d.ts",
+  "dist/elements/css/alert.js",
+  "dist/svelte/Alert.svelte",
+  "dist/svelte/Alert.svelte.d.ts",
+  "dist/svelte/alert-runtime.mjs",
+  "src/styles/components/_alert.scss",
+  "src/styles/elements/_alert.scss",
   "dist/adapters/skeleton/contract.d.ts",
   "dist/adapters/skeleton/react.d.ts",
   "dist/adapters/skeleton/solid.d.ts",
@@ -281,7 +305,7 @@ try {
   const specifiers = [];
   const adapters = new Map([["./react", "react"], ["./vue", "vue"], ["./solid", "solid-js"]]);
   for (const [entry, conditions] of Object.entries(pkg.exports)) {
-    const components = entry.includes("*") ? ["form", "colorpicker", "autocomplete", "stepper", "expansion-panel", "avatar"] : [""];
+    const components = entry.includes("*") ? ["form", "colorpicker", "autocomplete", "stepper", "expansion-panel", "avatar", "alert"] : [""];
     for (const component of components) {
       const paths = typeof conditions === "string" ? [conditions] : Object.values(conditions);
       for (const path of paths) {
@@ -292,7 +316,7 @@ try {
       }
     }
   }
-  assert.equal(specifiers.length, 27);
+  assert.equal(specifiers.length, 31);
   run(process.execPath, ["--input-type=module", "-e", `
     import assert from 'node:assert/strict';
     import { createRequire } from 'node:module';
@@ -315,6 +339,7 @@ try {
       assert.ok(adapter.${name} && adapter.${child});
       assert.ok(adapter.${prefix}Autocomplete && adapter.${prefix}AutocompleteOption);
       assert.ok(adapter.${prefix}Avatar);
+      assert.ok(adapter.${prefix}Alert);
     `], fixture);
   }
   assert.match(readFileSync(join(addon, "dist/react/index.mjs"), "utf8"), /^"use client";/);
@@ -332,6 +357,8 @@ try {
     "dist/elements/autocomplete-css.mjs",
     "dist/components/avatar/index.mjs",
     "dist/elements/avatar.mjs", "dist/elements/css/avatar.css",
+    "dist/components/alert/index.mjs",
+    "dist/elements/alert.mjs", "dist/elements/css/alert.css",
   ]) {
     const bytes = readFileSync(join(addon, path));
     console.log(`${path}: ${bytes.length} B raw, ${gzipSync(bytes, { level: 9 }).length} B gzip`);

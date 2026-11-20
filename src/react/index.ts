@@ -28,3 +28,8 @@ import { createReactSkeleton } from "../adapters/skeleton/react";
 export const Skeleton = /*#__PURE__*/ createReactSkeleton();
 export type { ReactSkeletonProps } from "../adapters/skeleton/react";
 export type { SkeletonElementEventMap } from "../elements/skeleton";
+import "material-addons/elements/css/alert";
+import { createReactAlert } from "../adapters/alert/react";
+export const Alert = /*#__PURE__*/ createReactAlert();
+export type { ReactAlertProps } from "../adapters/alert/react";
+export type { AlertElementEventMap } from "../elements/alert";
