@@ -254,13 +254,16 @@ try {
           first.focus();
           await new Promise((resolve) => setTimeout(resolve, 60));
           const before = grid.element.querySelectorAll(".vlist-table-cell[tabindex='0']").length;
-          // Scroll far enough that the focused row recycles out
+          // Wheel-scroll far enough that the focused row recycles out
+          viewport.dispatchEvent(new WheelEvent("wheel", { deltaY: 4000, bubbles: true, cancelable: true }));
           viewport.scrollTop = 4000;
-          await new Promise((resolve) => setTimeout(resolve, 250));
+          await new Promise((resolve) => setTimeout(resolve, 300));
           const afterScroll = {
             stops: grid.element.querySelectorAll(".vlist-table-cell[tabindex='0']").length,
             focusInGrid: Boolean(content().contains(document.activeElement)),
             activeIsProxy: Boolean(document.activeElement?.closest?.(".vlist-table-cell")),
+            activeRowGone: content().querySelector(".vlist-table-row[data-index='0']") === null,
+            scrollTop: viewport.scrollTop,
           };
           // Back to the top: the active cell returns and takes focus again
           viewport.scrollTop = 0;
@@ -278,6 +281,8 @@ try {
         assert.equal(scrolled.afterScroll.stops, 1, `${label}/${gridName}: the tab stop stays while the active row is recycled`);
         assert.equal(scrolled.afterScroll.focusInGrid, true, `${label}/${gridName}: focus stays in the grid through the recycle`);
         assert.equal(scrolled.afterScroll.activeIsProxy, true, `${label}/${gridName}: the proxy cell holds the focus`);
+        assert.equal(scrolled.afterScroll.activeRowGone, true, `${label}/${gridName}: the active row left the DOM`);
+        assert.ok(scrolled.afterScroll.scrollTop > 1000, `${label}/${gridName}: the wheel scroll stayed (${scrolled.afterScroll.scrollTop})`);
         assert.equal(scrolled.afterReturn.stops, 1, `${label}/${gridName}: one tab stop after the return`);
         assert.equal(scrolled.afterReturn.focusedIsCell, true, `${label}/${gridName}: the active cell takes the focus back`);
         assert.equal(scrolled.afterReturn.focusedRow, "0", `${label}/${gridName}: focus returns to the active row`);

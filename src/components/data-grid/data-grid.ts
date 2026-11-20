@@ -11,7 +11,7 @@
  * the layer reorders the items and sets the indicator.
  */
 
-import { createVList, selection as vlistSelection, table } from "vlist";
+import { createVList, table } from "vlist";
 import type { TableColumn, VList } from "vlist";
 import { createBase, pipe, withDisabled, withElement, withEvents, withLifecycle } from "material/core/compose";
 import { DATA_GRID_EVENTS, DATA_GRID_SELECTIONS } from "./constants";
@@ -100,12 +100,11 @@ const withDataGridCore =
         columnBorders: settings.columnBorders === true,
         rowBorders: settings.rowBorders !== false,
     };
-    const plugins = [
-      table(tableConfig as never),
-      ...(selectionColumn
-        ? [vlistSelection({ mode: state.selection === "multiple" ? "multiple" : "single", keyboard: false })]
-        : []),
-    ];
+    // No vlist `selection()`: it keeps its focused row in view on every
+    // scroll, which snaps a wheel back to that row, and it owns aria-selected
+    // so the layer could not paint it. The layer keeps the selection state and
+    // paints the rows itself, so one focus model (the active cell) remains.
+    const plugins = [table(tableConfig as never)];
 
     const list = createVList(
       {
@@ -160,9 +159,22 @@ const withDataGridCore =
       checkbox.setIndeterminate?.(indeterminate);
     };
 
+    // Paint the selection onto the rendered rows; vlist recycles them, so it
+    // runs on every render and scroll
+    const paintSelection = (): void => {
+      if (!selectionColumn) return;
+      for (const row of Array.from(listEl.querySelectorAll<HTMLElement>(".vlist-table-row"))) {
+        const id = row.getAttribute("data-id") ?? "";
+        const isSelected = selected.has(id);
+        row.setAttribute("aria-selected", isSelected ? "true" : "false");
+        row.classList.toggle("vlist-item--selected", isSelected);
+      }
+    };
+
     const emitChange = (): void => {
       const values = [...selected];
       emit(DATA_GRID_EVENTS.CHANGE, { value: values.length ? values[values.length - 1] : null, values });
+      paintSelection();
       syncCheckboxes();
     };
 
@@ -171,13 +183,10 @@ const withDataGridCore =
       if (state.selection === "single") {
         selected.clear();
         selected.add(id);
-        list.select?.(id);
       } else if (selected.has(id)) {
         selected.delete(id);
-        list.deselect?.(id);
       } else {
         selected.add(id);
-        list.select?.(id);
       }
       emitChange();
     };
@@ -187,10 +196,8 @@ const withDataGridCore =
       const every = rendered.every((item) => selected.has(String(item.id)));
       if (every) {
         selected.clear();
-        list.clearSelection?.();
       } else {
         rendered.forEach((item) => selected.add(String(item.id)));
-        list.selectAll?.();
       }
       emitChange();
     };
@@ -222,8 +229,24 @@ const withDataGridCore =
         return value === "rtl";
       },
     });
-    list.on("range:change", () => cellFocus.sync() as never);
-    list.on("scroll", () => cellFocus.sync() as never);
+    // A click selects the row, as vlist's selection did; the checkbox cell
+    // has its own change handler
+    const onRowClick = (event: MouseEvent): void => {
+      if (state.disabled || !selectionColumn) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("m-checkbox")) return;
+      const row = target?.closest<HTMLElement>(".vlist-table-row");
+      const id = row?.getAttribute("data-id");
+      if (id) toggleRow(id);
+    };
+    listEl.addEventListener("click", onRowClick);
+
+    const onRender = (): void => {
+      paintSelection();
+      cellFocus.sync();
+    };
+    list.on("range:change", onRender as never);
+    list.on("scroll", onRender as never);
 
     const sortItems = (key: string | null, direction: DataGridSortDirection): void => {
       const cleared = key === null || direction === null;
@@ -260,14 +283,7 @@ const withDataGridCore =
       sortItems(event.key, event.direction);
     };
 
-    let syncing = false;
     list.on("column:sort", onColumnSort as never);
-    const offSelection = list.on("selection:change", (event: { selected: Array<string | number> }) => {
-      if (destroyed || syncing) return;
-      selected.clear();
-      event.selected.forEach((id) => selected.add(String(id)));
-      emitChange();
-    });
 
     const syncDisabled = (): void => {
       if (state.disabled) listEl.setAttribute("aria-disabled", "true");
@@ -282,22 +298,13 @@ const withDataGridCore =
       setValue: (value) => grid.setValues(value === null ? [] : [String(value)]),
       getValues: () => [...selected],
       setValues: (values) => {
-        syncing = true;
-        try {
-          list.clearSelection?.();
-          selected.clear();
+        selected.clear();
           if (state.selection === "single") {
             if (values.length) selected.add(String(values[values.length - 1]));
           } else if (state.selection === "multiple") {
             values.forEach((id) => selected.add(String(id)));
           }
-          if (selected.size) {
-            if (state.selection === "multiple" && selected.size === rendered.length && rendered.length) list.selectAll?.();
-            else selected.forEach((id) => list.select?.(id));
-          }
-        } finally {
-          syncing = false;
-        }
+        paintSelection();
         syncCheckboxes();
       },
       setColumns: (columns) => {
@@ -336,8 +343,8 @@ const withDataGridCore =
         if (destroyed) return;
         destroyed = true;
         tabStopWatcher.disconnect();
+        listEl.removeEventListener("click", onRowClick);
         cellFocus.destroy();
-        offSelection();
         list.destroy();
         component.element.replaceChildren();
       },
