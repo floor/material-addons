@@ -30,6 +30,7 @@ class TestResizeObserver {
 (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver ??= TestResizeObserver;
 
 import { createDataGrid } from "../../src/components/data-grid";
+import { alignFor } from "../../src/components/data-grid/columns";
 
 installAutocompleteDom();
 
@@ -222,6 +223,14 @@ describe("createDataGrid", () => {
     grid.setValue("2");
     expect(grid.getValues()).toEqual(["2"]);
     grid.destroy();
+  });
+
+  test("a reading-order alignment maps onto vlist's mirrored names", () => {
+    // vlist mirrors the row in RTL, so `left` is the reading start there and
+    // the Chromium check holds the rendered edge in both directions
+    expect(alignFor("start")).toBe("left");
+    expect(alignFor("end")).toBe("right");
+    expect(alignFor("center")).toBe("center");
   });
 
   test("column widths include the selection column and it rejects resizing", async () => {

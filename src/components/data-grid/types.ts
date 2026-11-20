@@ -27,8 +27,6 @@ export interface DataGridColumn<T extends DataGridItem = DataGridItem> {
   resizable?: boolean;
   sortable?: boolean;
   align?: DataGridAlign;
-  /** Reading-order edge. Mapped onto vlist's physical sides until vlist takes logical ones. */
-  pin?: "start" | "end";
   /** Replaces the default text cell. */
   cell?: (item: T, column: DataGridColumn<T>, rowIndex: number) => string | HTMLElement;
 }

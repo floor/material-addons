@@ -12,9 +12,15 @@ import { DATA_GRID_DEFAULTS, DATA_GRID_SELECT_COLUMN } from "./constants";
 import type { DataGridColumn, DataGridItem } from "./types";
 
 const aligns = { start: "left", center: "center", end: "right" } as const;
-const pins = { start: "left", end: "right" } as const;
 
-/** One caller column as vlist takes it. Logical alignment and pin sides stay physical until vlist accepts logical ones. */
+/**
+ * A reading-order alignment as vlist's: vlist mirrors the row in RTL, so its
+ * `left` lands on the reading start and its `right` on the reading end in
+ * either direction. The measured check holds both directions to that.
+ */
+export const alignFor = (align: NonNullable<DataGridColumn["align"]>): "left" | "center" | "right" => aligns[align];
+
+/** One caller column as vlist takes it. */
 export const toTableColumn = <T extends DataGridItem>(column: DataGridColumn<T>): TableColumn<T> => ({
   key: column.key,
   label: column.label,
@@ -23,8 +29,7 @@ export const toTableColumn = <T extends DataGridItem>(column: DataGridColumn<T>)
   ...(column.maxWidth === undefined ? {} : { maxWidth: column.maxWidth }),
   ...(column.resizable === undefined ? {} : { resizable: column.resizable }),
   ...(column.sortable === undefined ? {} : { sortable: column.sortable }),
-  ...(column.align === undefined ? {} : { align: aligns[column.align] }),
-  ...(column.pin === undefined ? {} : { pin: pins[column.pin] }),
+  ...(column.align === undefined ? {} : { align: alignFor(column.align) }),
   ...(column.cell === undefined
     ? {}
     : { cell: (item: T, tableColumn: TableColumn<T>, rowIndex: number) => column.cell?.(item, column, rowIndex) ?? "" }),
@@ -72,7 +77,6 @@ export const createSelectionColumn = <T extends DataGridItem>(
     minWidth: DATA_GRID_DEFAULTS.SELECT_COLUMN_WIDTH,
     resizable: false,
     sortable: false,
-    pin: "left",
     header: () => {
       if (!options.multiple) return "";
       const state = options.allSelected();

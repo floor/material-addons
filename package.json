@@ -148,7 +148,8 @@
     "adapters:generate": "bun scripts/generate-adapters.mjs",
     "adapters:check": "bun scripts/generate-adapters.mjs --check",
     "check:stepper-adapters": "node scripts/check-stepper-adapters.mjs",
-    "check:expansion-panel": "node scripts/check-expansion-panel.mjs"
+    "check:expansion-panel": "node scripts/check-expansion-panel.mjs",
+    "check:data-grid": "node scripts/check-data-grid.mjs"
   },
   "repository": {
     "type": "git",

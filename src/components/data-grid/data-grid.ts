@@ -11,7 +11,7 @@
  * the layer reorders the items and sets the indicator.
  */
 
-import { columnPin, createVList, selection as vlistSelection, table } from "vlist";
+import { createVList, selection as vlistSelection, table } from "vlist";
 import type { TableColumn, VList } from "vlist";
 import { createBase, pipe, withDisabled, withElement, withEvents, withLifecycle } from "material/core/compose";
 import { DATA_GRID_EVENTS, DATA_GRID_SELECTIONS } from "./constants";
@@ -67,8 +67,10 @@ const withDataGridCore =
     let rendered: readonly DataGridItem[] = authored;
     const selected = new Set<string>(settings.values ?? (settings.value != null ? [String(settings.value)] : []));
 
+    // The list fills the root; the caller gives the root its height
     const listEl = document.createElement("div");
     listEl.className = component.getClass("list");
+    listEl.style.height = "100%";
     component.element.append(listEl);
 
     const heights = heightsFor(settings.density);
@@ -96,7 +98,6 @@ const withDataGridCore =
         fillWidth: settings.fill === "stretch" ? "stretch" : settings.fill === "none" ? false : "spacer",
         columnBorders: settings.columnBorders === true,
         rowBorders: settings.rowBorders !== false,
-        ...(selectionColumn ? { features: [columnPin()] } : {}),
     };
     const plugins = [
       table(tableConfig as never),
@@ -244,7 +245,7 @@ const withDataGridCore =
 
     const grid: DataGridComponent = {
       element: component.element,
-      list: listEl,
+      list: list.element as HTMLElement,
       getValue: () => (selected.size ? [...selected][selected.size - 1] : null),
       setValue: (value) => grid.setValues(value === null ? [] : [String(value)]),
       getValues: () => [...selected],
