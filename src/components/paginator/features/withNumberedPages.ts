@@ -45,8 +45,12 @@ export const withNumberedPages = (
 
   const render = ({ page, pageCount, disabled }: { page: number; pageCount: number; disabled: boolean }): void => {
     // A keyboard activation rebuilds the row under the focused button: keep
-    // focus on the page it activated, now the current one
-    const focused = container.contains(document.activeElement) ? document.activeElement?.textContent : null;
+    // focus on the page it activated, now the current one. Inside a shadow
+    // root the document's activeElement is only the host, so the focus is
+    // read from the container's own root.
+    const root = container.getRootNode() as Document | ShadowRoot;
+    const active = root.activeElement;
+    const focused = active && container.contains(active) ? active.textContent : null;
     clear();
     if (!settings.numbered) return;
     let previous = 0;

@@ -603,10 +603,10 @@ Measured as standalone minified ESM bundles, gzipped, with `material` external; 
 
 | Artifact | Gzip | Spec estimate |
 | --- | ---: | ---: |
-| Factory | 3,412 B | 1,600 B |
+| Factory | 3,426 B | 1,600 B |
 | Client element | 914 B | 700 B |
 | Compiled stylesheet | 1,072 B | 900 B |
-| Combined | 5,398 B | 3,200 B |
+| Combined | 5,412 B | 3,200 B |
 
 ## Layout
 

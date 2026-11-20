@@ -133,6 +133,35 @@ try {
   assert.equal(numbered.page, 2, "a numbered button held past destroy commits nothing");
   assert.deepEqual(numbered.seen, [], "and emits nothing");
 
+  // The element's shadow root: Enter on page 3 keeps focus on page 3, and
+  // the next Tab moves on rather than back to the first page
+  await reset();
+  const elementFocus = await page.evaluate(async () => {
+    document.body.replaceChildren();
+    document.body.innerHTML = `<m-paginator total="500" page-size="25" page="2" numbered></m-paginator>`;
+    window.paginator.definePaginator();
+    const host = document.querySelector("m-paginator");
+    const root = host.shadowRoot;
+    const pageButton = (label) => [...root.querySelectorAll(".mtrl-paginator__page")].find((node) => node.textContent === label);
+    const third = pageButton("3");
+    third.focus();
+    third.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
+    third.click();
+    const current = root.querySelector(".mtrl-paginator__page--current");
+    const kept = root.activeElement === current && current.textContent === "3";
+    return { kept, hostFocus: document.activeElement === host, page: host.getPage() };
+  });
+  assert.equal(elementFocus.page, 3, "the element moved to page 3");
+  assert.equal(elementFocus.kept, true, "focus stays on page 3 inside the shadow root");
+  await page.keyboard.press("Tab");
+  const tabbed = await page.evaluate(() => {
+    const host = document.querySelector("m-paginator");
+    const root = host.shadowRoot;
+    const current = root.querySelector(".mtrl-paginator__page--current");
+    return { stillCurrent: root.activeElement === current, label: root.activeElement?.textContent };
+  });
+  assert.equal(tabbed.stillCurrent, false, "the next Tab moves on");
+
   // Forced colours and reduced motion
   await reset();
   await page.emulateMedia({ forcedColors: "active" });
