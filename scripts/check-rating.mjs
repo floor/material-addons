@@ -76,10 +76,11 @@ try {
   assert.equal(await paint("#medium .mtrl-rating__star--full .mtrl-rating__star-fill", "color"), await paint("#forced-reference", "outlineColor"));
   assert.equal(await paint("#medium .mtrl-rating__star--empty .mtrl-rating__star-empty", "color"), await reference.evaluate(node => getComputedStyle(node).borderTopColor));
   assert.equal(await paint("#disabled .mtrl-rating__star-fill", "color"), await reference.evaluate(node => getComputedStyle(node).color));
-  await page.evaluate(() => document.activeElement?.blur());
-  await page.keyboard.press("Tab");
-  assert.equal(await page.locator("#small .mtrl-rating__stop").first().evaluate(node => node.matches(":focus-visible")), true);
-  assert.equal(await page.locator("#small .mtrl-rating__stop").first().evaluate(node => getComputedStyle(node).outlineColor), await paint("#forced-reference", "outlineColor"));
+  const smallStop = page.locator("#small .mtrl-rating__stop[tabindex='0']");
+  await page.locator("#medium .mtrl-rating__stop[tabindex='0']").focus();
+  await page.keyboard.press("Shift+Tab");
+  assert.equal(await smallStop.evaluate(node => node.matches(":focus-visible")), true);
+  assert.equal(await smallStop.evaluate(node => getComputedStyle(node).outlineColor), await paint("#forced-reference", "outlineColor"));
   assert.deepEqual(errors, []);
   await page.close();
 
