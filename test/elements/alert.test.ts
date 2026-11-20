@@ -62,13 +62,25 @@ test("<m-alert> reflects attributes, slots body content, and dispatches cancelab
   host.severity = "success";
   expect(root().getAttribute("role")).toBe("status");
 
-  // Focus handoff on custom element dismissal: moves to next focusable, else previous
+  // Focus handoff on custom element dismissal: skips ineligible wrappers, moves to next focusable, else previous
   const prevBtn = document.createElement("button");
   prevBtn.id = "prev-btn";
+  const hiddenWrap = document.createElement("div");
+  hiddenWrap.style.display = "none";
+  hiddenWrap.append(document.createElement("button"));
+  const disabledFieldset = document.createElement("fieldset");
+  disabledFieldset.disabled = true;
+  disabledFieldset.append(document.createElement("button"));
+  const inertWrap = document.createElement("div");
+  inertWrap.setAttribute("inert", "");
+  inertWrap.append(document.createElement("button"));
+  const visHiddenWrap = document.createElement("div");
+  visHiddenWrap.style.visibility = "hidden";
+  visHiddenWrap.append(document.createElement("button"));
   const nextBtn = document.createElement("button");
   nextBtn.id = "next-btn";
   host.before(prevBtn);
-  host.after(nextBtn);
+  host.after(hiddenWrap, disabledFieldset, inertWrap, visHiddenWrap, nextBtn);
 
   const dismissBtn = root().querySelector<HTMLButtonElement>(".mtrl-alert__dismiss")!;
   dismissBtn.focus();

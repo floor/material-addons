@@ -155,9 +155,25 @@ describe("createAlert", () => {
     const prevBtn = document.createElement("button");
     prevBtn.textContent = "Previous";
     const alert = createAlert({ label: "Focusable alert", dismissible: true });
+    const hiddenWrap = document.createElement("div");
+    hiddenWrap.style.display = "none";
+    const hiddenBtn = document.createElement("button");
+    hiddenWrap.append(hiddenBtn);
+    const disabledFieldset = document.createElement("fieldset");
+    disabledFieldset.disabled = true;
+    const fieldsetBtn = document.createElement("button");
+    disabledFieldset.append(fieldsetBtn);
+    const inertWrap = document.createElement("div");
+    inertWrap.setAttribute("inert", "");
+    const inertBtn = document.createElement("button");
+    inertWrap.append(inertBtn);
+    const visHiddenWrap = document.createElement("div");
+    visHiddenWrap.style.visibility = "hidden";
+    const visHiddenBtn = document.createElement("button");
+    visHiddenWrap.append(visHiddenBtn);
     const nextBtn = document.createElement("button");
     nextBtn.textContent = "Next";
-    document.body.append(prevBtn, alert.element, nextBtn);
+    document.body.append(prevBtn, alert.element, hiddenWrap, disabledFieldset, inertWrap, visHiddenWrap, nextBtn);
 
     const dismissBtn = alert.element.querySelector<HTMLButtonElement>(".mtrl-alert__dismiss")!;
     dismissBtn.focus();

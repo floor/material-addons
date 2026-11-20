@@ -5,47 +5,71 @@ import type { AlertBeforeDismissEvent, AlertDismissEvent, AlertDismissReason } f
 
 const FOCUSABLE_SELECTOR = [
   "a[href]",
-  "button:not([disabled])",
-  'input:not([disabled]):not([type="hidden"])',
-  "select:not([disabled])",
-  "textarea:not([disabled])",
+  "button:not(:disabled)",
+  'input:not(:disabled):not([type="hidden"])',
+  "select:not(:disabled)",
+  "textarea:not(:disabled)",
   "summary",
   '[tabindex]:not([tabindex="-1"])',
   '[contenteditable]:not([contenteditable="false"])',
 ].join(",");
 
-function isFocusableCandidate(node: HTMLElement, container: HTMLElement, root: HTMLElement): boolean {
-  if (node === container || node === root || container.contains(node) || root.contains(node)) return false;
-  if (node.tabIndex < 0) return false;
-  if ((node as HTMLButtonElement).disabled || node.hasAttribute("disabled")) return false;
-  if (node.closest("[hidden], [inert], [no-open], .mtrl-alert--closed, [aria-hidden='true']")) return false;
-  const view = node.ownerDocument.defaultView;
-  if (view) {
-    const style = view.getComputedStyle(node);
-    if (style.display === "none" || style.visibility === "hidden") return false;
-  }
-  return true;
-}
-
 function isShadow(node: Node): node is ShadowRoot {
   return "host" in node && Boolean((node as ShadowRoot).host);
 }
 
-function findAdjacentFocusable(container: HTMLElement, root: HTMLElement): HTMLElement | null {
+function isEligibleFocusable(node: HTMLElement, container: HTMLElement, root: HTMLElement): boolean {
+  if (node === container || node === root || container.contains(node) || root.contains(node)) return false;
+  if (node.tabIndex < 0) return false;
+  if ((node as HTMLButtonElement).disabled || node.hasAttribute("disabled") || node.matches?.(":disabled")) return false;
+  if (node.closest("[hidden], [inert], [no-open], .mtrl-alert--closed, [aria-hidden='true']")) return false;
+  const view = node.ownerDocument.defaultView;
+  if (view) {
+    let current: HTMLElement | null = node;
+    while (current) {
+      const style = view.getComputedStyle(current);
+      if (style.display === "none" || style.visibility === "hidden") return false;
+      const parent: HTMLElement | null = current.parentElement;
+      if (parent) {
+        current = parent;
+      } else {
+        const rootNode = current.getRootNode();
+        current = isShadow(rootNode) ? (rootNode.host as HTMLElement) : null;
+      }
+    }
+  }
+  return true;
+}
+
+function activeElementOf(scope: Node, doc: Document): Element | null {
+  if (isShadow(scope) && scope.activeElement) return scope.activeElement;
+  return doc.activeElement;
+}
+
+function focusAdjacent(container: HTMLElement, root: HTMLElement): void {
   const scopeNode = container.getRootNode();
+  const doc = container.ownerDocument;
   const queryRoot: ParentNode = "querySelectorAll" in scopeNode
     ? (scopeNode as ParentNode)
-    : container.ownerDocument;
-  const candidates = Array.from(queryRoot.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
-    .filter(node => isFocusableCandidate(node, container, root));
+    : doc;
+  const all = Array.from(queryRoot.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
 
-  let previous: HTMLElement | null = null;
-  for (const candidate of candidates) {
+  const following: HTMLElement[] = [];
+  const preceding: HTMLElement[] = [];
+  for (const candidate of all) {
+    if (candidate === container || candidate === root || container.contains(candidate) || root.contains(candidate)) continue;
     const pos = container.compareDocumentPosition(candidate);
-    if (pos & 4) return candidate; // Node.DOCUMENT_POSITION_FOLLOWING
-    if (pos & 2) previous = candidate; // Node.DOCUMENT_POSITION_PRECEDING
+    if (pos & 4) following.push(candidate); // Node.DOCUMENT_POSITION_FOLLOWING
+    else if (pos & 2) preceding.push(candidate); // Node.DOCUMENT_POSITION_PRECEDING
   }
-  return previous;
+  preceding.reverse();
+
+  for (const candidate of [...following, ...preceding]) {
+    if (!isEligibleFocusable(candidate, container, root)) continue;
+    candidate.focus();
+    const active = activeElementOf(candidate.getRootNode(), doc);
+    if (active === candidate || doc.activeElement === candidate) return;
+  }
 }
 
 function alertHadFocus(container: HTMLElement, root: HTMLElement): boolean {
@@ -101,7 +125,6 @@ export function withDismiss(settings: AlertSettings) {
       const rootNode = root.getRootNode();
       const container = (isShadow(rootNode) ? rootNode.host : root) as HTMLElement;
       const shouldMoveFocus = alertHadFocus(container, root);
-      const nextFocus = shouldMoveFocus ? findAdjacentFocusable(container, root) : null;
 
       open = false;
       settings.open = false;
@@ -111,8 +134,8 @@ export function withDismiss(settings: AlertSettings) {
       root.toggleAttribute("inert", false);
       notifyState();
 
-      if (nextFocus) {
-        nextFocus.focus();
+      if (shouldMoveFocus) {
+        focusAdjacent(container, root);
       }
 
       const dismissPayload: AlertDismissEvent = {

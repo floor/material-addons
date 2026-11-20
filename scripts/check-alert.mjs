@@ -121,7 +121,7 @@ try {
         document.documentElement.dir = d;
       }, [mode, dir]);
 
-      // Factory alert: next focusable, then previous focusable
+      // Factory alert: skips display:none ancestor, disabled fieldset, inert, visibility:hidden; focuses next focusable, then previous
       await page.evaluate(() => {
         const container = document.getElementById("focus-handoff") ?? Object.assign(document.createElement("div"), { id: "focus-handoff" });
         container.replaceChildren();
@@ -137,8 +137,25 @@ try {
           },
         });
         alert.element.id = "factory-focus-alert";
+
+        const displayNoneWrap = document.createElement("div");
+        displayNoneWrap.style.display = "none";
+        displayNoneWrap.append(Object.assign(document.createElement("button"), { id: "factory-display-none-btn", textContent: "Hidden ancestor" }));
+
+        const disabledFieldset = document.createElement("fieldset");
+        disabledFieldset.disabled = true;
+        disabledFieldset.append(Object.assign(document.createElement("button"), { id: "factory-fieldset-btn", textContent: "Disabled fieldset" }));
+
+        const inertWrap = document.createElement("div");
+        inertWrap.setAttribute("inert", "");
+        inertWrap.append(Object.assign(document.createElement("button"), { id: "factory-inert-btn", textContent: "Inert ancestor" }));
+
+        const visHiddenWrap = document.createElement("div");
+        visHiddenWrap.style.visibility = "hidden";
+        visHiddenWrap.append(Object.assign(document.createElement("button"), { id: "factory-vis-hidden-btn", textContent: "Visibility hidden" }));
+
         const next = Object.assign(document.createElement("button"), { id: "factory-next", textContent: "Next" });
-        container.append(prev, alert.element, next);
+        container.append(prev, alert.element, displayNoneWrap, disabledFieldset, inertWrap, visHiddenWrap, next);
         window.__factoryFocusTest = { alert, setVeto(v) { veto = v; } };
       });
       const factoryDismiss = page.locator("#factory-focus-alert .mtrl-alert__dismiss");
@@ -147,16 +164,16 @@ try {
       assert.equal(await page.evaluate(() => document.activeElement?.classList.contains("mtrl-alert__dismiss")), true, `${mode}/${dir}: vetoed factory dismiss keeps focus on dismiss button`);
       await page.evaluate(() => window.__factoryFocusTest.setVeto(false));
       await page.keyboard.press("Enter");
-      assert.equal(await page.evaluate(() => document.activeElement?.id), "factory-next", `${mode}/${dir}: factory dismiss moves focus to next focusable`);
+      assert.equal(await page.evaluate(() => document.activeElement?.id), "factory-next", `${mode}/${dir}: factory dismiss skips ineligible wrappers and moves focus to next focusable`);
       await page.evaluate(() => {
         document.getElementById("factory-next").remove();
         window.__factoryFocusTest.alert.show();
       });
       await factoryDismiss.focus();
       await page.keyboard.press("Space");
-      assert.equal(await page.evaluate(() => document.activeElement?.id), "factory-prev", `${mode}/${dir}: factory dismiss falls back to previous focusable`);
+      assert.equal(await page.evaluate(() => document.activeElement?.id), "factory-prev", `${mode}/${dir}: factory dismiss skips ineligible following wrappers and falls back to previous focusable`);
 
-      // Custom element <m-alert>: next focusable, then previous focusable
+      // Custom element <m-alert>: skips display:none ancestor, disabled fieldset, inert, visibility:hidden; focuses next focusable, then previous
       await page.evaluate(() => {
         const container = document.getElementById("focus-handoff");
         container.replaceChildren();
@@ -170,8 +187,25 @@ try {
         host.addEventListener("beforedismiss", (e) => {
           if (veto) e.preventDefault();
         });
+
+        const displayNoneWrap = document.createElement("div");
+        displayNoneWrap.style.display = "none";
+        displayNoneWrap.append(Object.assign(document.createElement("button"), { id: "el-display-none-btn", textContent: "Hidden ancestor" }));
+
+        const disabledFieldset = document.createElement("fieldset");
+        disabledFieldset.disabled = true;
+        disabledFieldset.append(Object.assign(document.createElement("button"), { id: "el-fieldset-btn", textContent: "Disabled fieldset" }));
+
+        const inertWrap = document.createElement("div");
+        inertWrap.setAttribute("inert", "");
+        inertWrap.append(Object.assign(document.createElement("button"), { id: "el-inert-btn", textContent: "Inert ancestor" }));
+
+        const visHiddenWrap = document.createElement("div");
+        visHiddenWrap.style.visibility = "hidden";
+        visHiddenWrap.append(Object.assign(document.createElement("button"), { id: "el-vis-hidden-btn", textContent: "Visibility hidden" }));
+
         const next = Object.assign(document.createElement("button"), { id: "el-next", textContent: "Next" });
-        container.append(prev, host, next);
+        container.append(prev, host, displayNoneWrap, disabledFieldset, inertWrap, visHiddenWrap, next);
         window.__elFocusTest = { host, setVeto(v) { veto = v; } };
       });
       const elDismiss = page.locator("#el-focus-alert").locator(".mtrl-alert__dismiss");
@@ -180,14 +214,14 @@ try {
       assert.equal(await page.evaluate(() => document.getElementById("el-focus-alert")?.shadowRoot?.activeElement?.classList.contains("mtrl-alert__dismiss")), true, `${mode}/${dir}: vetoed <m-alert> dismiss keeps focus on dismiss button`);
       await page.evaluate(() => window.__elFocusTest.setVeto(false));
       await page.keyboard.press("Enter");
-      assert.equal(await page.evaluate(() => document.activeElement?.id), "el-next", `${mode}/${dir}: <m-alert> dismiss moves focus to next focusable`);
+      assert.equal(await page.evaluate(() => document.activeElement?.id), "el-next", `${mode}/${dir}: <m-alert> dismiss skips ineligible wrappers and moves focus to next focusable`);
       await page.evaluate(() => {
         document.getElementById("el-next").remove();
         window.__elFocusTest.host.show();
       });
       await elDismiss.focus();
       await page.keyboard.press("Space");
-      assert.equal(await page.evaluate(() => document.activeElement?.id), "el-prev", `${mode}/${dir}: <m-alert> dismiss falls back to previous focusable`);
+      assert.equal(await page.evaluate(() => document.activeElement?.id), "el-prev", `${mode}/${dir}: <m-alert> dismiss skips ineligible following wrappers and falls back to previous focusable`);
     }
   }
   assert.deepEqual(errors, []);
