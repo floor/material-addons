@@ -163,16 +163,44 @@ describe("createPaginator", () => {
     const paginator = mount({ total: 100, numbered: true });
     const seen: string[] = [];
     paginator.on("beforechange", () => seen.push("beforechange"));
-    paginator.destroy();
     const next = paginator.element.querySelector(".mtrl-paginator__button--next") as HTMLButtonElement;
+    const page = [...paginator.element.querySelectorAll(".mtrl-paginator__page")].find(
+      (button) => button.textContent !== "1",
+    ) as HTMLButtonElement;
+    paginator.destroy();
     next.click();
     paginator.select.value = "50";
     paginator.select.dispatchEvent(new Event("change"));
-    const page = paginator.element.querySelector(".mtrl-paginator__page") as HTMLButtonElement;
-    page?.click();
+    page.click();
     expect(seen).toEqual([]);
     expect(paginator.getPage()).toBe(1);
     expect(paginator.getPageSize()).toBe(25);
+  });
+
+  test("a numbered page button held past destroy does not commit", () => {
+    const paginator = mount({ total: 500, pageSize: 25, page: 10, numbered: true });
+    const target = [...paginator.element.querySelectorAll(".mtrl-paginator__page")].find(
+      (button) => button.textContent === "11",
+    ) as HTMLButtonElement;
+    const seen: string[] = [];
+    paginator.on("beforechange", () => seen.push("beforechange"));
+    paginator.destroy();
+    target.click();
+    expect(seen).toEqual([]);
+    expect(paginator.getPage()).toBe(10);
+  });
+
+  test("activating a numbered page keeps focus on the new current button", () => {
+    const paginator = mount({ total: 500, pageSize: 25, page: 1, numbered: true });
+    const target = [...paginator.element.querySelectorAll(".mtrl-paginator__page")].find(
+      (button) => button.textContent === "2",
+    ) as HTMLButtonElement;
+    target.focus();
+    target.click();
+    const current = paginator.element.querySelector(".mtrl-paginator__page--current") as HTMLButtonElement;
+    expect(current.textContent).toBe("2");
+    expect(document.activeElement).toBe(current);
+    paginator.destroy();
   });
 
   test("disable disables the select and every button", () => {

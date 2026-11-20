@@ -107,6 +107,32 @@ try {
   assert.equal(keyboard.moved, 2);
   assert.equal(keyboard.afterCancel, 2);
 
+  // Numbered pages: Enter keeps focus on the new current button, and a
+  // button held past destroy commits nothing
+  await reset();
+  const numbered = await page.evaluate(async () => {
+    document.body.replaceChildren();
+    const paginator = window.paginator.createPaginator({ total: 500, pageSize: 25, page: 1, numbered: true });
+    document.body.append(paginator.element);
+    const buttons = () => Array.from(paginator.element.querySelectorAll(".mtrl-paginator__page"));
+    const target = buttons().find((button) => button.textContent === "2");
+    target.focus();
+    target.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
+    // A native Enter on a button is a click; send it as the browser would
+    target.click();
+    const current = paginator.element.querySelector(".mtrl-paginator__page--current");
+    const kept = document.activeElement === current && current.textContent === "2";
+    const held = buttons().find((button) => button.textContent !== "2");
+    const seen = [];
+    paginator.on("beforechange", (event) => seen.push(event.page));
+    paginator.destroy();
+    held.click();
+    return { kept, page: paginator.getPage(), seen };
+  });
+  assert.equal(numbered.kept, true, "keyboard activation keeps focus on the new current page");
+  assert.equal(numbered.page, 2, "a numbered button held past destroy commits nothing");
+  assert.deepEqual(numbered.seen, [], "and emits nothing");
+
   // Forced colours and reduced motion
   await reset();
   await page.emulateMedia({ forcedColors: "active" });

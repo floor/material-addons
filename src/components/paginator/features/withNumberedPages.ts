@@ -34,8 +34,20 @@ export const withNumberedPages = (
 
   const label = (page: number): string => settings.pageLabel?.(page) ?? `Page ${page}`;
 
-  const render = ({ page, pageCount, disabled }: { page: number; pageCount: number; disabled: boolean }): void => {
+  // The rebuilt buttons carry their own listeners: drop them before a
+  // rebuild and on destroy, so a node held elsewhere cannot still commit
+  let added: Array<() => void> = [];
+  const clear = (): void => {
+    added.forEach((remove) => remove());
+    added = [];
     container.replaceChildren();
+  };
+
+  const render = ({ page, pageCount, disabled }: { page: number; pageCount: number; disabled: boolean }): void => {
+    // A keyboard activation rebuilds the row under the focused button: keep
+    // focus on the page it activated, now the current one
+    const focused = container.contains(document.activeElement) ? document.activeElement?.textContent : null;
+    clear();
     if (!settings.numbered) return;
     let previous = 0;
     for (const candidate of wanted(page, pageCount)) {
@@ -48,7 +60,9 @@ export const withNumberedPages = (
         button.setAttribute("aria-label", label(missing));
         button.textContent = String(missing);
         button.disabled = disabled;
-        button.addEventListener("click", () => goTo(missing));
+        const activateMissing = (): void => goTo(missing);
+        button.addEventListener("click", activateMissing);
+        added.push(() => button.removeEventListener("click", activateMissing));
         container.append(button);
       } else if (previous && candidate - previous > 2) {
         const ellipsis = document.createElement("span");
@@ -67,11 +81,17 @@ export const withNumberedPages = (
         button.classList.add(getClass(PAGINATOR_CLASSES.PAGE_CURRENT));
         button.setAttribute("aria-current", "page");
       }
-      button.addEventListener("click", () => goTo(candidate));
+      const activate = (): void => goTo(candidate);
+      button.addEventListener("click", activate);
+      added.push(() => button.removeEventListener("click", activate));
       container.append(button);
       previous = candidate;
     }
+    if (focused !== null) {
+      const again = Array.from(container.querySelectorAll("button")).find((node) => node.textContent === focused);
+      again?.focus();
+    }
   };
 
-  return { render, destroy: () => container.replaceChildren() };
+  return { render, destroy: clear };
 };

@@ -78,6 +78,7 @@ const withPaginationCore =
       disabled: settings.disabled === true || component.disabled.isDisabled(),
     };
     let pageSizes = [...settings.pageSizes];
+    let destroyed = false;
     const stateListeners: Array<() => void> = [];
 
     const callbacks: Partial<Record<keyof PaginatorEvents, (event: never) => void>> = settings.on ?? {};
@@ -102,7 +103,7 @@ const withPaginationCore =
     const uid = nextId();
     const root = component.element;
     const pageSize = withPageSize(settings, component.getClass, uid, (chosen) => {
-      if (state.disabled) return;
+      if (destroyed || state.disabled) return;
       const next = positive(chosen);
       if (!next || next === state.pageSize) {
         pageSize.sync(state.pageSize, pageSizes);
@@ -143,7 +144,7 @@ const withPaginationCore =
      * commit. Returns whether it committed.
      */
     const propose = (page: number, size: number): boolean => {
-      if (state.disabled) return false;
+      if (destroyed || state.disabled) return false;
       const pageCount = Math.max(1, Math.ceil(state.total / size));
       const target = Math.min(Math.max(1, Math.floor(page)), pageCount);
       if (target === state.page && size === state.pageSize) return false;
@@ -174,7 +175,7 @@ const withPaginationCore =
 
     const goTo = (page: number): boolean => {
       const target = positive(page);
-      if (!target || state.disabled || target > getPageCount()) return false;
+      if (destroyed || !target || state.disabled || target > getPageCount()) return false;
       if (target === state.page) return false;
       return propose(target, state.pageSize);
     };
@@ -226,6 +227,7 @@ const withPaginationCore =
       getRange,
       stateListeners,
       destroy: () => {
+        destroyed = true;
         pageSize.destroy();
         navigation.destroy();
         numberedPages.destroy();
