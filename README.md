@@ -608,7 +608,7 @@ Measured as standalone minified ESM bundles, gzipped, with `material` external; 
 
 | Artifact | Measured | Target |
 | --- | --- | --- |
-| `createAlert` | 3.1 KB | 1.8 KB |
+| `createAlert` | 3.6 KB | 1.8 KB |
 | `<m-alert>` | 1.1 KB | 0.9 KB |
 | The compiled stylesheet | 1.5 KB | 1.1 KB |
 

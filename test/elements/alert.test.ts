@@ -61,5 +61,28 @@ test("<m-alert> reflects attributes, slots body content, and dispatches cancelab
 
   host.severity = "success";
   expect(root().getAttribute("role")).toBe("status");
+
+  // Focus handoff on custom element dismissal: moves to next focusable, else previous
+  const prevBtn = document.createElement("button");
+  prevBtn.id = "prev-btn";
+  const nextBtn = document.createElement("button");
+  nextBtn.id = "next-btn";
+  host.before(prevBtn);
+  host.after(nextBtn);
+
+  const dismissBtn = root().querySelector<HTMLButtonElement>(".mtrl-alert__dismiss")!;
+  dismissBtn.focus();
+  dismissBtn.click();
+  expect(host.open).toBe(false);
+  expect(document.activeElement).toBe(nextBtn);
+
+  nextBtn.remove();
+  host.open = true;
+  dismissBtn.focus();
+  dismissBtn.click();
+  expect(host.open).toBe(false);
+  expect(document.activeElement).toBe(prevBtn);
+
+  prevBtn.remove();
   host.remove();
 });

@@ -111,9 +111,88 @@ try {
     await nextAction.evaluate(n => getComputedStyle(n).outlineColor),
     await reference.evaluate(n => getComputedStyle(n).outlineColor),
   );
+  await page.emulateMedia({ forcedColors: "none" });
+
+  // Keyboard dismissal focus handoff in both factory and <m-alert> (next focusable, else previous, never body)
+  for (const mode of ["light", "dark"]) {
+    for (const dir of ["ltr", "rtl"]) {
+      await page.evaluate(([m, d]) => {
+        document.documentElement.dataset.themeMode = m;
+        document.documentElement.dir = d;
+      }, [mode, dir]);
+
+      // Factory alert: next focusable, then previous focusable
+      await page.evaluate(() => {
+        const container = document.getElementById("focus-handoff") ?? Object.assign(document.createElement("div"), { id: "focus-handoff" });
+        container.replaceChildren();
+        document.body.append(container);
+        const prev = Object.assign(document.createElement("button"), { id: "factory-prev", textContent: "Previous" });
+        let veto = true;
+        const alert = window.createAlert({
+          severity: "warning",
+          label: "Dismiss focus check",
+          dismissible: true,
+          onBeforeDismiss(e) {
+            if (veto) e.preventDefault();
+          },
+        });
+        alert.element.id = "factory-focus-alert";
+        const next = Object.assign(document.createElement("button"), { id: "factory-next", textContent: "Next" });
+        container.append(prev, alert.element, next);
+        window.__factoryFocusTest = { alert, setVeto(v) { veto = v; } };
+      });
+      const factoryDismiss = page.locator("#factory-focus-alert .mtrl-alert__dismiss");
+      await factoryDismiss.focus();
+      await page.keyboard.press("Enter");
+      assert.equal(await page.evaluate(() => document.activeElement?.classList.contains("mtrl-alert__dismiss")), true, `${mode}/${dir}: vetoed factory dismiss keeps focus on dismiss button`);
+      await page.evaluate(() => window.__factoryFocusTest.setVeto(false));
+      await page.keyboard.press("Enter");
+      assert.equal(await page.evaluate(() => document.activeElement?.id), "factory-next", `${mode}/${dir}: factory dismiss moves focus to next focusable`);
+      await page.evaluate(() => {
+        document.getElementById("factory-next").remove();
+        window.__factoryFocusTest.alert.show();
+      });
+      await factoryDismiss.focus();
+      await page.keyboard.press("Space");
+      assert.equal(await page.evaluate(() => document.activeElement?.id), "factory-prev", `${mode}/${dir}: factory dismiss falls back to previous focusable`);
+
+      // Custom element <m-alert>: next focusable, then previous focusable
+      await page.evaluate(() => {
+        const container = document.getElementById("focus-handoff");
+        container.replaceChildren();
+        const prev = Object.assign(document.createElement("button"), { id: "el-prev", textContent: "Previous" });
+        const host = document.createElement("m-alert");
+        host.id = "el-focus-alert";
+        host.setAttribute("severity", "error");
+        host.setAttribute("label", "Element focus check");
+        host.setAttribute("dismissible", "");
+        let veto = true;
+        host.addEventListener("beforedismiss", (e) => {
+          if (veto) e.preventDefault();
+        });
+        const next = Object.assign(document.createElement("button"), { id: "el-next", textContent: "Next" });
+        container.append(prev, host, next);
+        window.__elFocusTest = { host, setVeto(v) { veto = v; } };
+      });
+      const elDismiss = page.locator("#el-focus-alert").locator(".mtrl-alert__dismiss");
+      await elDismiss.focus();
+      await page.keyboard.press("Enter");
+      assert.equal(await page.evaluate(() => document.getElementById("el-focus-alert")?.shadowRoot?.activeElement?.classList.contains("mtrl-alert__dismiss")), true, `${mode}/${dir}: vetoed <m-alert> dismiss keeps focus on dismiss button`);
+      await page.evaluate(() => window.__elFocusTest.setVeto(false));
+      await page.keyboard.press("Enter");
+      assert.equal(await page.evaluate(() => document.activeElement?.id), "el-next", `${mode}/${dir}: <m-alert> dismiss moves focus to next focusable`);
+      await page.evaluate(() => {
+        document.getElementById("el-next").remove();
+        window.__elFocusTest.host.show();
+      });
+      await elDismiss.focus();
+      await page.keyboard.press("Space");
+      assert.equal(await page.evaluate(() => document.activeElement?.id), "el-prev", `${mode}/${dir}: <m-alert> dismiss falls back to previous focusable`);
+    }
+  }
   assert.deepEqual(errors, []);
   await page.close();
-  console.log("Alert severities, variants, light/dark x LTR/RTL, reduced motion, and forced colors passed");
+  console.log("Alert severities, variants, light/dark x LTR/RTL, reduced motion, forced colors, and focus handoff passed");
 
   // Framework adapters (React, Vue, Solid, Svelte 5)
   for (const framework of ["react", "vue", "solid", "svelte"]) {

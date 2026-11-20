@@ -149,4 +149,35 @@ describe("createAlert", () => {
     expect(root.classList.contains("mtrl-alert--closed")).toBe(false);
     alert.destroy();
   });
+
+  test("moves focus to the next focusable element (or previous if none follows) when dismissed while focused", () => {
+    document.body.innerHTML = "";
+    const prevBtn = document.createElement("button");
+    prevBtn.textContent = "Previous";
+    const alert = createAlert({ label: "Focusable alert", dismissible: true });
+    const nextBtn = document.createElement("button");
+    nextBtn.textContent = "Next";
+    document.body.append(prevBtn, alert.element, nextBtn);
+
+    const dismissBtn = alert.element.querySelector<HTMLButtonElement>(".mtrl-alert__dismiss")!;
+    dismissBtn.focus();
+    expect(document.activeElement).toBe(dismissBtn);
+
+    dismissBtn.click();
+    expect(alert.isOpen()).toBe(false);
+    expect(document.activeElement).toBe(nextBtn);
+
+    // When no focusable element follows, falls back to the previous focusable element
+    nextBtn.remove();
+    alert.show();
+    dismissBtn.focus();
+    expect(document.activeElement).toBe(dismissBtn);
+
+    dismissBtn.click();
+    expect(alert.isOpen()).toBe(false);
+    expect(document.activeElement).toBe(prevBtn);
+
+    alert.destroy();
+    prevBtn.remove();
+  });
 });
