@@ -42,6 +42,11 @@ const EXPECTED_PATHS = [
   "dist/adapters/avatar/solid.d.ts",
   "dist/adapters/avatar/svelte.d.ts",
   "dist/adapters/avatar/vue.d.ts",
+  "dist/adapters/rating/contract.d.ts",
+  "dist/adapters/rating/react.d.ts",
+  "dist/adapters/rating/solid.d.ts",
+  "dist/adapters/rating/svelte.d.ts",
+  "dist/adapters/rating/vue.d.ts",
   "dist/adapters/expansion-panel.d.ts",
   "dist/adapters/react-expansion.d.ts",
   "dist/adapters/react.d.ts",
@@ -72,6 +77,16 @@ const EXPECTED_PATHS = [
   "dist/components/avatar/index.d.ts",
   "dist/components/avatar/index.mjs",
   "dist/components/avatar/types.d.ts",
+  "dist/components/rating/config.d.ts",
+  "dist/components/rating/constants.d.ts",
+  "dist/components/rating/constants.mjs",
+  "dist/components/rating/features/withForm.d.ts",
+  "dist/components/rating/features/withKeyboard.d.ts",
+  "dist/components/rating/features/withStars.d.ts",
+  "dist/components/rating/index.d.ts",
+  "dist/components/rating/index.mjs",
+  "dist/components/rating/rating.d.ts",
+  "dist/components/rating/types.d.ts",
   "dist/components/colorpicker/api.d.ts",
   "dist/components/colorpicker/colorpicker.d.ts",
   "dist/components/colorpicker/config.d.ts",
@@ -165,6 +180,9 @@ const EXPECTED_PATHS = [
   "dist/elements/css/avatar.css",
   "dist/elements/css/avatar.d.ts",
   "dist/elements/css/avatar.js",
+  "dist/elements/css/rating.css",
+  "dist/elements/css/rating.d.ts",
+  "dist/elements/css/rating.js",
   "dist/elements/css/expansion-panel.css",
   "dist/elements/css/expansion-panel.d.ts",
   "dist/elements/css/expansion-panel.js",
@@ -176,6 +194,8 @@ const EXPECTED_PATHS = [
   "dist/elements/index.d.ts",
   "dist/elements/index.mjs",
   "dist/elements/preupgrade.css",
+  "dist/elements/rating.d.ts",
+  "dist/elements/rating.mjs",
   "dist/elements/stepper.d.ts",
   "dist/elements/stepper.mjs",
   "dist/index.d.ts",
@@ -201,6 +221,9 @@ const EXPECTED_PATHS = [
   "dist/svelte/Stepper.svelte",
   "dist/svelte/Stepper.svelte.d.ts",
   "dist/svelte/avatar-runtime.mjs",
+  "dist/svelte/Rating.svelte",
+  "dist/svelte/Rating.svelte.d.ts",
+  "dist/svelte/rating-runtime.mjs",
   "dist/svelte/index.d.ts",
   "dist/svelte/index.js",
   "dist/svelte/runtime.mjs",
@@ -209,6 +232,7 @@ const EXPECTED_PATHS = [
   "package.json",
   "src/styles/components/_autocomplete.scss",
   "src/styles/components/_avatar.scss",
+  "src/styles/components/_rating.scss",
   "src/styles/components/_colorpicker.scss",
   "src/styles/components/_expansion-panel.scss",
   "src/styles/components/_form.scss",
@@ -216,6 +240,7 @@ const EXPECTED_PATHS = [
   "src/styles/core/_layout.scss",
   "src/styles/elements/_autocomplete.scss",
   "src/styles/elements/_avatar.scss",
+  "src/styles/elements/_rating.scss",
   "src/styles/elements/_expansion-panel.scss",
   "src/styles/elements/_stepper.scss",
   "src/styles/index.scss",
@@ -281,7 +306,7 @@ try {
   const specifiers = [];
   const adapters = new Map([["./react", "react"], ["./vue", "vue"], ["./solid", "solid-js"]]);
   for (const [entry, conditions] of Object.entries(pkg.exports)) {
-    const components = entry.includes("*") ? ["form", "colorpicker", "autocomplete", "stepper", "expansion-panel", "avatar"] : [""];
+    const components = entry.includes("*") ? ["form", "colorpicker", "autocomplete", "stepper", "expansion-panel", "avatar", "rating"] : [""];
     for (const component of components) {
       const paths = typeof conditions === "string" ? [conditions] : Object.values(conditions);
       for (const path of paths) {
@@ -292,7 +317,7 @@ try {
       }
     }
   }
-  assert.equal(specifiers.length, 27);
+  assert.equal(specifiers.length, 31);
   run(process.execPath, ["--input-type=module", "-e", `
     import assert from 'node:assert/strict';
     import { createRequire } from 'node:module';
@@ -315,6 +340,7 @@ try {
       assert.ok(adapter.${name} && adapter.${child});
       assert.ok(adapter.${prefix}Autocomplete && adapter.${prefix}AutocompleteOption);
       assert.ok(adapter.${prefix}Avatar);
+      assert.ok(adapter.${prefix}Rating);
     `], fixture);
   }
   assert.match(readFileSync(join(addon, "dist/react/index.mjs"), "utf8"), /^"use client";/);
@@ -332,6 +358,8 @@ try {
     "dist/elements/autocomplete-css.mjs",
     "dist/components/avatar/index.mjs",
     "dist/elements/avatar.mjs", "dist/elements/css/avatar.css",
+    "dist/components/rating/index.mjs",
+    "dist/elements/rating.mjs", "dist/elements/css/rating.css",
   ]) {
     const bytes = readFileSync(join(addon, path));
     console.log(`${path}: ${bytes.length} B raw, ${gzipSync(bytes, { level: 9 }).length} B gzip`);

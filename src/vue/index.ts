@@ -27,3 +27,8 @@ import { createVueSkeleton } from "../adapters/skeleton/vue";
 export const MSkeleton = /*#__PURE__*/ createVueSkeleton();
 export type { VueSkeletonProps } from "../adapters/skeleton/vue";
 export type { SkeletonElementEventMap } from "../elements/skeleton";
+import "material-addons/elements/css/rating";
+import { createVueRating } from "../adapters/rating/vue";
+export const MRating = /*#__PURE__*/ createVueRating();
+export type { VueRatingProps, VueRatingEmits } from "../adapters/rating/vue";
+export type { RatingElementEventMap } from "../elements/rating";

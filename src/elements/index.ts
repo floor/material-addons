@@ -23,3 +23,6 @@ export type {
 
 export { avatarElement, defineAvatar } from "./avatar";
 export type { AvatarElement, AvatarElementEventMap } from "./avatar";
+
+export { ratingElement, defineRating, ratingElementEventNames } from "./rating";
+export type { RatingElement, RatingElementEventMap, RatingSpec } from "./rating";

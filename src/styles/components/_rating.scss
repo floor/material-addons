@@ -1,0 +1,96 @@
+.mtrl-rating {
+  --mtrl-rating-size: 24px;
+  --mtrl-rating-target: 48px;
+  --mtrl-rating-gap: 4px;
+  --mtrl-rating-color: var(--mtrl-sys-color-primary);
+  --mtrl-rating-empty-color: var(--mtrl-sys-color-on-surface-variant);
+  --mtrl-rating-error-color: var(--mtrl-sys-color-error);
+  --mtrl-rating-label-color: var(--mtrl-sys-color-on-surface);
+  --mtrl-rating-supporting-color: var(--mtrl-sys-color-on-surface-variant);
+  --mtrl-rating-disabled-opacity: 0.38;
+  --mtrl-rating-focus-outline: 2px solid var(--mtrl-sys-color-secondary);
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--mtrl-rating-label-color);
+  font: 500 0.875rem/1.25rem system-ui, sans-serif;
+
+  &--small { --mtrl-rating-size: 18px; }
+  &--large { --mtrl-rating-size: 32px; }
+  &--disabled { opacity: var(--mtrl-rating-disabled-opacity); pointer-events: none; }
+  &--error {
+    .mtrl-rating__label,
+    .mtrl-rating__supporting-text,
+    .mtrl-rating__star-empty { color: var(--mtrl-rating-error-color); }
+  }
+}
+
+.mtrl-rating__row { display: inline-flex; align-items: center; gap: 8px; }
+.mtrl-rating__group { display: inline-flex; align-items: center; gap: var(--mtrl-rating-gap); }
+.mtrl-rating__supporting-text { color: var(--mtrl-rating-supporting-color); font-size: 0.75rem; font-weight: 400; }
+.mtrl-rating__star {
+  position: relative;
+  flex: none;
+  width: var(--mtrl-rating-size);
+  height: var(--mtrl-rating-size);
+}
+.mtrl-rating:not(.mtrl-rating--read-only) .mtrl-rating__star::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--mtrl-rating-target);
+  height: var(--mtrl-rating-target);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.mtrl-rating__star-visual {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  transition: transform var(--mtrl-sys-motion-spring-fast-spatial-duration, 200ms) var(--mtrl-sys-motion-spring-fast-spatial-easing, ease-out);
+}
+.mtrl-rating__star--full .mtrl-rating__star-visual,
+.mtrl-rating--hovering .mtrl-rating__star--full .mtrl-rating__star-visual,
+.mtrl-rating--hovering .mtrl-rating__star--half .mtrl-rating__star-visual { transform: scale(1.12); }
+.mtrl-rating__star-empty,
+.mtrl-rating__star-fill { grid-area: 1 / 1; display: block; }
+.mtrl-rating__star-empty { color: var(--mtrl-rating-empty-color); }
+.mtrl-rating__star-fill { color: var(--mtrl-rating-color); clip-path: inset(0 100% 0 0); }
+.mtrl-rating__star--full .mtrl-rating__star-fill { clip-path: none; }
+.mtrl-rating__star--half .mtrl-rating__star-fill { clip-path: inset(0 50% 0 0); }
+.mtrl-rating__star--fraction .mtrl-rating__star-fill { clip-path: inset(0 calc(100% - var(--_star-fill, 0%)) 0 0); }
+.mtrl-rating__star-empty svg,
+.mtrl-rating__star-fill svg { display: block; width: 100%; height: 100%; }
+.mtrl-rating__stop {
+  position: absolute;
+  z-index: 1;
+  inset-block: 0;
+  inset-inline-start: 0;
+  inline-size: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.mtrl-rating__star:has(.mtrl-rating__stop--half) > .mtrl-rating__stop--half { inline-size: 50%; }
+.mtrl-rating__star:has(.mtrl-rating__stop--half) > .mtrl-rating__stop--full { inset-inline-start: 50%; inline-size: 50%; }
+.mtrl-rating__stop:focus-visible { outline: var(--mtrl-rating-focus-outline); outline-offset: 2px; }
+
+:dir(rtl) .mtrl-rating__star--half .mtrl-rating__star-fill,
+[dir="rtl"] .mtrl-rating__star--half .mtrl-rating__star-fill { clip-path: inset(0 0 0 50%); }
+:dir(rtl) .mtrl-rating__star--fraction .mtrl-rating__star-fill,
+[dir="rtl"] .mtrl-rating__star--fraction .mtrl-rating__star-fill { clip-path: inset(0 0 0 calc(100% - var(--_star-fill, 0%))); }
+
+@media (prefers-reduced-motion: reduce) {
+  .mtrl-rating__star-visual { transition: none; }
+}
+@media (forced-colors: active) {
+  .mtrl-rating__star-fill { color: Highlight; }
+  .mtrl-rating__star-empty { color: CanvasText; }
+  .mtrl-rating--disabled { opacity: 1; }
+  .mtrl-rating--disabled .mtrl-rating__star-fill,
+  .mtrl-rating--disabled .mtrl-rating__star-empty { color: GrayText; }
+  .mtrl-rating__stop:focus-visible { outline: 2px solid Highlight; }
+}

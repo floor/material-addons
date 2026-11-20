@@ -28,3 +28,8 @@ import { createReactSkeleton } from "../adapters/skeleton/react";
 export const Skeleton = /*#__PURE__*/ createReactSkeleton();
 export type { ReactSkeletonProps } from "../adapters/skeleton/react";
 export type { SkeletonElementEventMap } from "../elements/skeleton";
+import "material-addons/elements/css/rating";
+import { createReactRating } from "../adapters/rating/react";
+export const Rating = /*#__PURE__*/ createReactRating();
+export type { ReactRatingProps } from "../adapters/rating/react";
+export type { RatingElementEventMap } from "../elements/rating";
