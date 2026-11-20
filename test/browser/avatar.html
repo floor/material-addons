@@ -9,6 +9,12 @@
   const fixture = document.getElementById("fixture");
   const framework = new URL(location.href).searchParams.get("framework");
   window.avatarClicks = [];
+  const { createAvatar } = await import("material-addons");
+  window.createAvatar = createAvatar;
+  await import("material-addons/elements/css/avatar");
+  const { defineAvatar } = await import("material-addons/elements/avatar");
+  defineAvatar();
+  window.defineAvatar = defineAvatar;
   window.recordAvatarClick = event => avatarClicks.push([event.type, event instanceof MouseEvent]);
   const attributes = {
     variant: "text", size: "small", text: "AL", label: "Account", supportingText: "Editor", onClick: recordAvatarClick,
