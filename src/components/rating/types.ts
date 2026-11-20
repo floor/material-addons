@@ -1,3 +1,4 @@
+import type { BaseConfig } from "material/core/compose";
 import type { RATING_SIZES } from "./constants";
 
 export type RatingSize = (typeof RATING_SIZES)[keyof typeof RATING_SIZES];
@@ -19,13 +20,11 @@ export interface RatingEvents {
   hover: (payload: RatingHoverEvent) => void;
 }
 
-export interface RatingConfig {
+export interface RatingConfig extends BaseConfig {
   /** Extra classes on the root. A string or a list of class names. */
   class?: string | string[];
   /** Alias of `class`. */
   className?: string | string[];
-  /** Component name used for the root class. @default "rating" */
-  componentName?: string;
   /** Current rating value (0 = unrated, up to `max`). @default 0 */
   value?: number;
   /** Initial value restored on form reset. */

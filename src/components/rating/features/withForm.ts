@@ -8,7 +8,7 @@ interface Host {
 }
 
 export function withForm() {
-  return (component: Host): Host => {
+  return <T extends Host>(component: T): T => {
     const { view } = component;
     let input: HTMLInputElement | undefined;
     const fieldValue = (value: number) => (value > 0 ? formatRating(value) : "");

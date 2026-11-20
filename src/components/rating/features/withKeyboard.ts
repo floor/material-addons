@@ -18,7 +18,7 @@ function near(left: number, right: number): boolean {
 }
 
 export function withKeyboard() {
-  return (component: Host): Host => {
+  return <T extends Host>(component: T): T => {
     const { view } = component;
     const onKey = (event: KeyboardEvent) => {
       const state = view.state;

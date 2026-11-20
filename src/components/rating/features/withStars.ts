@@ -33,7 +33,7 @@ function near(left: number, right: number): boolean {
 }
 
 export function withStars(settings: RatingSettings) {
-  return (component: Host): Host & { view: RatingView } => {
+  return <T extends Host>(component: T): T & { view: RatingView } => {
     const state: RatingView["state"] = { ...settings, hover: null, autoError: false };
     const root = component.element;
     const document = root.ownerDocument;

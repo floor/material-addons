@@ -4,16 +4,16 @@ import { createBaseConfig, getElementConfig, normalizeMax, normalizeValue, ratin
 import { withForm } from "./features/withForm";
 import { withKeyboard } from "./features/withKeyboard";
 import { withStars, type RatingView } from "./features/withStars";
-import type { RatingComponent, RatingConfig, RatingController, RatingEvents } from "./types";
+import type { RatingComponent, RatingConfig, RatingController } from "./types";
 
 interface Built {
   element: HTMLElement;
   view: RatingView;
   lifecycle: { destroy: () => void };
-  on: (event: string, handler: (payload: never) => void) => unknown;
-  off: (event: string, handler: (payload: never) => void) => unknown;
-  emit: (event: string, data?: unknown) => void;
-  destroy: () => void;
+  on(event: string, handler: (...args: unknown[]) => void): unknown;
+  off(event: string, handler: (...args: unknown[]) => void): unknown;
+  emit(event: string, data?: unknown): void;
+  destroy(): void;
 }
 
 function bindRating(component: Built): RatingController {
@@ -156,11 +156,11 @@ function bindRating(component: Built): RatingController {
       return valid;
     },
     on(event, handler) {
-      component.on(event, handler as (payload: never) => void);
+      component.on(event, handler as (...args: unknown[]) => void);
       return api;
     },
     off(event, handler) {
-      component.off(event, handler as (payload: never) => void);
+      component.off(event, handler as (...args: unknown[]) => void);
       return api;
     },
     destroy() {
@@ -180,15 +180,14 @@ function bindRating(component: Built): RatingController {
  */
 export const createRating = (config: RatingConfig = {}): RatingComponent => {
   const settings = createBaseConfig(config);
-  const rating = (pipe as unknown as (...fns: Array<(value: never) => never>) => (value: never) => RatingController)(
-    createBase as unknown as (value: never) => never,
-    withEvents() as unknown as (value: never) => never,
-    withElement(getElementConfig(settings)) as unknown as (value: never) => never,
-    withStars(settings) as unknown as (value: never) => never,
-    withKeyboard() as unknown as (value: never) => never,
-    withForm() as unknown as (value: never) => never,
-    withLifecycle() as unknown as (value: never) => never,
-    ((component: Built) => bindRating(component)) as unknown as (value: never) => never,
-  )(settings as unknown as never);
-  return rating;
+  const component = pipe(
+    createBase,
+    withEvents(),
+    withElement(getElementConfig(settings)),
+    withStars(settings),
+    withKeyboard(),
+    withForm(),
+    withLifecycle(),
+  )(settings);
+  return bindRating(component);
 };
