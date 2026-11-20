@@ -104,3 +104,15 @@ export {
 
 export * from "./autocomplete";
 export * from "./avatar";
+
+// Breadcrumb
+export { createBreadcrumb } from "./breadcrumb";
+export type {
+  BreadcrumbBeforeChangeEvent,
+  BreadcrumbChangeEvent,
+  BreadcrumbComponent,
+  BreadcrumbConfig,
+  BreadcrumbEvents,
+  BreadcrumbItemConfig,
+  BreadcrumbItemState,
+} from "./breadcrumb/types";

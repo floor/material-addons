@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en" data-theme="baseline">
+<meta charset="utf-8">
+<title>Breadcrumb adapter fixture</title>
+<div id="fixture"></div>
+<script type="module">
+  import 'material/styles';
+  import 'material-addons/styles';
+  const mount = document.getElementById('fixture');
+  const framework = new URL(location.href).searchParams.get('framework');
+  window.events = [];
+  window.veto = false;
+  window.recordBefore = (event) => {
+    window.events.push([event.type, event.detail?.value, event.detail?.previousValue]);
+    if (window.veto) event.preventDefault();
+  };
+  window.recordChange = (event) => window.events.push([event.type, event.detail?.value, event.detail?.previousValue]);
+  const items = [
+    { value: 'home', label: 'Home' },
+    { value: 'rooms', label: 'Rooms' },
+    { value: 'chair', label: 'Chair' },
+  ];
+  if (framework === 'react') {
+    const { createElement: h } = await import('react');
+    const { createRoot } = await import('react-dom/client');
+    const { Breadcrumb } = await import('material-addons/react');
+    createRoot(mount).render(h(Breadcrumb, { onBeforechange: recordBefore, onChange: recordChange },
+      h('m-breadcrumb-item', { value: 'home' }, 'Home'),
+      h('m-breadcrumb-item', { value: 'rooms' }, 'Rooms'),
+      h('m-breadcrumb-item', { value: 'chair' }, 'Chair')));
+  } else if (framework === 'vue') {
+    const { createApp, h } = await import('vue');
+    const { MBreadcrumb } = await import('material-addons/vue');
+    createApp({ setup() {
+      return () => h(MBreadcrumb, { onBeforechange: recordBefore, onChange: recordChange }, () => [
+        h('m-breadcrumb-item', { value: 'home' }, () => 'Home'),
+        h('m-breadcrumb-item', { value: 'rooms' }, () => 'Rooms'),
+        h('m-breadcrumb-item', { value: 'chair' }, () => 'Chair'),
+      ]);
+    } }).mount(mount);
+  } else if (framework === 'solid') {
+    const { createComponent } = await import('solid-js');
+    const { render } = await import('solid-js/web');
+    const { Breadcrumb } = await import('material-addons/solid');
+    const item = (value, label) => {
+      const node = document.createElement('m-breadcrumb-item');
+      node.setAttribute('value', value);
+      node.textContent = label;
+      return node;
+    };
+    render(() => createComponent(Breadcrumb, {
+      onBeforechange: recordBefore,
+      onChange: recordChange,
+      get children() { return [item('home', 'Home'), item('rooms', 'Rooms'), item('chair', 'Chair')]; },
+    }), mount);
+  } else if (framework === 'svelte') {
+    const { mount: render } = await import('svelte');
+    const { default: App } = await import('./BreadcrumbSvelteFixture.svelte');
+    render(App, { target: mount });
+  }
+  void items;
+</script>

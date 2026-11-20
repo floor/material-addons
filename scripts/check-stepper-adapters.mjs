@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { compile } from "svelte/compiler";
 import { createServer } from "vite";
+import { MATERIAL_DEPS } from "./vite-deps.mjs";
 
 const server = await createServer({
   configFile: false,
@@ -12,7 +13,7 @@ const server = await createServer({
   },
   resolve: { conditions: ["svelte", "module", "browser", "development"] },
   cacheDir: "node_modules/.vite-stepper-adapters",
-  optimizeDeps: { entries: ["test/browser/stepper-adapters.html", "test/browser/autocomplete-adapters.html"], exclude: ["material-addons/svelte", "svelte"] },
+  optimizeDeps: { include: MATERIAL_DEPS, entries: ["test/browser/stepper-adapters.html", "test/browser/autocomplete-adapters.html"], exclude: ["material-addons/svelte", "svelte"] },
   server: { host: "127.0.0.1", port: 0, hmr: false },
   plugins: [{
     name: "compile-svelte-fixture",

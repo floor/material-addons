@@ -7,11 +7,12 @@
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { createServer } from "vite";
+import { MATERIAL_DEPS } from "./vite-deps.mjs";
 
 const server = await createServer({
   configFile: false,
   cacheDir: "node_modules/.vite-skeleton",
-  optimizeDeps: { entries: ["test/browser/skeleton.html"] },
+  optimizeDeps: { include: MATERIAL_DEPS, entries: ["test/browser/skeleton.html"] },
   server: { host: "127.0.0.1", port: 0, hmr: false },
 });
 let browser;
@@ -25,7 +26,10 @@ try {
   const reset = async (scheme) => {
     await page.goto(`http://127.0.0.1:${port}/test/browser/skeleton.html`);
     await page.emulateMedia({ colorScheme: scheme });
-    await page.waitForFunction(() => !!window.skeleton);
+    // A dependency discovered mid-run reloads the page: settle the network
+    // before waiting for the fixture, with room for a slow cold start
+    await page.waitForLoadState("networkidle");
+    await page.waitForFunction(() => !!window.skeleton, {}, { timeout: 60000 });
   };
 
   // Fill and highlight resolve through the two surface tokens, light and
