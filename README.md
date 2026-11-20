@@ -573,7 +573,7 @@ paginator.on('change', (event) => { status.textContent = `${event.page} / ${even
 document.body.append(status);
 ```
 
-`goTo(page)` is the guarded move: it emits `beforechange`, and only then `change`. `setPage`, `setPageSize` and `setTotal` are silent and clamp. `numbered` adds page buttons between previous and next, with `siblingCount` and `boundaryCount` around the current page. `ends: false` drops first and last, as `no-ends` does on the element.
+`goTo(page)` is the guarded move. It emits `beforechange`, and only then `change`. `setPage` and `setPageSize` are silent and clamp. So is `setTotal`. `numbered` adds page buttons between previous and next. The page list keeps `siblingCount` around the current page and `boundaryCount` at the ends. `ends: false` drops first and last, as `no-ends` does on the element.
 
 <!-- example: fragment -->
 ```html
@@ -588,7 +588,7 @@ import { definePaginator } from 'material-addons/elements/paginator';
 definePaginator();
 ```
 
-The element dispatches one cancelable `change` whose `detail` is `{ page, pageSize }`, raised from the factory's `beforechange`: calling `preventDefault()` leaves the page where it was. `pageSizes` is a property. The data grid composes this contract.
+The element dispatches one cancelable change. Its detail is `{ page, pageSize }`, raised from the factory's beforechange. Calling `preventDefault()` leaves the page where it was. `pageSizes` is a property. The data grid composes this contract.
 
 | Framework | Import | Component | Event |
 | --- | --- | --- | --- |
