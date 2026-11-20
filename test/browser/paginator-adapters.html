@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en" data-theme="baseline">
+<meta charset="utf-8">
+<title>Paginator adapter fixture</title>
+<div id="fixture"></div>
+<script type="module">
+  import 'material/styles';
+  import 'material-addons/styles';
+  const mount = document.getElementById('fixture');
+  const framework = new URL(location.href).searchParams.get('framework');
+  window.events = [];
+  window.veto = false;
+  window.recordChange = (event) => {
+    window.events.push([event.type, event.detail?.page, event.detail?.pageSize, event.cancelable]);
+    if (window.veto) event.preventDefault();
+  };
+  if (framework === 'react') {
+    const { createElement: h } = await import('react');
+    const { createRoot } = await import('react-dom/client');
+    const { Paginator } = await import('material-addons/react');
+    createRoot(mount).render(h(Paginator, { total: 100, page: 1, onChange: recordChange }));
+  } else if (framework === 'vue') {
+    const { createApp, h } = await import('vue');
+    const { MPaginator } = await import('material-addons/vue');
+    createApp({ setup() { return () => h(MPaginator, { total: 100, page: 1, onChange: recordChange }); } }).mount(mount);
+  } else if (framework === 'solid') {
+    const { createComponent } = await import('solid-js');
+    const { render } = await import('solid-js/web');
+    const { Paginator } = await import('material-addons/solid');
+    render(() => createComponent(Paginator, { total: 100, page: 1, onChange: recordChange }), mount);
+  } else if (framework === 'svelte') {
+    const { mount: render } = await import('svelte');
+    const { default: App } = await import('./PaginatorSvelteFixture.svelte');
+    render(App, { target: mount });
+  }
+</script>

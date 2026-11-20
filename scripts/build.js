@@ -57,6 +57,19 @@ const MODULES = [
     plugins: [externalEntry(/^\.\.\/components\/avatar$/, "../components/avatar/index.mjs")],
   },
   {
+    name: "paginator", entry: "src/components/paginator/index.ts", outDir: "dist/components/paginator",
+  },
+  {
+    name: "paginator constants", entry: "src/components/paginator/constants.ts", outDir: "dist/components/paginator", basename: "constants",
+  },
+  {
+    name: "paginator element", entry: "src/elements/paginator.ts", outDir: "dist/elements", basename: "paginator",
+    plugins: [externalEntry(/^\.\.\/components\/paginator$/, "../components/paginator/index.mjs")],
+  },
+  {
+    name: "svelte paginator runtime", entry: "src/adapters/paginator/svelte.ts", outDir: "dist/svelte", basename: "paginator-runtime", adapter: true,
+  },
+  {
     name: "form constants",
     entry: "src/components/form/constants.ts",
     outDir: "dist/components/form",
@@ -293,7 +306,7 @@ const buildStyles = async () => {
 const buildElementStyles = async () => {
   const dir = join(DIST_DIR, "elements/css");
   await mkdir(dir, { recursive: true });
-  for (const name of ["stepper", "expansion-panel", "avatar", "skeleton"]) {
+  for (const name of ["stepper", "expansion-panel", "avatar", "skeleton", "paginator"]) {
     const source = `src/styles/components/_${name}.scss`;
     const result = Bun.spawn(
       ["npx", "sass", source, "--style=compressed", "--no-source-map", "--load-path=node_modules"],

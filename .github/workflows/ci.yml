@@ -51,3 +51,5 @@ jobs:
         run: bun run check:stepper-adapters
       - name: Avatar and framework adapters in Chromium
         run: bun run check:avatar
+      - name: Paginator and framework adapters in Chromium
+        run: bun run check:paginator
