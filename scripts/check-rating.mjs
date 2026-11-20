@@ -111,58 +111,17 @@ try {
       const checked = await group.locator("input.mtrl-rating__stop").evaluate(node => node.checked);
       return { snapshot, checked, step };
     };
-    const probe = async (step, point = null) => {
-      const report = await page.evaluate(({ target, point }) => {
-        const host = document.getElementById(target);
-        const root = host ? host.shadowRoot ?? host : null;
-        const stops = root ? [...root.querySelectorAll(".mtrl-rating__stop")] : [];
-        const mark = window.__ratingMark;
-        const previous = mark && mark.id === target ? mark.stops : null;
-        const same = !previous || (previous.length === stops.length && previous.every((node, index) => node === stops[index]));
-        const connected = !previous || previous.every((node) => node.isConnected);
-        window.__ratingMark = { id: target, stops };
-        let hit = "";
-        let hitStop = false;
-        if (point && host) {
-          const seen = new Set();
-          let node = document.elementFromPoint(point.x, point.y);
-          while (node && node.shadowRoot && !seen.has(node)) {
-            seen.add(node);
-            const inner = node.shadowRoot.elementFromPoint(point.x, point.y);
-            if (!inner || inner === node) break;
-            node = inner;
-          }
-          if (node) {
-            const className = typeof node.className === "string" ? node.className.trim().replace(/\s+/g, ".") : "";
-            hit = `${node.tagName.toLowerCase()}${className ? `.${className}` : ""}`;
-            hitStop = stops.includes(node);
-          }
-        }
-        const value = !host ? null : host.tagName === "M-RATING" ? host.value : window.hit.getValue();
-        return { value, stops: stops.length, same, connected, hit, hitStop };
-      }, { target: id, point });
-      console.log(`rating-check ${id} ${step} ${JSON.stringify(report)}`);
-      return report;
-    };
-    await probe("before");
     await page.evaluate((target) => {
       const host = document.getElementById(target);
       if (host.tagName === "M-RATING") host.value = 2;
       else window.hit.setValue(2);
     }, id);
-    await probe("set");
     await group.locator('[tabindex="0"]').focus();
     await page.keyboard.press("Home");
     const home = await read("home");
-    await probe("home");
     assert.match(home.snapshot, /radio "0\.5 stars" \[checked\]/, `${id} home`);
     assert.equal(home.checked, true, `${id} home`);
-    const box = await star(page, id, 1).boundingBox();
-    assert.ok(box, `${id} star 1`);
-    const point = { x: box.x + box.width * 0.25, y: box.y + box.height / 2 };
-    await probe("click", point);
-    await page.mouse.click(point.x, point.y);
-    await probe("clear");
+    await clickRatio(page, id, 1, 0.25);
     const cleared = await read("clear");
     assert.doesNotMatch(cleared.snapshot, /radio "0\.5 stars" \[checked\]/, `${id} clear`);
     assert.equal(cleared.checked, false, `${id} clear`);
@@ -175,6 +134,7 @@ try {
     assert.equal(up.checked, false, `${id} up`);
   };
   await checkedPaths("hit");
+  assert.equal(await page.locator("#element-half .mtrl-rating__stop").first().evaluate(node => getComputedStyle(node).position), "absolute", "element-half stop is not absolute; the element stylesheet was unregistered");
   await checkedPaths("element-half");
 
   assert.equal(await page.locator("#guest .mtrl-rating__group").getAttribute("aria-label"), "Guest rating: 3.7 of 5 stars");
