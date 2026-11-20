@@ -121,6 +121,7 @@ const EXPECTED_PATHS = [
   "dist/components/data-grid/constants.d.ts",
   "dist/components/data-grid/constants.mjs",
   "dist/components/data-grid/data-grid.d.ts",
+  "dist/components/data-grid/features/withCellFocus.d.ts",
   "dist/components/data-grid/index.d.ts",
   "dist/components/data-grid/index.mjs",
   "dist/components/data-grid/types.d.ts",
