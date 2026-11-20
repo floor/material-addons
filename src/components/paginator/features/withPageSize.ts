@@ -8,6 +8,8 @@ export interface PageSizeFeature {
   select: HTMLSelectElement;
   /** Draws the options and the selected one */
   sync: (pageSize: number, pageSizes: number[]) => void;
+  /** Removes the listener the control added */
+  destroy: () => void;
 }
 
 /**
@@ -31,7 +33,8 @@ export const withPageSize = (
   const select = document.createElement("select");
   select.className = getClass(PAGINATOR_CLASSES.PAGE_SIZE_SELECT);
   select.id = `${uid}-page-size`;
-  select.addEventListener("change", () => onChoose(Number(select.value)));
+  const choose = (): void => onChoose(Number(select.value));
+  select.addEventListener("change", choose);
 
   element.append(label, select);
 
@@ -49,5 +52,5 @@ export const withPageSize = (
     select.value = String(pageSize);
   };
 
-  return { element, select, sync };
+  return { element, select, sync, destroy: () => select.removeEventListener("change", choose) };
 };

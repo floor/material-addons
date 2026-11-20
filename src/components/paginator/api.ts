@@ -37,7 +37,7 @@ export const withAPI =
         core.setPageSize(pageSize);
         return self();
       },
-      getPageSizes: () => [...core.settings.pageSizes],
+      getPageSizes: core.getPageSizes,
       setPageSizes: (pageSizes) => {
         core.setPageSizes(pageSizes);
         return self();
@@ -75,7 +75,10 @@ export const withAPI =
         off(event, handler as (...args: unknown[]) => void);
         return self();
       },
-      destroy: () => core.destroy(),
+      destroy: () => {
+        lifecycle.destroy();
+        core.destroy();
+      },
     };
     return Object.assign(component, api) as unknown as PaginatorComponent;
   };

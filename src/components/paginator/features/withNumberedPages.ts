@@ -6,6 +6,8 @@ import type { PaginatorSettings } from "../config";
 export interface NumberedPagesFeature {
   /** Draws the page list, or nothing when numbered is off */
   render: (state: { page: number; pageCount: number; disabled: boolean }) => void;
+  /** Drops the page buttons and the listeners they carry */
+  destroy: () => void;
 }
 
 /**
@@ -71,5 +73,5 @@ export const withNumberedPages = (
     }
   };
 
-  return { render };
+  return { render, destroy: () => container.replaceChildren() };
 };

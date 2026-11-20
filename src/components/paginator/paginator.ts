@@ -45,6 +45,7 @@ export interface PaginatorCore {
   setPageSizes: (pageSizes: number[]) => void;
   setTotal: (total: number) => void;
   setNumbered: (numbered: boolean) => void;
+  getPageSizes: () => number[];
   getPageCount: () => number;
   getRange: () => PaginatorRange;
   /** Every committed state change, silent ones included, for the element */
@@ -210,6 +211,7 @@ const withPaginationCore =
         pageSizes = sizes.filter((size) => positive(size) !== undefined).map((size) => positive(size)!);
         silent();
       },
+      getPageSizes: () => [...pageSizes],
       setTotal: (total) => {
         const number = Number(total);
         state.total = Number.isFinite(number) ? Math.max(0, Math.floor(number)) : 0;
@@ -224,6 +226,9 @@ const withPaginationCore =
       getRange,
       stateListeners,
       destroy: () => {
+        pageSize.destroy();
+        navigation.destroy();
+        numberedPages.destroy();
         stateListeners.length = 0;
       },
     };

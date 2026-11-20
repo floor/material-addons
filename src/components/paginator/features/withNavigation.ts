@@ -16,6 +16,8 @@ export interface NavigationFeature {
   };
   /** Draws the disabled states for the current page and page count */
   sync: (page: number, pageCount: number, disabled: boolean, ends: boolean) => void;
+  /** Removes the listeners the four buttons added */
+  destroy: () => void;
 }
 
 /**
@@ -32,6 +34,7 @@ const createButton = (
   label: string,
   icon: string,
   onClick: () => void,
+  added: Array<() => void>,
 ): HTMLButtonElement => {
   const button = document.createElement("button");
   button.type = "button";
@@ -42,6 +45,7 @@ const createButton = (
   setHTML(holder, icon);
   button.appendChild(holder);
   button.addEventListener("click", onClick);
+  added.push(() => button.removeEventListener("click", onClick));
   return button;
 };
 
@@ -59,20 +63,21 @@ export const withNavigation = (
   const element = document.createElement("div");
   element.className = getClass(PAGINATOR_CLASSES.NAVIGATION);
 
+  const added: Array<() => void> = [];
   const first = createButton(
-    getClass, PAGINATOR_CLASSES.BUTTON_FIRST, settings.firstLabel, glyph("first-page"), () => goTo(1),
+    getClass, PAGINATOR_CLASSES.BUTTON_FIRST, settings.firstLabel, glyph("first-page"), () => goTo(1), added,
   );
   const prev = createButton(
     getClass, PAGINATOR_CLASSES.BUTTON_PREV, settings.prevLabel, glyph("chevron-left"),
-    () => goTo(live().page - 1),
+    () => goTo(live().page - 1), added,
   );
   const next = createButton(
     getClass, PAGINATOR_CLASSES.BUTTON_NEXT, settings.nextLabel, glyph("chevron-right"),
-    () => goTo(live().page + 1),
+    () => goTo(live().page + 1), added,
   );
   const last = createButton(
     getClass, PAGINATOR_CLASSES.BUTTON_LAST, settings.lastLabel, glyph("last-page"),
-    () => goTo(live().pageCount),
+    () => goTo(live().pageCount), added,
   );
 
   const pages = document.createElement("div");
@@ -89,5 +94,8 @@ export const withNavigation = (
     last.disabled = disabled || page >= pageCount;
   };
 
-  return { element, pages, buttons: { first, prev, next, last }, sync };
+  return {
+    element, pages, buttons: { first, prev, next, last }, sync,
+    destroy: () => added.forEach((remove) => remove()),
+  };
 };
