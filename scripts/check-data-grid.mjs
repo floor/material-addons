@@ -241,6 +241,48 @@ try {
       assert.equal(bodyEntry.inPlain, true, `${label}: Tab from the header enters the body with selection "none"`);
       assert.equal(bodyEntry.stops, 1, `${label}: the display-only body holds one tab stop`);
 
+      // (4d) The active cell keeps a tab stop when its row is recycled out of
+      //      the range, and takes focus back when the row returns
+      for (const gridName of ["plain", "selectable"]) {
+        const scrolled = await page.evaluate(async (name) => {
+          const grid = window.grids[name];
+          const content = () => grid.element.querySelector(".vlist-content");
+          const viewport = grid.element.querySelector(".vlist-viewport");
+          const stop = () => grid.element.querySelector(".vlist-table-cell[tabindex='0']");
+          // Focus the active cell at the top
+          const first = content().querySelector(".vlist-table-row .vlist-table-cell");
+          first.focus();
+          await new Promise((resolve) => setTimeout(resolve, 60));
+          const before = grid.element.querySelectorAll(".vlist-table-cell[tabindex='0']").length;
+          // Scroll far enough that the focused row recycles out
+          viewport.scrollTop = 4000;
+          await new Promise((resolve) => setTimeout(resolve, 250));
+          const afterScroll = {
+            stops: grid.element.querySelectorAll(".vlist-table-cell[tabindex='0']").length,
+            focusInGrid: Boolean(content().contains(document.activeElement)),
+            activeIsProxy: Boolean(document.activeElement?.closest?.(".vlist-table-cell")),
+          };
+          // Back to the top: the active cell returns and takes focus again
+          viewport.scrollTop = 0;
+          await new Promise((resolve) => setTimeout(resolve, 250));
+          const activeRow = document.activeElement?.closest?.(".vlist-table-row");
+          const afterReturn = {
+            stops: grid.element.querySelectorAll(".vlist-table-cell[tabindex='0']").length,
+            focusedRow: activeRow?.getAttribute("data-index") ?? null,
+            focusedIsCell: Boolean(document.activeElement?.closest?.(".vlist-table-cell")),
+          };
+          void stop;
+          return { before, afterScroll, afterReturn };
+        }, gridName);
+        assert.equal(scrolled.before, 1, `${label}/${gridName}: one tab stop before the scroll`);
+        assert.equal(scrolled.afterScroll.stops, 1, `${label}/${gridName}: the tab stop stays while the active row is recycled`);
+        assert.equal(scrolled.afterScroll.focusInGrid, true, `${label}/${gridName}: focus stays in the grid through the recycle`);
+        assert.equal(scrolled.afterScroll.activeIsProxy, true, `${label}/${gridName}: the proxy cell holds the focus`);
+        assert.equal(scrolled.afterReturn.stops, 1, `${label}/${gridName}: one tab stop after the return`);
+        assert.equal(scrolled.afterReturn.focusedIsCell, true, `${label}/${gridName}: the active cell takes the focus back`);
+        assert.equal(scrolled.afterReturn.focusedRow, "0", `${label}/${gridName}: focus returns to the active row`);
+      }
+
       // (5) Selection: Space toggles the focused row, the header checkbox
       //     selects every loaded row
       // Space on the grid root selects the focused row

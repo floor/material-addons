@@ -58,6 +58,8 @@ export const withCellFocus = (options: CellFocusOptions): CellFocusFeature => {
   let destroyed = false;
   let pendingFocus = false;
   let scheduled = false;
+  /** Focus was in the body when the active row left the rendered range */
+  let focusInBody = false;
 
   const clampRow = (value: number): number => Math.min(Math.max(0, value), Math.max(0, options.rowCount() - 1));
   const clampColumn = (value: number): number => Math.min(Math.max(0, value), Math.max(0, options.columnCount() - 1));
@@ -76,16 +78,27 @@ export const withCellFocus = (options: CellFocusOptions): CellFocusFeature => {
     if (!content) return;
     for (const cell of Array.from(content.querySelectorAll<HTMLElement>(CELL))) cell.tabIndex = -1;
     const element = rowElement(row);
+    const focusLost = focusInBody && !content.contains(document.activeElement);
     if (!element) {
-      pendingFocus = false;
+      // The active row is out of the rendered range: the cell in its column
+      // of the first rendered row holds the body's tab stop, and takes focus
+      // when the recycling row dropped it
+      const first = content.querySelector<HTMLElement>(".vlist-table-row");
+      if (!first) return;
+      const proxy = cellsOf(first)[column] ?? cellsOf(first)[0];
+      if (!proxy) return;
+      proxy.tabIndex = 0;
+      if (focusLost) proxy.focus({ preventScroll: true });
       return;
     }
     const target = cellsOf(element)[column];
     if (!target) return;
     target.tabIndex = 0;
-    if (pendingFocus) {
-      pendingFocus = false;
+    if (pendingFocus || (focusInBody && (!document.activeElement || document.activeElement === document.body || !options.root.contains(document.activeElement)))) {
+      // The active cell is back on screen: focus returns to it when focus was
+      // in the grid
       target.focus({ preventScroll: true });
+      pendingFocus = false;
     }
   };
 
@@ -184,6 +197,10 @@ export const withCellFocus = (options: CellFocusOptions): CellFocusFeature => {
 
   const onFocusIn = (event: FocusEvent): void => {
     const target = event.target as HTMLElement | null;
+    if (target?.closest(CELL)) {
+      focusInBody = true;
+      return;
+    }
     if (target?.closest(".vlist-table-header")) return;
     if (target?.closest(CELL)) return;
     if (!target?.closest(".vlist")) return;
@@ -194,7 +211,16 @@ export const withCellFocus = (options: CellFocusOptions): CellFocusFeature => {
     schedule();
   };
 
+  const onFocusOut = (event: FocusEvent): void => {
+    const next = event.relatedTarget as HTMLElement | null;
+    // No related target means the focused node left the document with its
+    // recycled row: the grid keeps its claim on the focus
+    if (!next) return;
+    if (!options.root.contains(next)) focusInBody = false;
+  };
+
   options.root.addEventListener("keydown", onKeydown, true);
+  options.root.addEventListener("focusout", onFocusOut, true);
   options.root.addEventListener("click", onClick, true);
   options.root.addEventListener("focusin", onFocusIn, true);
   schedule();
@@ -208,6 +234,7 @@ export const withCellFocus = (options: CellFocusOptions): CellFocusFeature => {
       options.root.removeEventListener("keydown", onKeydown, true);
       options.root.removeEventListener("click", onClick, true);
       options.root.removeEventListener("focusin", onFocusIn, true);
+      options.root.removeEventListener("focusout", onFocusOut, true);
     },
   };
 };
