@@ -250,6 +250,103 @@ try {
   assert.equal(tipping.tipped.fits, false, "the button's width is counted, so this row scrolls");
   assert.ok(tipping.tipped.scroll > tipping.tipped.client, "the overflow is visible instead of ignored");
 
+  // The element's popup: the menu sheet is registered in its shadow root, so
+  // the popup is styled and sits beside the button in both directions
+  for (const direction of ["ltr", "rtl"]) {
+    await reset();
+    const popup = await page.evaluate(async (dir) => {
+      document.documentElement.dir = dir;
+      document.body.replaceChildren();
+      const host = document.createElement("div");
+      host.style.cssText = "width:260px";
+      document.body.append(host);
+      document.body.insertAdjacentHTML("beforeend", `<m-breadcrumb><m-breadcrumb-item value="a" href="#alpha">Alpha</m-breadcrumb-item><m-breadcrumb-item value="b" href="#bravo">Bravo</m-breadcrumb-item><m-breadcrumb-item value="c" href="#charlie">Charlie</m-breadcrumb-item><m-breadcrumb-item value="d" href="#delta">Delta</m-breadcrumb-item><m-breadcrumb-item value="e">Echo</m-breadcrumb-item></m-breadcrumb>`);
+      window.breadcrumb.defineBreadcrumb();
+      host.append(document.querySelector("m-breadcrumb"));
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      const shadow = document.querySelector("m-breadcrumb").shadowRoot;
+      const button = shadow.querySelector(".mtrl-breadcrumb__overflow");
+      button.click();
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      const menu = shadow.querySelector(".mtrl-menu");
+      if (!menu) return { styled: false };
+      const style = getComputedStyle(menu);
+      const box = menu.getBoundingClientRect();
+      const anchor = button.getBoundingClientRect();
+      return {
+        styled: style.position === "fixed" && box.width > 0 && style.backgroundColor !== "rgba(0, 0, 0, 0)",
+        anchored: Math.abs(box.top - anchor.bottom) <= 24 && box.left <= anchor.right + 8 && box.right >= anchor.left - 8,
+        box: [box.left, box.top],
+        anchor: [anchor.left, anchor.bottom],
+      };
+    }, direction);
+    assert.equal(popup.styled, true, `${direction} element popup is styled`);
+    assert.equal(popup.anchored, true, `${direction} element popup sits beside the button`);
+  }
+  await page.evaluate(() => { document.documentElement.dir = "ltr"; });
+
+  // Forced colours: the popup keeps its border, in the factory and the element
+  await reset();
+  await page.emulateMedia({ forcedColors: "active" });
+  const forcedBorders = await page.evaluate(async () => {
+    document.body.replaceChildren();
+    const host = document.createElement("div");
+    host.style.cssText = "width:260px";
+    document.body.append(host);
+    const crumb = window.breadcrumb.createBreadcrumb({
+      items: [
+        { value: "a", label: "Alpha" }, { value: "b", label: "Bravo" }, { value: "c", label: "Charlie" },
+        { value: "d", label: "Delta" }, { value: "e", label: "Echo" },
+      ],
+    });
+    host.append(crumb.element);
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    crumb.open();
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    const menu = crumb.element.querySelector(".mtrl-menu");
+    const factory = menu ? getComputedStyle(menu).borderTopStyle : "none";
+    crumb.close();
+    document.body.replaceChildren();
+    document.body.insertAdjacentHTML("beforeend", `<m-breadcrumb><m-breadcrumb-item value="a">Alpha</m-breadcrumb-item><m-breadcrumb-item value="b">Bravo</m-breadcrumb-item><m-breadcrumb-item value="c">Charlie</m-breadcrumb-item><m-breadcrumb-item value="d">Delta</m-breadcrumb-item><m-breadcrumb-item value="e">Echo</m-breadcrumb-item></m-breadcrumb>`);
+    window.breadcrumb.defineBreadcrumb();
+    const elementHost = document.querySelector("m-breadcrumb");
+    elementHost.style.width = "260px";
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    const shadow = elementHost.shadowRoot;
+    shadow.querySelector(".mtrl-breadcrumb__overflow").click();
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    const elementMenu = shadow.querySelector(".mtrl-menu");
+    const element = elementMenu ? getComputedStyle(elementMenu).borderTopStyle : "none";
+    return { factory, element };
+  });
+  await page.emulateMedia({ forcedColors: "none" });
+  assert.equal(forcedBorders.factory, "solid", "forced colours: factory popup keeps a border");
+  assert.equal(forcedBorders.element, "solid", "forced colours: element popup keeps a border");
+
+  // A disabled trail paints its links disabled: an anchor never matches :disabled
+  await reset();
+  const disabledTrail = await page.evaluate(() => {
+    document.body.replaceChildren();
+    const host = document.createElement("div");
+    host.style.cssText = "width:600px";
+    document.body.append(host);
+    const crumb = window.breadcrumb.createBreadcrumb({
+      items: [
+        { value: "a", label: "Alpha", href: "#alpha" },
+        { value: "b", label: "Bravo", href: "#bravo" },
+        { value: "c", label: "Charlie" },
+      ],
+    });
+    host.append(crumb.element);
+    const link = crumb.element.querySelector("a.mtrl-breadcrumb__link");
+    const enabled = getComputedStyle(link).color;
+    crumb.disable();
+    const disabled = getComputedStyle(crumb.element.querySelector("a.mtrl-breadcrumb__link")).color;
+    return { enabled, disabled, cursor: getComputedStyle(crumb.element.querySelector("a.mtrl-breadcrumb__link")).cursor };
+  });
+  assert.notEqual(disabledTrail.disabled, disabledTrail.enabled, "a disabled trail paints its links disabled");
+  assert.equal(disabledTrail.cursor, "default");
+
   // Forced colours and reduced motion
   await reset();
   await page.emulateMedia({ forcedColors: "active" });

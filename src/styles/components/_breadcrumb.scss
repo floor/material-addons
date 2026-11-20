@@ -138,6 +138,13 @@ $-breadcrumb: "mtrl-breadcrumb";
   cursor: default;
 }
 
+// A disabled trail paints its destinations disabled. A link is an anchor, so
+// `:disabled` never matches it; the root's own modifier carries the state.
+.mtrl-breadcrumb--disabled .#{$-breadcrumb}__link {
+  color: var(--#{$-breadcrumb}-disabled-color);
+  cursor: default;
+}
+
 // The separator chevron points along the reading direction
 [dir="rtl"] .#{$-breadcrumb}__separator svg {
   transform: scaleX(-1);
@@ -167,6 +174,15 @@ $-breadcrumb: "mtrl-breadcrumb";
     color: GrayText;
   }
 
+}
+
+@media (forced-colors: active) {
+  // material's menu paints its own forced-colours border, but the top
+  // layer's [popover] reset outranks that rule; the breadcrumb restates the
+  // border for the menu it opens, above that reset's specificity
+  .#{$-breadcrumb} .mtrl-menu {
+    border: 1px solid ButtonText;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

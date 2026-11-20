@@ -19,6 +19,10 @@ import {
   type ElementInstance,
   type ElementSpec,
 } from "material/elements";
+// The overflow opens material's menu inside this shadow root: its sheet is
+// registered in the shared registry by this import, as material's own
+// menu-hosting elements do
+import "material/elements/css/menu";
 import { createBreadcrumb } from "../components/breadcrumb";
 import type {
   BreadcrumbComponent,
@@ -87,7 +91,9 @@ const signature = (items: BreadcrumbItemConfig[]): string => JSON.stringify(item
 const breadcrumbSpec = {
   name: "breadcrumb",
   ssr: false,
-  styles: ["breadcrumb"],
+  // The overflow opens material's menu inside this shadow root, so the
+  // menu sheet is registered here as material's own menu-hosting elements do
+  styles: ["menu", "breadcrumb"],
   hostStyles: ":host{display:block}",
   create: (config: Record<string, unknown>) => createBreadcrumb(config as BreadcrumbConfig),
   attributes: {
