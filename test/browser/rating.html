@@ -78,6 +78,29 @@
     mount("half", { half: true, value: 3.5, label: "Half" });
     window.hit = mount("hit", { half: true, label: "Hit" });
     mount("disabled", { disabled: true, value: 2, label: "Off" });
+    const requiredForm = document.createElement("form");
+    requiredForm.id = "required-form";
+    window.requiredRating = mount("required", { name: "score", required: true, label: "Required" });
+    const requiredSubmit = document.createElement("button");
+    requiredSubmit.type = "submit";
+    requiredSubmit.id = "required-submit";
+    requiredSubmit.textContent = "Submit required";
+    requiredForm.append(window.requiredRating.element, requiredSubmit);
+    fixture.append(requiredForm);
+    mount("guest", { readOnly: true, value: 3.7, ariaLabel: "Guest rating" });
+    mount("critic", { readOnly: true, value: 3.7, label: "Critic rating" });
+    const { defineRating } = await import("material-addons/elements/rating");
+    defineRating();
+    const elementForm = document.createElement("form");
+    elementForm.id = "element-required-form";
+    elementForm.innerHTML = '<m-rating id="element-required" name="score" required label="Required"></m-rating><button type="submit" id="element-required-submit">Submit element</button>';
+    fixture.append(elementForm);
+    const elementGuest = document.createElement("m-rating");
+    elementGuest.id = "element-guest";
+    elementGuest.setAttribute("read-only", "");
+    elementGuest.setAttribute("value", "3.7");
+    elementGuest.setAttribute("aria-label", "Guest rating");
+    fixture.append(elementGuest);
     fixture.insertAdjacentHTML("beforeend", `
       <span id="forced-reference" style="color:GrayText;border:1px solid CanvasText;outline:2px solid Highlight;forced-color-adjust:none"></span>
     `);

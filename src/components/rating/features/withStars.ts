@@ -150,9 +150,10 @@ export function withStars(settings: RatingSettings) {
       else group.removeAttribute("aria-invalid");
 
       if (state.readOnly) {
-        const prefix = state.label ? `${state.label}: ` : "";
+        const title = state.ariaLabel || state.label;
+        const score = `${formatRating(state.value)} of ${state.max} stars`;
         group.setAttribute("role", "img");
-        group.setAttribute("aria-label", state.ariaLabel || `${prefix}${formatRating(state.value)} of ${state.max} stars`);
+        group.setAttribute("aria-label", title ? `${title}: ${score}` : score);
         group.removeAttribute("aria-labelledby");
         group.removeAttribute("aria-required");
         group.removeAttribute("aria-disabled");

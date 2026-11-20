@@ -99,6 +99,33 @@ try {
   await tabFromBefore("small");
   await tabFromBefore("medium");
   assert.equal(await page.locator("#medium .mtrl-rating__group [tabindex='0']").evaluate(node => getComputedStyle(node).outlineColor), await paint("#forced-reference", "outlineColor"));
+
+  assert.equal(await page.locator("#guest .mtrl-rating__group").getAttribute("aria-label"), "Guest rating: 3.7 of 5 stars");
+  assert.equal(await page.locator("#critic .mtrl-rating__group").getAttribute("aria-label"), "Critic rating: 3.7 of 5 stars");
+  assert.equal(await page.locator("#element-guest .mtrl-rating__group").getAttribute("aria-label"), "Guest rating: 3.7 of 5 stars");
+  const blockedSubmit = async (formId) => {
+    const result = await page.evaluate((id) => {
+      const form = document.getElementById(id);
+      let submitted = 0;
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        submitted += 1;
+      });
+      form.querySelector("[type=submit]").click();
+      return { valid: form.checkValidity(), submitted };
+    }, formId);
+    assert.equal(result.valid, false, formId);
+    assert.equal(result.submitted, 0, formId);
+  };
+  await blockedSubmit("required-form");
+  await blockedSubmit("element-required-form");
+  assert.equal(await page.evaluate(() => {
+    window.requiredRating.setValue(2);
+    document.getElementById("element-required").value = 2;
+    return window.requiredRating.getValue() === 2
+      && document.getElementById("required-form").checkValidity()
+      && document.getElementById("element-required-form").checkValidity();
+  }), true);
   assert.deepEqual(errors, []);
   await page.close();
 

@@ -3,6 +3,8 @@ import { createRating, type RatingConfig } from "../components/rating";
 import type { RatingController } from "../components/rating/types";
 import { RATING_CLASSES } from "../components/rating/constants";
 
+const validitySync = new WeakMap<RatingController, () => void>();
+
 const spec = {
   name: "rating",
   ssr: false,
@@ -51,9 +53,27 @@ const spec = {
       detail: (payload: unknown) => ({ value: (payload as { value: number | null }).value }),
     },
   },
-  // The light-DOM input is the submitted control. The host stays out of the
-  // form-associated custom element path so that input joins the ancestor form.
+  // The submitted value. An empty required rating is valueMissing on the first star.
+  form: {
+    value: (component: RatingController) => {
+      validitySync.get(component)?.();
+      return component.getValue() > 0 ? String(component.getValue()) : "";
+    },
+  },
   setup(host, component) {
+    validitySync.set(component, () => {
+      const internals = host.internals;
+      if (!internals || typeof internals.setValidity !== "function") return;
+      const missing = component.isRequired() && !component.isDisabled() && component.getValue() === 0;
+      if (!missing) {
+        internals.setValidity({});
+        return;
+      }
+      const anchor = component.element.querySelector<HTMLElement>(`.${RATING_CLASSES.STOP}`);
+      const message = "Please select a rating.";
+      if (anchor) internals.setValidity({ valueMissing: true }, message, anchor);
+      else internals.setValidity({ valueMissing: true }, message);
+    });
     const move = () => {
       const field = component.element.querySelector<HTMLInputElement>(`.${RATING_CLASSES.INPUT}`);
       if (field && field.parentElement !== host) host.append(field);

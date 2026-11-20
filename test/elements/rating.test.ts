@@ -1,10 +1,28 @@
-import { expect, test } from "bun:test";
+import { beforeEach, expect, test } from "bun:test";
 import "material/elements/css/ripple";
 import { registerStyles } from "material/elements";
 import { defineRating, ratingElement } from "../../src/elements/rating";
 import { installAutocompleteDom } from "../utils/autocomplete-dom";
 
 installAutocompleteDom();
+
+// jsdom ElementInternals has neither setFormValue nor setValidity. Record the
+// call the element makes so a required miss can be asserted without a browser.
+const validityRecords = new WeakMap<HTMLElement, { flags: ValidityStateFlags; message?: string; anchor?: HTMLElement }>();
+
+beforeEach(() => {
+  const prototype = HTMLElement.prototype as HTMLElement & { attachInternals?: () => ElementInternals };
+  const original = prototype.attachInternals;
+  if (!original) return;
+  prototype.attachInternals = function (this: HTMLElement) {
+    const internals = original.call(this);
+    internals.setFormValue = () => {};
+    internals.setValidity = (flags, message, anchor) => {
+      validityRecords.set(this, { flags, message, anchor: anchor ?? undefined });
+    };
+    return internals;
+  };
+});
 
 test("client rating submits its named value and validates a required miss", async () => {
   registerStyles({ rating: ".mtrl-rating{display:inline-flex}" });
@@ -47,6 +65,39 @@ test("client rating submits its named value and validates a required miss", asyn
   expect(host.reportValidity()).toBe(false);
   expect(root().classList.contains("mtrl-rating--error")).toBe(true);
   expect(group().getAttribute("aria-invalid")).toBe("true");
+  const missed = validityRecords.get(host);
+  const anchor = host.shadowRoot!.querySelector<HTMLElement>(".mtrl-rating__stop");
+  expect(missed?.flags.valueMissing).toBe(true);
+  expect(missed?.message).toBe("Please select a rating.");
+  expect(missed?.anchor).toBe(anchor);
+  expect(anchor?.tabIndex).toBe(0);
+
+  const blockedForm = document.createElement("form");
+  blockedForm.innerHTML = '<m-rating name="score" required label="Required"></m-rating>';
+  document.body.append(blockedForm);
+  const blocked = blockedForm.querySelector("m-rating")!;
+  await Promise.resolve();
+  const blockedAnchor = blocked.shadowRoot!.querySelector<HTMLElement>(".mtrl-rating__stop");
+  const blockedRecord = validityRecords.get(blocked);
+  expect(blockedRecord?.flags.valueMissing).toBe(true);
+  expect(blockedRecord?.anchor).toBe(blockedAnchor);
+  blocked.value = 2;
+  expect(validityRecords.get(blocked)?.flags.valueMissing).toBeUndefined();
+
+  const guest = document.createElement("m-rating");
+  guest.setAttribute("read-only", "");
+  guest.setAttribute("value", "3.7");
+  guest.setAttribute("aria-label", "Guest rating");
+  document.body.append(guest);
+  await Promise.resolve();
+  expect(guest.shadowRoot!.querySelector(".mtrl-rating__group")?.getAttribute("aria-label")).toBe("Guest rating: 3.7 of 5 stars");
+  const critic = document.createElement("m-rating");
+  critic.setAttribute("read-only", "");
+  critic.setAttribute("value", "3.7");
+  critic.setAttribute("label", "Critic rating");
+  document.body.append(critic);
+  await Promise.resolve();
+  expect(critic.shadowRoot!.querySelector(".mtrl-rating__group")?.getAttribute("aria-label")).toBe("Critic rating: 3.7 of 5 stars");
 
   host.readOnly = true;
   expect(group().getAttribute("role")).toBe("img");
