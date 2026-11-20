@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Rating test</title>
+<div id="fixture"></div>
+<script type="module">
+  import "material/styles";
+  import "material-addons/styles";
+  const fixture = document.getElementById("fixture");
+  const framework = new URL(location.href).searchParams.get("framework");
+  window.ratingLog = [];
+  const record = (kind) => (event) => { ratingLog.push([kind, event.detail.value]); };
+
+  if (framework === "react") {
+    const { createElement: h, useState } = await import("react");
+    const { createRoot } = await import("react-dom/client");
+    const { Rating } = await import("material-addons/react");
+    function App() {
+      const [value, setValue] = useState(2);
+      return h("div", null,
+        h(Rating, {
+          half: true, label: "Quality", value,
+          onChange: (event) => { record("change")(event); setValue(event.detail.value); },
+          onHover: record("hover"),
+        }),
+        h("span", { id: "bound" }, String(value)),
+        h("button", { onClick: () => setValue(2) }, "Set two"));
+    }
+    createRoot(fixture).render(h(App));
+  } else if (framework === "vue") {
+    const { createApp, h, ref } = await import("vue");
+    const { MRating } = await import("material-addons/vue");
+    createApp({
+      setup() {
+        const value = ref(2);
+        return () => h("div", [
+          h(MRating, {
+            half: true, label: "Quality", modelValue: value.value,
+            "onUpdate:modelValue": (next) => { value.value = next; },
+            onChange: record("change"), onHover: record("hover"),
+          }),
+          h("span", { id: "bound" }, String(value.value)),
+          h("button", { onClick: () => { value.value = 2; } }, "Set two"),
+        ]);
+      },
+    }).mount(fixture);
+  } else if (framework === "solid") {
+    const { createSignal, createComponent, mergeProps } = await import("solid-js");
+    const { render, Dynamic } = await import("solid-js/web");
+    const { Rating } = await import("material-addons/solid");
+    render(() => {
+      const [value, setValue] = createSignal(2);
+      return [
+        createComponent(Rating, mergeProps({
+          half: true, label: "Quality",
+          onChange: (event) => { record("change")(event); setValue(event.detail.value); },
+          onHover: record("hover"),
+        }, { get value() { return value(); } })),
+        createComponent(Dynamic, { component: "span", id: "bound", get children() { return String(value()); } }),
+        createComponent(Dynamic, { component: "button", onClick: () => setValue(2), children: "Set two" }),
+      ];
+    }, fixture);
+  } else if (framework === "svelte") {
+    const { mount } = await import("svelte");
+    const { default: App } = await import("./RatingSvelteFixture.svelte");
+    mount(App, { target: fixture });
+  } else {
+    const { createRating } = await import("material-addons/components/rating");
+    const mount = (id, config) => {
+      const rating = createRating(config);
+      rating.element.id = id;
+      fixture.append(rating.element);
+      return rating;
+    };
+    mount("small", { size: "small", label: "Small" });
+    mount("medium", { label: "Medium", value: 3 });
+    mount("large", { size: "large", label: "Large" });
+    mount("half", { half: true, value: 3.5, label: "Half" });
+    window.hit = mount("hit", { half: true, label: "Hit" });
+    mount("disabled", { disabled: true, value: 2, label: "Off" });
+    const requiredForm = document.createElement("form");
+    requiredForm.id = "required-form";
+    window.requiredRating = mount("required", { name: "score", required: true, label: "Required" });
+    const requiredSubmit = document.createElement("button");
+    requiredSubmit.type = "submit";
+    requiredSubmit.id = "required-submit";
+    requiredSubmit.textContent = "Submit required";
+    requiredForm.append(window.requiredRating.element, requiredSubmit);
+    fixture.append(requiredForm);
+    const scoreForm = document.createElement("form");
+    scoreForm.id = "factory-score-form";
+    window.factoryScore = mount("factory-score", { name: "score", half: true, value: 1, label: "Score" });
+    const scoreSubmit = document.createElement("button");
+    scoreSubmit.type = "submit";
+    scoreSubmit.textContent = "Submit score";
+    scoreForm.append(window.factoryScore.element, scoreSubmit);
+    fixture.append(scoreForm);
+    mount("guest", { readOnly: true, value: 3.7, ariaLabel: "Guest rating" });
+    mount("critic", { readOnly: true, value: 3.7, label: "Critic rating" });
+    await import("material-addons/elements/css/rating");
+    const { defineRating } = await import("material-addons/elements/rating");
+    defineRating();
+    const elementForm = document.createElement("form");
+    elementForm.id = "element-required-form";
+    elementForm.innerHTML = '<m-rating id="element-required" name="score" required label="Required"></m-rating><button type="submit" id="element-required-submit">Submit element</button>';
+    fixture.append(elementForm);
+    const elementScore = document.createElement("form");
+    elementScore.id = "element-score-form";
+    elementScore.innerHTML = '<m-rating id="element-score" name="score" value="1" half required label="Score"></m-rating><button type="submit">Submit element score</button>';
+    fixture.append(elementScore);
+    const elementHalf = document.createElement("m-rating");
+    elementHalf.id = "element-half";
+    elementHalf.setAttribute("half", "");
+    elementHalf.setAttribute("value", "2");
+    elementHalf.setAttribute("label", "Half element");
+    fixture.append(elementHalf);
+    const elementGuest = document.createElement("m-rating");
+    elementGuest.id = "element-guest";
+    elementGuest.setAttribute("read-only", "");
+    elementGuest.setAttribute("value", "3.7");
+    elementGuest.setAttribute("aria-label", "Guest rating");
+    fixture.append(elementGuest);
+    fixture.insertAdjacentHTML("beforeend", `
+      <span id="forced-reference" style="color:GrayText;border:1px solid CanvasText;outline:2px solid Highlight;forced-color-adjust:none"></span>
+    `);
+  }
+</script>

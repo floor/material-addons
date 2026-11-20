@@ -27,3 +27,8 @@ import { createSolidSkeleton } from "../adapters/skeleton/solid";
 export const Skeleton = /*#__PURE__*/ createSolidSkeleton();
 export type { SolidSkeletonProps } from "../adapters/skeleton/solid";
 export type { SkeletonElementEventMap } from "../elements/skeleton";
+import "material-addons/elements/css/rating";
+import { createSolidRating } from "../adapters/rating/solid";
+export const Rating = /*#__PURE__*/ createSolidRating();
+export type { SolidRatingProps } from "../adapters/rating/solid";
+export type { RatingElementEventMap } from "../elements/rating";

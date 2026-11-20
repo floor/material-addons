@@ -104,3 +104,4 @@ export {
 
 export * from "./autocomplete";
 export * from "./avatar";
+export * from "./rating";
