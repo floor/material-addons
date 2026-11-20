@@ -206,6 +206,37 @@ describe("avatar image fallback", () => {
     avatar.destroy();
   });
 
+  test("a whitespace-only alt falls through to the initials", async () => {
+    const { createAvatar } = await import("../src/components/avatar");
+    const avatar = createAvatar({
+      variant: "image",
+      text: "AL",
+      content: '<img src="http://localhost/missing.png" alt="   ">',
+    });
+    document.body.appendChild(avatar.element);
+    const img = avatar.element.querySelector("img")!;
+    Object.defineProperty(img, "complete", { value: true, configurable: true });
+    Object.defineProperty(img, "naturalWidth", { value: 0, configurable: true });
+    img.dispatchEvent(new Event("error"));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(img.getAttribute("aria-hidden")).toBe("true");
+    expect(avatar.element.getAttribute("role")).toBe("img");
+    expect(avatar.element.getAttribute("aria-label")).toBe("AL");
+    avatar.destroy();
+  });
+
+  test("the icon variant with no name source is not a nameless img", async () => {
+    const { createAvatar } = await import("../src/components/avatar");
+    const avatar = createAvatar({
+      variant: "icon",
+      content: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle></svg>',
+    });
+    document.body.appendChild(avatar.element);
+    expect(avatar.element.getAttribute("role")).not.toBe("img");
+    expect(avatar.element.getAttribute("aria-label")).toBe(null);
+    avatar.destroy();
+  });
+
   test("an authored icon beside the failed image keeps showing", async () => {
     const { createAvatar } = await import("../src/components/avatar");
     const avatar = createAvatar({

@@ -62,9 +62,11 @@ export function withRenderer(settings: AvatarSettings) {
     // nothing readable remains the initials take the shape instead.
     const failedImages = new Set<HTMLImageElement>();
 
-    // The author's inline display, value and priority, saved before the
-    // failure hides the image: recovery and destroy restore exactly it.
+    // The author's inline display, value and priority, and their aria-hidden,
+    // saved before the failure hides the image: recovery and destroy restore
+    // exactly what was there.
     const savedDisplay = new Map<HTMLImageElement, { value: string; priority: string }>();
+    const savedAriaHidden = new Map<HTMLImageElement, string | null>();
 
     function hideImage(img: HTMLImageElement): void {
       if (!savedDisplay.has(img)) {
@@ -94,6 +96,7 @@ export function withRenderer(settings: AvatarSettings) {
       if (failedImages.has(img)) return;
       failedImages.add(img);
       img.classList.add(`${AVATAR_CLASSES.ROOT}__img--failed`);
+      if (!savedAriaHidden.has(img)) savedAriaHidden.set(img, img.getAttribute("aria-hidden"));
       img.setAttribute("aria-hidden", "true");
       hideImage(img);
       syncFallback();
@@ -102,10 +105,17 @@ export function withRenderer(settings: AvatarSettings) {
       updateName();
     }
 
+    function restoreAriaHidden(img: HTMLImageElement): void {
+      const saved = savedAriaHidden.get(img);
+      if (saved === null || saved === undefined) img.removeAttribute("aria-hidden");
+      else img.setAttribute("aria-hidden", saved);
+      savedAriaHidden.delete(img);
+    }
+
     function imageRecovered(img: HTMLImageElement): void {
       if (!failedImages.delete(img)) return;
       img.classList.remove(`${AVATAR_CLASSES.ROOT}__img--failed`);
-      img.removeAttribute("aria-hidden");
+      restoreAriaHidden(img);
       unhideImage(img);
       syncFallback();
       updateName();
@@ -166,7 +176,10 @@ export function withRenderer(settings: AvatarSettings) {
     function updateName() {
       const pictures = settings.variant === "image" ? images() : [];
       const first = pictures[0];
-      const imageLabel = first && (first.getAttribute("alt") || hiddenImages.get(first));
+      // A whitespace-only alt names nothing: trim before using it, so the
+      // fallback falls through to the initials.
+      const altOf = (img: HTMLImageElement): string => (img.getAttribute("alt") || hiddenImages.get(img) || "").trim();
+      const imageLabel = first ? altOf(first) || undefined : undefined;
       // On the initials fallback the image is hidden, so its own alt cannot
       // name anything: the root takes the name — the alt when there is one,
       // else the initials.
@@ -182,7 +195,7 @@ export function withRenderer(settings: AvatarSettings) {
       // else the initials. An empty or missing alt does not leave the root
       // nameless — role img without a name would make the initials
       // presentational too.
-      const failedAlt = failedImage ? (failedImage.getAttribute("alt") || hiddenImages.get(failedImage) || "") : "";
+      const failedAlt = failedImage ? altOf(failedImage) : "";
       const fallbackName = fallen ? (failedAlt || fallbackInitials()) || undefined : undefined;
       const name = settings.ariaLabel ?? (settings.label || (settings.variant === "text" ? settings.text : imageLabel) || fallbackName) ?? "";
       const description = settings.supportingText;
@@ -208,7 +221,7 @@ export function withRenderer(settings: AvatarSettings) {
       // presentational, hiding the initials the fallback just showed.
       const fallenRoot = root.localName === "div" && fallen && !!name;
       const role = fallenRoot ? "img"
-        : root.localName === "div" ? (namedRoot ? (first || description ? "group" : "img") : undefined)
+        : root.localName === "div" ? (namedRoot ? (first || description ? "group" : name ? "img" : undefined) : undefined)
         : root.localName === "a" && settings.disabled ? "link" : undefined;
       const fullName = [name, announcement].filter(Boolean).join(", ");
       setAttribute(root, "role", role);
@@ -348,7 +361,7 @@ export function withRenderer(settings: AvatarSettings) {
         slot?.removeEventListener("slotchange", observeImages);
         for (const img of failedImages) {
           img.classList.remove(`${AVATAR_CLASSES.ROOT}__img--failed`);
-          img.removeAttribute("aria-hidden");
+          restoreAriaHidden(img);
           unhideImage(img);
         }
         for (const [img, original] of hiddenImages) restoreImage(img, original);

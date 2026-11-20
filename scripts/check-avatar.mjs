@@ -432,6 +432,47 @@ try {
     assert.deepEqual(errors, [], "nameless: no page errors");
     await page.close();
     console.log('Avatar nameless guard: alt="" and no alt name the root "AL"; nothing becomes a nameless img');
+
+  // A whitespace-only alt is empty (the initials name the root), and an
+  // icon avatar with no name source is not a nameless img; the failed img
+  // is aria-hidden while failed so no bare img stays in the AX tree.
+  {
+    const page = await browser.newPage();
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto(`http://127.0.0.1:${port}/test/browser/avatar.html`, { waitUntil: "networkidle" });
+    await page.waitForFunction(() => !!window.createAvatar && !!window.defineAvatar);
+    const guard = await page.evaluate(async () => {
+      document.body.innerHTML = "";
+      const spacey = window.createAvatar({ variant: "image", text: "AL", content: '<img src="/definitely-missing.png" alt="   ">' });
+      document.body.appendChild(spacey.element);
+      const iconNoName = window.createAvatar({ variant: "icon", content: "<svg viewBox='0 0 24 24'><circle cx='12' cy='12' r='8'></circle></svg>" });
+      document.body.appendChild(iconNoName.element);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      const spaceyImg = spacey.element.querySelector("img");
+      return {
+        spacey: {
+          role: spacey.element.getAttribute("role"),
+          name: spacey.element.getAttribute("aria-label"),
+          imgHidden: spaceyImg?.getAttribute("aria-hidden") ?? null,
+          imgDisplay: spaceyImg ? getComputedStyle(spaceyImg).display : null,
+        },
+        iconNoName: {
+          role: iconNoName.element.getAttribute("role"),
+          name: iconNoName.element.getAttribute("aria-label"),
+        },
+      };
+    });
+    assert.equal(guard.spacey.imgHidden, "true", `the failed img is aria-hidden while failed (got ${JSON.stringify(guard.spacey.imgHidden)})`);
+    assert.equal(guard.spacey.imgDisplay, "none", "and not displayed");
+    assert.equal(guard.spacey.role, "img", `whitespace alt: role img (got ${guard.spacey.role})`);
+    assert.equal(guard.spacey.name, "AL", `whitespace alt: the initials name it (got ${JSON.stringify(guard.spacey.name)})`);
+    assert.notEqual(guard.iconNoName.role, "img", `icon with no name: not a nameless img (got ${guard.iconNoName.role})`);
+    assert.equal(guard.iconNoName.name, null, "icon with no name: no aria-label");
+    assert.deepEqual(errors, [], "guard: no page errors");
+    await page.close();
+    console.log("Avatar final guard: whitespace alt names from the initials; icon-no-name is not an img; failed img aria-hidden");
+  }
   }
   }
   }
