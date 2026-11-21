@@ -25,7 +25,8 @@ try {
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("console", (message) => { if (message.text().startsWith("DBG")) console.log(message.text().slice(0, 200)); });
   const reset = async (options = {}) => {
-    await page.goto(`http://127.0.0.1:${port}/test/browser/tree.html`, { waitUntil: "networkidle" });
+    const query = options.virtual ? "?virtual" : "";
+    await page.goto(`http://127.0.0.1:${port}/test/browser/tree.html${query}`, { waitUntil: "networkidle" });
     await page.evaluate((opts) => {
       document.documentElement.dir = opts.dir ?? "ltr";
       if (opts.dark) document.documentElement.setAttribute("data-theme-mode", "dark");
@@ -267,6 +268,68 @@ try {
     accepted: { active: "readme", stops: ["readme"], selected: "readme", changes: ["readme"] },
   });
   console.log("shadow keyboard: rebuild restores focus, Home and End move the tab stop and honor selection vetoes");
+
+  // The opt-in package entry maps every nested and lazy descendant to a vlist id.
+  await reset({ virtual: true });
+  await page.evaluate(() => {
+    const record = (type) => ({ value, node }) => window.virtualEvents.push([type, value, node.value, node.label]);
+    window.virtualEvents = [];
+    window.virtualTree = window.createVirtualTree({
+      nodes: [
+        { value: "root", label: "Root", children: [
+          { value: "branch", label: "Branch", children: [{ value: "leaf", label: "Leaf" }] },
+          { value: "sibling", label: "Sibling" },
+        ] },
+        { value: "lazy", label: "Lazy", lazy: true },
+      ],
+      loadChildren: async () => [
+        { value: "loaded", label: "Loaded", children: [
+          { value: "loaded-a", label: "Loaded A" },
+          { value: "loaded-b", label: "Loaded B" },
+        ] },
+      ],
+      onExpand: record("callback:expand"),
+      onCollapse: record("callback:collapse"),
+    });
+    const tree = window.virtualTree;
+    tree.on("expand", record("expand"));
+    tree.on("collapse", record("collapse"));
+    tree.element.style.height = "480px";
+    document.body.append(tree.element);
+    tree.expand("root");
+    tree.expand("branch");
+  });
+  const virtualRow = (value) => page.locator(`.mtrl-tree--virtual [role="treeitem"][data-id="${value}"]`);
+  await virtualRow("leaf").waitFor({ state: "attached" });
+  assert.equal(await virtualRow("leaf").getAttribute("aria-level"), "3");
+  assert.equal(await virtualRow("sibling").getAttribute("aria-level"), "2");
+  await page.evaluate(() => {
+    window.virtualTree.collapse("branch");
+    window.virtualTree.expand("lazy");
+  });
+  await virtualRow("loaded").waitFor({ state: "attached" });
+  await page.evaluate(() => window.virtualTree.expand("loaded"));
+  await virtualRow("loaded-b").waitFor({ state: "attached" });
+  assert.equal(await virtualRow("loaded-a").getAttribute("aria-level"), "3");
+  assert.equal(await virtualRow("loaded-b").getAttribute("aria-level"), "3");
+  assert.equal(await virtualRow("leaf").count(), 0);
+  const virtual = await page.evaluate(() => {
+    const result = { events: window.virtualEvents, expanded: window.virtualTree.getExpanded() };
+    window.virtualTree.destroy();
+    return result;
+  });
+  assert.deepEqual(virtual.expanded, ["root", "lazy", "loaded"]);
+  assert.deepEqual(virtual.events, [
+    ["expand", "root", "root", "Root"],
+    ["callback:expand", "root", "root", "Root"],
+    ["expand", "branch", "branch", "Branch"],
+    ["callback:expand", "branch", "branch", "Branch"],
+    ["collapse", "branch", "branch", "Branch"],
+    ["callback:collapse", "branch", "branch", "Branch"],
+    ["expand", "loaded", "loaded", "Loaded"],
+    ["callback:expand", "loaded", "loaded", "Loaded"],
+  ]);
+  console.log("virtual tree: nested and lazy descendants keep their IDs, expansion events reach Material listeners");
 
   assert.deepEqual(errors, [], "no page errors");
   console.log("Passed tree browser checks.");

@@ -10,5 +10,13 @@
   import "material-addons/elements/css/tree";
   import { createTree } from "material-addons/components/tree";
   import { defineTree } from "material-addons/elements/tree";
+  if (new URLSearchParams(location.search).has("virtual")) {
+    const [{ createVirtualTree }] = await Promise.all([
+      import("material-addons/components/tree/virtual"),
+      import("vlist/styles"),
+      import("vlist/styles/tree"),
+    ]);
+    window.createVirtualTree = createVirtualTree;
+  }
   window.tree = { createTree, defineTree };
 </script>

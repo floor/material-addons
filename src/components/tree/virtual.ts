@@ -13,7 +13,7 @@
 import { createVList, tree as treePlugin } from "vlist";
 import { TREE_DEFAULTS, TREE_EVENTS } from "./constants";
 import type {
-  TreeBeforeChangeEvent, TreeChangeEvent, TreeComponent, TreeConfig, TreeNode,
+  TreeBeforeChangeEvent, TreeChangeEvent, TreeComponent, TreeConfig, TreeExpandEvent, TreeNode,
 } from "./types";
 
 export interface VirtualTreeConfig extends TreeConfig {
@@ -23,9 +23,13 @@ export interface VirtualTreeConfig extends TreeConfig {
   height?: number;
 }
 
-type Row = TreeNode & { id: string };
+type Row = Omit<TreeNode, "children"> & { id: string; children?: Row[] };
 
-const toRows = (nodes: TreeNode[]): Row[] => nodes.map((node) => ({ ...node, id: node.value }));
+const toRows = (nodes: TreeNode[]): Row[] => nodes.map(({ children, ...node }) => ({
+  ...node,
+  id: node.value,
+  ...(children && { children: toRows(children) }),
+}));
 
 /** Creates a windowed tree for large data sets, on vlist's tree plugin. */
 export const createVirtualTree = (config: VirtualTreeConfig = {}): TreeComponent => {
@@ -65,10 +69,17 @@ export const createVirtualTree = (config: VirtualTreeConfig = {}): TreeComponent
   if (selection === "multiple") root.setAttribute("aria-multiselectable", "true");
   if (config.disabled) root.setAttribute("aria-disabled", "true");
 
-  const emit = <T>(name: string, payload: T): T => {
+  const emit = <T>(name: string, payload: T, callback?: (event: T) => void): void => {
     for (const handler of handlers[name] ?? []) (handler as (p: T) => void)(payload);
-    return payload;
+    callback?.(payload);
   };
+
+  const offExpand = list.on("tree:expand", ({ item }) => {
+    emit<TreeExpandEvent>(TREE_EVENTS.EXPAND, { value: item.value, node: item }, config.onExpand);
+  });
+  const offCollapse = list.on("tree:collapse", ({ item }) => {
+    emit<TreeExpandEvent>(TREE_EVENTS.COLLAPSE, { value: item.value, node: item }, config.onCollapse);
+  });
 
   const rowOf = (id: string): Row | undefined => list.items.find((row) => row.value === id);
 
@@ -140,6 +151,8 @@ export const createVirtualTree = (config: VirtualTreeConfig = {}): TreeComponent
     focus() { root.focus(); },
     destroy() {
       root.removeEventListener("click", onClick);
+      offExpand();
+      offCollapse();
       list.destroy();
       root.remove();
     },
