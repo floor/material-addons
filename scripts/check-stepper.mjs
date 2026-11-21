@@ -373,6 +373,73 @@ try {
   assert.equal(bottomNarrow.inside, true, "bottom 312px: the active label stays inside its header");
   assert.equal(bottomNarrow.overflow, false, "bottom 312px: nothing scrolls");
 
+  // Uneven labels at 500px: the widest step decides, so full mode never clips
+  await reset();
+  const uneven = await page.evaluate(async () => {
+    document.body.replaceChildren();
+    const stepper = window.stepper.createStepper({
+      orientation: "horizontal",
+      steps: [
+        { value: "a", label: "A", content: "Panel a" },
+        { value: "b", label: "Pickup time and address", content: "Panel b" },
+        { value: "c", label: "C", content: "Panel c" },
+      ],
+    });
+    stepper.element.style.width = "500px";
+    document.body.append(stepper.element);
+    const settle = () => new Promise((resolve) => setTimeout(resolve, 120));
+    await settle();
+    const labels = [...stepper.element.querySelectorAll(".mtrl-stepper__label")];
+    const narrow = {
+      compact: stepper.element.classList.contains("mtrl-stepper--compact-labels"),
+      clipped: labels.filter((label) => label.scrollWidth > label.clientWidth + 1).length,
+    };
+    // The same uneven labels with room: full mode shows all of them, unclipped
+    stepper.element.style.width = "900px";
+    await settle();
+    const wide = {
+      compact: stepper.element.classList.contains("mtrl-stepper--compact-labels"),
+      clipped: labels.filter((label) => label.scrollWidth > label.clientWidth + 1).length,
+    };
+    return { narrow, wide };
+  });
+  assert.equal(uneven.narrow.compact, true, "500px uneven labels: the widest step keeps the row out of full mode");
+  assert.equal(uneven.wide.compact, false, "900px uneven labels: full mode fits");
+  assert.equal(uneven.wide.clipped, 0, `900px uneven labels: no label is clipped in full mode (${uneven.wide.clipped})`);
+
+  // Seven and eight steps at 312px: the icon row cannot hold them either, so
+  // the dots display takes over
+  for (const count of [7, 8]) {
+    await reset();
+    const many = await page.evaluate(async (steps) => {
+      document.body.replaceChildren();
+      const stepper = window.stepper.createStepper({
+        orientation: "horizontal",
+        steps: Array.from({ length: steps }, (_, index) => ({
+          value: `step-${index}`, label: `Step ${index + 1}`, content: `Panel ${index}`,
+        })),
+      });
+      stepper.element.style.width = "312px";
+      document.body.append(stepper.element);
+      await new Promise((resolve) => setTimeout(resolve, 120));
+      const root = stepper.element;
+      const list = root.querySelector(".mtrl-stepper__list");
+      const boxes = [...root.querySelectorAll(".mtrl-stepper__header")].map((header) => header.getBoundingClientRect());
+      return {
+        dots: root.classList.contains("mtrl-stepper--display-dots"),
+        dotsFallback: root.classList.contains("mtrl-stepper--compact-dots"),
+        overlap: boxes.some((box, index) => index > 0 && box.left < boxes[index - 1].right - 0.5),
+        overflow: list.scrollWidth > list.clientWidth + 1,
+        names: [...root.querySelectorAll(".mtrl-stepper__header")].map((header) => header.textContent.trim()),
+      };
+    }, count);
+    assert.equal(many.dots, true, `${count} steps at 312px: the dots display takes over`);
+    assert.equal(many.dotsFallback, true, `${count} steps at 312px: the fallback is marked`);
+    assert.equal(many.overlap, false, `${count} steps at 312px: the buttons do not overlap`);
+    assert.equal(many.overflow, false, `${count} steps at 312px: nothing scrolls`);
+    assert.equal(many.names.length, count, `${count} steps at 312px: every header keeps its name`);
+  }
+
   // Six steps in 312px cannot hold a label: every step shows its indicator
   await reset();
   const icons = await page.evaluate(async () => {

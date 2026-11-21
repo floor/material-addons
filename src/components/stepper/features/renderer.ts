@@ -260,28 +260,33 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
     const indicatorOnly = 2 * padding + indicator;
     const railFull = 32 + 16;
     const railMin = 8 + 4;
-    let full = 0;
+    const items = Array.from(list.children) as HTMLElement[];
     let compactFootprint = 0;
     let labels = 0;
-    for (const item of Array.from(list.children) as HTMLElement[]) {
+    let worstNeed = 0;
+    for (const item of items) {
       const label = item.querySelector<HTMLElement>(`.${cls(STEPPER_CLASSES.LABEL)}`);
       const rail = item.querySelector(`.${cls(STEPPER_CLASSES.CONNECTOR)}`);
       const active = item.classList.contains(cls(STEPPER_MODIFIERS.ACTIVE));
-      full += fixed + (label ? naturalWidth(label) : 0);
-      // In compact the inactive steps carry no gap: no label sits beside the
-      // indicator there, and the active step keeps its own
-      compactFootprint += active ? fixed : indicatorOnly;
-      if (rail) {
-        full += railFull;
-        compactFootprint += railMin;
-      }
+      const natural = label ? naturalWidth(label) : 0;
+      // In full mode the items share the row equally, so every step has to get
+      // its own need — the widest one decides, not the average
+      worstNeed = Math.max(worstNeed, fixed + natural + (rail ? railFull : 0));
+      compactFootprint += (active ? fixed : indicatorOnly) + (rail ? railMin : 0);
       if (label && (label.textContent ?? "").trim()) labels += 1;
     }
     const width = element.clientWidth;
-    const needs = labels > 0 && full > width + 1;
+    const needs = labels > 0 && worstNeed * items.length > width + 1;
     compact = needs;
-    // Last resort: when not even a small label box fits beside the indicators
+    // Not even a small label box beside the indicators: the active label goes
+    // too. The icon row has its own tighter padding, and when even that row
+    // cannot hold the steps the dots display takes over
     iconOnly = needs && compactFootprint + 16 > width + 1;
+    const rails = items.filter((item) => item.querySelector(`.${cls(STEPPER_CLASSES.CONNECTOR)}`)).length;
+    const iconFootprint = items.length * (2 * 8 + indicator) + rails * railMin;
+    const dotsFallback = iconOnly && iconFootprint > width + 1;
+    element.classList.toggle(cls(STEPPER_MODIFIERS.DISPLAY_DOTS), dotsFallback);
+    element.classList.toggle(cls(STEPPER_MODIFIERS.COMPACT_DOTS), dotsFallback);
     element.classList.toggle(cls(STEPPER_MODIFIERS.COMPACT_LABELS), compact);
     element.classList.toggle(cls(STEPPER_MODIFIERS.COMPACT_ICONS), iconOnly);
   };

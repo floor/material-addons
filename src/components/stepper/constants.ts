@@ -96,6 +96,7 @@ export const STEPPER_MODIFIERS = {
   VALIDATING_ITEM: "stepper__item--validating",
   COMPACT_LABELS: "stepper--compact-labels",
   COMPACT_ICONS: "stepper--compact-icons",
+  COMPACT_DOTS: "stepper--compact-dots",
   DISPLAY_LABELS: "stepper--display-labels",
   DISPLAY_COUNT: "stepper--display-count",
   DISPLAY_DOTS: "stepper--display-dots",
