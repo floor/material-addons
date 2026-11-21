@@ -247,9 +247,9 @@ try {
 
   // A narrow horizontal stepper truncates its labels inside their headers, in
   // both placements, and never shrinks one to an unreadable box
-  const narrow = async (placement) => {
+  const narrow = async (placement, width) => {
     await reset();
-    return page.evaluate(async (labelPlacement) => {
+    return page.evaluate(async ({ labelPlacement, width }) => {
       document.body.replaceChildren();
       const stepper = window.stepper.createStepper({
         orientation: "horizontal",
@@ -260,7 +260,7 @@ try {
           { value: "review", label: "Review the order", content: "Review the order.", supportingText: "One more step" },
         ],
       });
-      stepper.element.style.width = "312px";
+      stepper.element.style.width = `${width}px`;
       document.body.append(stepper.element);
       await new Promise((resolve) => setTimeout(resolve, 60));
       return [...stepper.element.querySelectorAll(".mtrl-stepper__header")].map((header) => {
@@ -279,22 +279,24 @@ try {
         };
         return { label: measure(header.querySelector(".mtrl-stepper__label")), supporting: measure(header.querySelector(".mtrl-stepper__supporting-text")) };
       });
-    }, placement);
+    }, { labelPlacement: placement, width });
   };
+  for (const width of [312, 480]) {
   for (const placement of ["bottom", null]) {
-    const rows = await narrow(placement);
-    const name = placement ? `${placement} placement` : "end placement";
+    const rows = await narrow(placement, width);
+    const name = `${width}px ${placement ? `${placement} placement` : "end placement"}`;
     for (const [index, row] of rows.entries()) {
-      assert.ok(row.label.width >= 24, `horizontal 312px ${name}: label ${index + 1} keeps a readable box (${row.label.width}px)`);
-      assert.equal(row.label.inside, true, `horizontal 312px ${name}: label ${index + 1} stays inside its header`);
-      assert.equal(row.label.overflow, "ellipsis", `horizontal 312px ${name}: label ${index + 1} ends in an ellipsis`);
-      assert.equal(row.label.nowrap, "nowrap", `horizontal 312px ${name}: label ${index + 1} stays on one line`);
+      assert.ok(row.label.width >= 24, `horizontal ${name}: label ${index + 1} keeps a readable box (${row.label.width}px)`);
+      assert.equal(row.label.inside, true, `horizontal ${name}: label ${index + 1} stays inside its header`);
+      assert.equal(row.label.overflow, "ellipsis", `horizontal ${name}: label ${index + 1} ends in an ellipsis`);
+      assert.equal(row.label.nowrap, "nowrap", `horizontal ${name}: label ${index + 1} stays on one line`);
       if (row.supporting) {
-        assert.equal(row.supporting.inside, true, `horizontal 312px ${name}: supporting text ${index + 1} stays inside its header`);
-        assert.ok(row.supporting.width > 0, `horizontal 312px ${name}: supporting text ${index + 1} keeps a box`);
+        assert.equal(row.supporting.inside, true, `horizontal ${name}: supporting text ${index + 1} stays inside its header`);
+        assert.ok(row.supporting.width > 0, `horizontal ${name}: supporting text ${index + 1} keeps a box`);
       }
     }
-    assert.ok(rows.some((row) => row.label.truncated), `horizontal 312px ${name}: a long label truncates`);
+    assert.ok(rows.some((row) => row.label.truncated), `horizontal ${name}: a long label truncates`);
+  }
   }
 
   // The same row at a wide width keeps the connector rail and untruncated names

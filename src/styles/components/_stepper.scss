@@ -167,7 +167,7 @@
   container-type: inline-size;
 }
 
-@container (max-width: 24rem) {
+@container (max-width: 32rem) {
   .mtrl-stepper--horizontal .mtrl-stepper__label-group {
     flex: 0 1 auto;
     min-width: 2rem;
