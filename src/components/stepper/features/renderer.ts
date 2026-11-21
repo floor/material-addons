@@ -263,7 +263,17 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
       .filter((label): label is HTMLElement => Boolean(label && (label.textContent ?? "").trim()));
     const clipped = labels.some((label) => label.scrollWidth > label.clientWidth + 1);
     const overflows = list.scrollWidth > element.clientWidth + 1;
-    if (!clipped && !overflows) {
+    // A wrapped label can fit without clipping yet still paint outside its
+    // header, as a bottom-placed stack lets it; the indicators and the rail
+    // must fit too
+    const escapes = labels.some((label) => {
+      const header = label.closest(`.${cls(STEPPER_CLASSES.HEADER)}`);
+      if (!header) return false;
+      const box = label.getBoundingClientRect();
+      const frame = header.getBoundingClientRect();
+      return box.width > 0 && (box.left < frame.left - 1 || box.right > frame.right + 1);
+    });
+    if (!clipped && !overflows && !escapes) {
       compact = false;
       iconOnly = false;
       return;

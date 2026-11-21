@@ -518,6 +518,69 @@ try {
   const loopErrors = errors.filter((error) => /ResizeObserver loop/i.test(error));
   assert.deepEqual(loopErrors, [], `no resize loop across the compact, icon and dots transitions (${loopErrors.join(" | ")})`);
 
+  // The bottom placement keeps the same discipline: its stacked headers may
+  // let a wrapped label paint outside its header, which does not count as
+  // fitting — seven and eight steps take the dots fallback, and a three-step
+  // row keeps its labels inside their headers
+  for (const count of [7, 8]) {
+    await reset();
+    const bottomMany = await page.evaluate(async (steps) => {
+      document.body.replaceChildren();
+      const stepper = window.stepper.createStepper({
+        orientation: "horizontal",
+        labelPlacement: "bottom",
+        steps: Array.from({ length: steps }, (_, index) => ({
+          value: `step-${index}`, label: `Step ${index + 1} with a longer title`, content: `Panel ${index}`,
+        })),
+      });
+      stepper.element.style.width = "312px";
+      document.body.append(stepper.element);
+      await new Promise((resolve) => setTimeout(resolve, 140));
+      const root = stepper.element;
+      const list = root.querySelector(".mtrl-stepper__list");
+      const boxes = [...root.querySelectorAll(".mtrl-stepper__header")].map((header) => header.getBoundingClientRect());
+      return {
+        dots: root.classList.contains("mtrl-stepper--display-dots"),
+        dotsFallback: root.classList.contains("mtrl-stepper--compact-dots"),
+        overlap: boxes.some((box, index) => index > 0 && box.left < boxes[index - 1].right - 0.5),
+        overflow: list.scrollWidth > list.clientWidth + 1,
+      };
+    }, count);
+    assert.equal(bottomMany.dots, true, `bottom ${count} steps at 312px: the dots fallback takes over`);
+    assert.equal(bottomMany.dotsFallback, true, `bottom ${count} steps at 312px: the fallback is marked`);
+    assert.equal(bottomMany.overlap, false, `bottom ${count} steps at 312px: the buttons do not overlap`);
+    assert.equal(bottomMany.overflow, false, `bottom ${count} steps at 312px: nothing scrolls`);
+  }
+
+  await reset();
+  const bottomThree = await page.evaluate(async () => {
+    document.body.replaceChildren();
+    const stepper = window.stepper.createStepper({
+      orientation: "horizontal",
+      labelPlacement: "bottom",
+      steps: ["Store", "Pickup time and address", "Review the order"].map((label, index) => ({
+        value: `step-${index}`, label, content: `Panel ${index}`,
+      })),
+    });
+    stepper.element.style.width = "312px";
+    document.body.append(stepper.element);
+    await new Promise((resolve) => setTimeout(resolve, 140));
+    const root = stepper.element;
+    const list = root.querySelector(".mtrl-stepper__list");
+    const escapes = [...root.querySelectorAll(".mtrl-stepper__label")].some((label) => {
+      const header = label.closest(".mtrl-stepper__header").getBoundingClientRect();
+      const box = label.getBoundingClientRect();
+      return box.width > 0 && (box.left < header.left - 1 || box.right > header.right + 1);
+    });
+    return {
+      escapes,
+      overflow: list.scrollWidth > list.clientWidth + 1,
+      compact: root.classList.contains("mtrl-stepper--compact-labels"),
+    };
+  });
+  assert.equal(bottomThree.escapes, false, "bottom 312px three titles: no label paints outside its header");
+  assert.equal(bottomThree.overflow, false, "bottom 312px three titles: nothing scrolls");
+
   // Six steps in 312px cannot hold a label: every step shows its indicator
   await reset();
   const icons = await page.evaluate(async () => {
