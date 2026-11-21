@@ -378,6 +378,33 @@ try {
   }
   assert.ok(hit.scrollWidth > hit.clientWidth, "horizontal 312px four steps: the row scrolls as a whole");
 
+  // Every step answers a real click at 312px, including the ones the row has
+  // to scroll into view first
+  const clicked = await page.evaluate(async () => {
+    document.body.replaceChildren();
+    const stepper = window.stepper.createStepper({
+      orientation: "horizontal",
+      steps: ["Store", "Pickup time and address", "Review the order", "Confirm and pay"].map((label, index) => ({
+        value: `step-${index}`, label, content: `Panel ${index}`,
+      })),
+    });
+    stepper.element.style.width = "312px";
+    document.body.append(stepper.element);
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    const reached = [];
+    for (const header of stepper.element.querySelectorAll(".mtrl-stepper__header")) {
+      header.scrollIntoView({ block: "nearest", inline: "center" });
+      await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)));
+      const box = header.getBoundingClientRect();
+      const target = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+      target?.click();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      reached.push(stepper.getValue());
+    }
+    return reached;
+  });
+  assert.deepEqual(clicked, ["step-0", "step-1", "step-2", "step-3"], "horizontal 312px four steps: a click on each step reaches it");
+
   await reset();
   const wideOutline = await page.evaluate(async () => {
     document.body.replaceChildren();
