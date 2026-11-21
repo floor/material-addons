@@ -217,59 +217,73 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
     });
   };
 
-  // Compact labels: when a full row would leave a label narrower than a
-  // readable box, the inactive steps show their indicator only and the active
-  // one keeps a truncated label. The width at which full labels fit again is
-  // read from the parts, not from the squeezed row, so the decision cannot
-  // depend on the mode it is measuring in
+  // Compact labels: when the measured labels do not fit the row, the inactive
+  // steps show their indicator only and the active step keeps its label. The
+  // decision is a pure function of the labels' own measured widths and the
+  // row's width, so it cannot depend on the mode it is measured in: it does
+  // not go stale when the steps change, and it cannot flap
   let compact = false;
-  let compactNeeded = 0;
+  let iconOnly = false;
   let lastResolved: "horizontal" | "vertical" = "horizontal";
 
-  const labelMinimum = 32;
-
-  /** The row width at which every label keeps its minimum box */
-  const fullLabelWidth = (): number => {
-    const style = getComputedStyle(element);
-    const value = (name: string, fallback: number): number =>
-      Number.parseFloat(style.getPropertyValue(name)) || fallback;
-    const fixed =
-      2 * value("--mtrl-stepper-header-padding", 16) +
-      value("--mtrl-stepper-indicator-size", 24) +
-      value("--mtrl-stepper-header-gap", 12);
-    const rail = 32 + 16;
-    let need = 0;
-    for (const item of Array.from(list.children) as HTMLElement[]) {
-      const label = item.querySelector<HTMLElement>(`.${cls(STEPPER_CLASSES.LABEL)}`);
-      need += fixed + labelMinimum;
-      if (label && label.textContent?.trim()) need += 0;
-      if (item.querySelector(`.${cls(STEPPER_CLASSES.CONNECTOR)}`)) need += rail;
-    }
-    return need;
+  /** A label's width on one line, whatever the current layout does to it */
+  const naturalWidth = (label: HTMLElement): number => {
+    const previous = label.style.whiteSpace;
+    label.style.whiteSpace = "nowrap";
+    const width = label.scrollWidth;
+    label.style.whiteSpace = previous;
+    return width;
   };
 
   const measureLabels = (resolved: "horizontal" | "vertical"): void => {
     lastResolved = resolved;
-    const showsLabels = settings.display === "labels";
-    if (resolved !== "horizontal" || !showsLabels) {
+    const reset = (): void => {
       compact = false;
-      compactNeeded = 0;
-      element.classList.remove(cls(STEPPER_MODIFIERS.COMPACT_LABELS));
+      iconOnly = false;
+      element.classList.remove(cls(STEPPER_MODIFIERS.COMPACT_LABELS), cls(STEPPER_MODIFIERS.COMPACT_ICONS));
+    };
+    if (resolved !== "horizontal" || settings.display !== "labels" || element.clientWidth === 0) {
+      reset();
       return;
     }
-    if (compact) {
-      // Leave only when the viewport has room for every label's minimum box
-      if (element.clientWidth >= compactNeeded) compact = false;
-      element.classList.toggle(cls(STEPPER_MODIFIERS.COMPACT_LABELS), compact);
-      return;
+    // Measure in the full layout: the classes come off for the read and go
+    // back on with the answer, and the observer's next call reads the same
+    // widths, so the answer settles instead of oscillating
+    element.classList.remove(cls(STEPPER_MODIFIERS.COMPACT_LABELS), cls(STEPPER_MODIFIERS.COMPACT_ICONS));
+    const style = getComputedStyle(element);
+    const value = (name: string, fallback: number): number =>
+      Number.parseFloat(style.getPropertyValue(name)) || fallback;
+    const padding = value("--mtrl-stepper-header-padding", 16);
+    const indicator = value("--mtrl-stepper-indicator-size", 24);
+    const gap = value("--mtrl-stepper-header-gap", 12);
+    const fixed = 2 * padding + indicator + gap;
+    const indicatorOnly = 2 * padding + indicator;
+    const railFull = 32 + 16;
+    const railMin = 8 + 4;
+    let full = 0;
+    let compactFootprint = 0;
+    let labels = 0;
+    for (const item of Array.from(list.children) as HTMLElement[]) {
+      const label = item.querySelector<HTMLElement>(`.${cls(STEPPER_CLASSES.LABEL)}`);
+      const rail = item.querySelector(`.${cls(STEPPER_CLASSES.CONNECTOR)}`);
+      const active = item.classList.contains(cls(STEPPER_MODIFIERS.ACTIVE));
+      full += fixed + (label ? naturalWidth(label) : 0);
+      // In compact the inactive steps carry no gap: no label sits beside the
+      // indicator there, and the active step keeps its own
+      compactFootprint += active ? fixed : indicatorOnly;
+      if (rail) {
+        full += railFull;
+        compactFootprint += railMin;
+      }
+      if (label && (label.textContent ?? "").trim()) labels += 1;
     }
-    const squeezed = Array.from(list.querySelectorAll<HTMLElement>(`.${cls(STEPPER_CLASSES.LABEL)}`)).some(
-      (label) => (label.textContent ?? "").trim().length > 0 && label.clientWidth < labelMinimum,
-    );
-    if (!squeezed) return;
-    compact = true;
-    compactNeeded = fullLabelWidth();
-    element.classList.add(cls(STEPPER_MODIFIERS.COMPACT_LABELS));
+    const width = element.clientWidth;
+    const needs = labels > 0 && full > width + 1;
+    compact = needs;
+    // Last resort: when not even a small label box fits beside the indicators
+    iconOnly = needs && compactFootprint + 16 > width + 1;
+    element.classList.toggle(cls(STEPPER_MODIFIERS.COMPACT_LABELS), compact);
+    element.classList.toggle(cls(STEPPER_MODIFIERS.COMPACT_ICONS), iconOnly);
   };
 
   // A forced horizontal stepper has no orientation observer to lean on, so

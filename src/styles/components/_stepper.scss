@@ -280,6 +280,31 @@
 
 .mtrl-stepper--compact-labels .mtrl-stepper__item--active .mtrl-stepper__label-group {
   min-width: 2rem;
+  max-width: 100%;
+}
+
+// The bottom placement stacks the header; its active label still truncates
+// inside the header rather than overhanging both edges
+.mtrl-stepper--compact-labels.mtrl-stepper--label-bottom .mtrl-stepper__item--active .mtrl-stepper__label-group {
+  align-self: stretch;
+}
+
+// Last resort, when not even one label fits: every step shows its indicator,
+// the active step included
+// Six indicators need the tighter padding to share a narrow row
+.mtrl-stepper--compact-icons .mtrl-stepper__header {
+  padding-inline: 8px;
+}
+
+.mtrl-stepper--compact-icons .mtrl-stepper__item .mtrl-stepper__label-group {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-width: 0;
+  max-width: none;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 // The connector keeps its place as a short rail between the indicators and
@@ -287,7 +312,7 @@
 .mtrl-stepper--compact-labels .mtrl-stepper__connector {
   flex: 0 1 16px;
   min-width: 8px;
-  margin-inline: 4px;
+  margin-inline: 2px;
 }
 
 // The list after the panels

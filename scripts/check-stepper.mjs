@@ -303,62 +303,109 @@ try {
     `312px four steps: every header keeps its full name (${compactLabels.names.join(" | ")})`,
   );
 
-  // Resizing back and forth across the cutoff does not flap: the compact class
-  // leaves only when the width the full labels need is available again
+  // Short labels that fit stay out of compact mode, and the decision follows
+  // the steps: adding a long one enters it, replacing them with short ones
+  // leaves it without a stale threshold
   await reset();
-  const cutoff = await page.evaluate(async () => {
+  const shortLabels = await page.evaluate(async () => {
     document.body.replaceChildren();
     const stepper = window.stepper.createStepper({
       orientation: "horizontal",
-      steps: ["Store", "Pickup time and address", "Review the order", "Confirm and pay"].map((label, index) => ({
+      steps: ["Store", "Pay", "Done"].map((label, index) => ({ value: `step-${index}`, label, content: `Panel ${index}` })),
+    });
+    stepper.element.style.width = "480px";
+    document.body.append(stepper.element);
+    const settle = () => new Promise((resolve) => setTimeout(resolve, 120));
+    const compact = () => stepper.element.classList.contains("mtrl-stepper--compact-labels");
+    await settle();
+    const fitted = compact();
+    stepper.setSteps([
+      { value: "one", label: "Store pickup", content: "One" },
+      { value: "two", label: "Pickup time and address", content: "Two" },
+      { value: "three", label: "Review the order", content: "Three" },
+      { value: "four", label: "Confirm and pay", content: "Four" },
+    ]);
+    await settle();
+    const grown = compact();
+    stepper.setSteps([
+      { value: "a", label: "Start", content: "A" },
+      { value: "b", label: "End", content: "B" },
+    ]);
+    await settle();
+    const shrunk = compact();
+    return { fitted, grown, shrunk };
+  });
+  assert.deepEqual(shortLabels, { fitted: false, grown: true, shrunk: false }, "the compact decision follows the measured labels and the steps");
+
+  // Bottom placement in a narrow row: compact enters on a resize and the active
+  // label stays inside its header
+  await reset();
+  const bottomNarrow = await page.evaluate(async () => {
+    document.body.replaceChildren();
+    const stepper = window.stepper.createStepper({
+      orientation: "horizontal",
+      labelPlacement: "bottom",
+      steps: ["Store", "Pickup time and address", "Review the order"].map((label, index) => ({
         value: `step-${index}`, label, content: `Panel ${index}`,
       })),
     });
     stepper.element.style.width = "880px";
     document.body.append(stepper.element);
     const settle = () => new Promise((resolve) => setTimeout(resolve, 120));
-    const list = stepper.element.querySelector(".mtrl-stepper__list");
-    const compact = () => stepper.element.classList.contains("mtrl-stepper--compact-labels");
-    // The width at which every label keeps a 32px box, from the same parts
-    const neededWidth = () => {
-      const style = getComputedStyle(stepper.element);
-      const value = (name, fallback) => Number.parseFloat(style.getPropertyValue(name)) || fallback;
-      const fixed =
-        2 * value("--mtrl-stepper-header-padding", 16) +
-        value("--mtrl-stepper-indicator-size", 24) +
-        value("--mtrl-stepper-header-gap", 12);
-      return Math.round(
-        [...list.children].reduce((sum, item) => {
-          const rail = item.querySelector(".mtrl-stepper__connector") ? 48 : 0;
-          return sum + fixed + 32 + rail;
-        }, 0),
-      );
-    };
-    const states = [];
     await settle();
-    states.push(["880", compact()]);
+    const wide = stepper.element.classList.contains("mtrl-stepper--compact-labels");
     stepper.element.style.width = "312px";
     await settle();
-    states.push(["312", compact()]);
-    // Measure what the full labels need while the row is squeezed
-    stepper.element.classList.remove("mtrl-stepper--compact-labels");
-    await settle();
-    const needed = neededWidth();
-    const around = [];
-    for (const width of [needed - 8, needed, needed + 8]) {
-      stepper.element.style.width = `${width}px`;
-      await settle();
-      around.push([width, compact()]);
-    }
-    for (const width of [312, 880, 312, 880]) {
-      stepper.element.style.width = `${width}px`;
-      await settle();
-      states.push([String(width), compact()]);
-    }
-    return { needed, states, around };
+    const items = [...stepper.element.querySelectorAll(".mtrl-stepper__item")];
+    const active = items.find((item) => item.classList.contains("mtrl-stepper__item--active"));
+    const header = active.querySelector(".mtrl-stepper__header").getBoundingClientRect();
+    const label = active.querySelector(".mtrl-stepper__label").getBoundingClientRect();
+    const list = stepper.element.querySelector(".mtrl-stepper__list");
+    return {
+      wide,
+      compact: stepper.element.classList.contains("mtrl-stepper--compact-labels"),
+      inside: Math.round(label.left) >= Math.round(header.left) - 1 && Math.round(label.right) <= Math.round(header.right) + 1,
+      overflow: list.scrollWidth > list.clientWidth + 1,
+    };
   });
-  assert.deepEqual(cutoff.states.map(([, state]) => state), [false, true, true, false, true, false], `the compact class follows the width (${JSON.stringify(cutoff.states)})`);
-  assert.deepEqual(cutoff.around.map(([, state]) => state), [true, false, false], `the class leaves only at the needed width ${cutoff.needed} (${JSON.stringify(cutoff.around)})`);
+  assert.equal(bottomNarrow.wide, false, "bottom 880px: the labels fit, no compact");
+  assert.equal(bottomNarrow.compact, true, "bottom 312px: compact enters on the resize");
+  assert.equal(bottomNarrow.inside, true, "bottom 312px: the active label stays inside its header");
+  assert.equal(bottomNarrow.overflow, false, "bottom 312px: nothing scrolls");
+
+  // Six steps in 312px cannot hold a label: every step shows its indicator
+  await reset();
+  const icons = await page.evaluate(async () => {
+    document.body.replaceChildren();
+    const stepper = window.stepper.createStepper({
+      orientation: "horizontal",
+      steps: Array.from({ length: 6 }, (_, index) => ({
+        value: `step-${index}`, label: `Step ${index + 1} with a longer title`, content: `Panel ${index}`,
+      })),
+    });
+    stepper.element.style.width = "312px";
+    document.body.append(stepper.element);
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    const root = stepper.element;
+    const list = root.querySelector(".mtrl-stepper__list");
+    const groups = [...root.querySelectorAll(".mtrl-stepper__label-group")];
+    const box = (node) => node.getBoundingClientRect();
+    return {
+      compact: root.classList.contains("mtrl-stepper--compact-labels"),
+      icons: root.classList.contains("mtrl-stepper--compact-icons"),
+      allClipped: groups.every((group) => box(group).width <= 1),
+      overlap:
+        [...root.querySelectorAll(".mtrl-stepper__header")]
+          .map(box)
+          .some((entry, index, all) => index > 0 && entry.left < all[index - 1].right - 0.5),
+      overflow: list.scrollWidth > list.clientWidth + 1,
+    };
+  });
+  assert.equal(icons.compact, true, "six steps at 312px: compact");
+  assert.equal(icons.icons, true, "six steps at 312px: the last-resort icon row");
+  assert.equal(icons.allClipped, true, "six steps at 312px: no label keeps a visible box");
+  assert.equal(icons.overlap, false, "six steps at 312px: the buttons do not overlap");
+  assert.equal(icons.overflow, false, "six steps at 312px: nothing scrolls");
 
   // Vertical compact modes: the active panel and its action stay visible, and
   // the hidden list is not a tab stop
@@ -456,7 +503,7 @@ try {
   assert.deepEqual(announce.cleared, { same: true, labels: true, listVisible: true, completed: true });
 
   assert.deepEqual(errors, []);
-  console.log("Stepper passes browser focus eligibility, panel and heading fallbacks, header focus, validationerror, slotted content, the compact displays, the vertical bottom label as an end label, and the compact label row with its cutoff.");
+  console.log("Stepper passes browser focus eligibility, panel and heading fallbacks, header focus, validationerror, slotted content, the compact displays, the vertical bottom label as an end label, the compact label row with its step-driven threshold, and the last-resort icon row.");
 } finally {
   await browser?.close();
   await server.close();
