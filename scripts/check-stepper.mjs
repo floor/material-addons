@@ -216,7 +216,6 @@ try {
     const root = stepper.element;
     const items = [...root.querySelectorAll(".mtrl-stepper__item")];
     const rows = items.map((item) => {
-      const header = item.querySelector(".mtrl-stepper__header");
       const indicator = item.querySelector(".mtrl-stepper__indicator");
       const label = item.querySelector(".mtrl-stepper__label");
       const connector = item.querySelector(".mtrl-stepper__connector");
@@ -228,7 +227,6 @@ try {
         centered: circle ? Math.round(circle.left + circle.width / 2) : null,
         line: line ? Math.round(line.left + line.width / 2) : null,
         labelBeside: Boolean(circle && words && words.left >= circle.right - 1),
-        headerRows: header ? Math.round(box(label).top - circle.top) : null,
       };
     });
     return {
@@ -244,264 +242,6 @@ try {
     if (row.line > 0) assert.ok(Math.abs(row.line - row.centered) <= 1, `vertical bottom: circle and connector share a centre on step ${index + 1}: ${JSON.stringify(row)}`);
     assert.equal(row.labelBeside, true, `vertical bottom: the label sits beside the circle on step ${index + 1}`);
   }
-
-  // A narrow horizontal stepper truncates its labels inside their headers, in
-  // both placements, and never shrinks one to an unreadable box
-  const narrow = async (placement, width) => {
-    await reset();
-    return page.evaluate(async ({ labelPlacement, width }) => {
-      document.body.replaceChildren();
-      const stepper = window.stepper.createStepper({
-        orientation: "horizontal",
-        ...(labelPlacement ? { labelPlacement } : {}),
-        steps: [
-          { value: "store", label: "Store", content: "Choose a shop.", supportingText: "Open now" },
-          { value: "time", label: "Pickup time and address", content: "Choose a time.", supportingText: "Today, 4 pm" },
-          { value: "review", label: "Review the order", content: "Review the order.", supportingText: "One more step" },
-        ],
-      });
-      stepper.element.style.width = `${width}px`;
-      document.body.append(stepper.element);
-      await new Promise((resolve) => setTimeout(resolve, 60));
-      return [...stepper.element.querySelectorAll(".mtrl-stepper__header")].map((header) => {
-        const measure = (node) => {
-          if (!node) return null;
-          const style = getComputedStyle(node);
-          const box = node.getBoundingClientRect();
-          const frame = header.getBoundingClientRect();
-          return {
-            width: Math.round(box.width),
-            inside: Math.round(box.left) >= Math.round(frame.left) - 1 && Math.round(box.right) <= Math.round(frame.right) + 1,
-            overflow: style.textOverflow,
-            nowrap: style.whiteSpace,
-            truncated: node.scrollWidth > node.clientWidth,
-          };
-        };
-        return { label: measure(header.querySelector(".mtrl-stepper__label")), supporting: measure(header.querySelector(".mtrl-stepper__supporting-text")) };
-      });
-    }, { labelPlacement: placement, width });
-  };
-  for (const width of [312, 480]) {
-  for (const placement of ["bottom", null]) {
-    const rows = await narrow(placement, width);
-    const name = `${width}px ${placement ? `${placement} placement` : "end placement"}`;
-    for (const [index, row] of rows.entries()) {
-      assert.ok(row.label.width >= 24, `horizontal ${name}: label ${index + 1} keeps a readable box (${row.label.width}px)`);
-      assert.equal(row.label.inside, true, `horizontal ${name}: label ${index + 1} stays inside its header`);
-      assert.equal(row.label.overflow, "ellipsis", `horizontal ${name}: label ${index + 1} ends in an ellipsis`);
-      assert.equal(row.label.nowrap, "nowrap", `horizontal ${name}: label ${index + 1} stays on one line`);
-      if (row.supporting) {
-        assert.equal(row.supporting.inside, true, `horizontal ${name}: supporting text ${index + 1} stays inside its header`);
-        assert.ok(row.supporting.width > 0, `horizontal ${name}: supporting text ${index + 1} keeps a box`);
-      }
-    }
-    assert.ok(rows.some((row) => row.label.truncated), `horizontal ${name}: a long label truncates`);
-  }
-  }
-
-  // The label floor is per step, not per stepper: four steps at the old cutoff
-  // and five in a 480px row keep every label inside its header, on both sides
-  // of any width where a whole-stepper rule would have switched behaviour
-  for (const [count, width] of [[4, 312], [4, 384], [4, 385], [5, 480]]) {
-    await reset();
-    const rows = await page.evaluate(async ({ count, width }) => {
-      document.body.replaceChildren();
-      const steps = ["Store", "Pickup time and address", "Review the order", "Confirm and pay", "Done"].slice(0, count).map((label, index) => ({
-        value: `step-${index}`, label, content: `Panel ${index}`,
-      }));
-      const stepper = window.stepper.createStepper({ orientation: "horizontal", steps });
-      stepper.element.style.width = `${width}px`;
-      document.body.append(stepper.element);
-      await new Promise((resolve) => setTimeout(resolve, 60));
-      return [...stepper.element.querySelectorAll(".mtrl-stepper__header")].map((header) => {
-        const label = header.querySelector(".mtrl-stepper__label");
-        const box = label.getBoundingClientRect();
-        const frame = header.getBoundingClientRect();
-        return {
-          width: Math.round(box.width),
-          inside: Math.round(box.left) >= Math.round(frame.left) - 1 && Math.round(box.right) <= Math.round(frame.right) + 1,
-          ellipsis: getComputedStyle(label).textOverflow === "ellipsis" && getComputedStyle(label).whiteSpace === "nowrap",
-        };
-      });
-    }, { count, width });
-    for (const [index, row] of rows.entries()) {
-      assert.equal(row.inside, true, `${count} steps at ${width}px: label ${index + 1} stays inside its header`);
-      assert.equal(row.ellipsis, true, `${count} steps at ${width}px: label ${index + 1} ends in an ellipsis`);
-    }
-    const readable = rows.filter((row) => row.width >= 24).length;
-    assert.ok(readable >= 1, `${count} steps at ${width}px: at least one label keeps a readable box`);
-  }
-
-  // Four step buttons at 312px each hold their own bounds — no overlap, no
-  // interception — and the focus outline stays inside the scrollport at a
-  // narrow width and at a wide one; the dots display adds no scroll
-  await reset();
-  const hit = await page.evaluate(async () => {
-    document.body.replaceChildren();
-    const stepper = window.stepper.createStepper({
-      orientation: "horizontal",
-      steps: ["Store", "Pickup time and address", "Review the order", "Confirm and pay"].map((label, index) => ({
-        value: `step-${index}`, label, content: `Panel ${index}`,
-      })),
-    });
-    stepper.element.style.width = "312px";
-    document.body.append(stepper.element);
-    await new Promise((resolve) => setTimeout(resolve, 60));
-    const list = stepper.element.querySelector(".mtrl-stepper__list");
-    const headers = [...stepper.element.querySelectorAll(".mtrl-stepper__header")];
-    const boxes = headers.map((header) => header.getBoundingClientRect());
-    const overlap = boxes.some((box, index) => index > 0 && box.left < boxes[index - 1].right - 0.5);
-    // Only the buttons on screen can be hit-tested; each one must answer for
-    // its own whole width, including the far edge a neighbour would steal
-    const viewport = list.getBoundingClientRect();
-    const intercepted = headers.map((header, index) => {
-      const box = boxes[index];
-      if (box.right > viewport.right - 1) return true;
-      const edge = document.elementFromPoint(box.left + box.width - 2, box.top + box.height / 2);
-      const start = document.elementFromPoint(box.left + 2, box.top + box.height / 2);
-      return header.contains(edge) && header.contains(start);
-    });
-    headers[0].focus();
-    const frame = list.getBoundingClientRect();
-    const first = headers[0].getBoundingClientRect();
-    const outline = {
-      left: Math.round(first.left - frame.left),
-      top: Math.round(first.top - frame.top),
-      bottom: Math.round(frame.bottom - first.bottom),
-    };
-    return { overlap, intercepted, outline, scrollWidth: list.scrollWidth, clientWidth: list.clientWidth };
-  });
-  assert.equal(hit.overlap, false, "horizontal 312px four steps: the buttons do not overlap");
-  assert.deepEqual(hit.intercepted, [true, true, true, true], "horizontal 312px four steps: every button owns its own hit area");
-  for (const side of ["left", "top", "bottom"]) {
-    assert.ok(hit.outline[side] >= 4, `horizontal 312px: the focus outline has room on the ${side} (${hit.outline[side]}px)`);
-  }
-  assert.ok(hit.scrollWidth > hit.clientWidth, "horizontal 312px four steps: the row scrolls as a whole");
-
-  // Every step answers a real click at 312px, including the ones the row has
-  // to scroll into view first
-  const clicked = await page.evaluate(async () => {
-    document.body.replaceChildren();
-    const stepper = window.stepper.createStepper({
-      orientation: "horizontal",
-      steps: ["Store", "Pickup time and address", "Review the order", "Confirm and pay"].map((label, index) => ({
-        value: `step-${index}`, label, content: `Panel ${index}`,
-      })),
-    });
-    stepper.element.style.width = "312px";
-    document.body.append(stepper.element);
-    await new Promise((resolve) => setTimeout(resolve, 60));
-    const reached = [];
-    for (const header of stepper.element.querySelectorAll(".mtrl-stepper__header")) {
-      header.scrollIntoView({ block: "nearest", inline: "center" });
-      await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)));
-      const box = header.getBoundingClientRect();
-      const target = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
-      target?.click();
-      await new Promise((resolve) => setTimeout(resolve, 20));
-      reached.push(stepper.getValue());
-    }
-    return reached;
-  });
-  assert.deepEqual(clicked, ["step-0", "step-1", "step-2", "step-3"], "horizontal 312px four steps: a click on each step reaches it");
-
-  await reset();
-  const wideOutline = await page.evaluate(async () => {
-    document.body.replaceChildren();
-    const stepper = window.stepper.createStepper({
-      orientation: "horizontal",
-      steps: ["Store", "Pickup time and address", "Review the order"].map((label, index) => ({
-        value: `step-${index}`, label, content: `Panel ${index}`,
-      })),
-    });
-    stepper.element.style.width = "880px";
-    document.body.append(stepper.element);
-    await new Promise((resolve) => setTimeout(resolve, 60));
-    const list = stepper.element.querySelector(".mtrl-stepper__list");
-    const header = stepper.element.querySelector(".mtrl-stepper__header");
-    header.focus();
-    const frame = list.getBoundingClientRect();
-    const box = header.getBoundingClientRect();
-    return {
-      left: Math.round(box.left - frame.left),
-      top: Math.round(box.top - frame.top),
-      bottom: Math.round(frame.bottom - box.bottom),
-      scrollWidth: list.scrollWidth,
-      clientWidth: list.clientWidth,
-    };
-  });
-  for (const side of ["left", "top", "bottom"]) {
-    assert.ok(wideOutline[side] >= 4, `horizontal 880px: the focus outline has room on the ${side} (${wideOutline[side]}px)`);
-  }
-  assert.equal(wideOutline.scrollWidth <= wideOutline.clientWidth + 1, true, "horizontal 880px: the row needs no scroll");
-
-  await reset();
-  const dots = await page.evaluate(async () => {
-    document.body.replaceChildren();
-    const stepper = window.stepper.createStepper({
-      orientation: "horizontal",
-      display: "dots",
-      steps: ["Store", "Pickup time and address", "Review the order", "Confirm and pay"].map((label, index) => ({
-        value: `step-${index}`, label, content: `Panel ${index}`,
-      })),
-    });
-    stepper.element.style.width = "312px";
-    document.body.append(stepper.element);
-    await new Promise((resolve) => setTimeout(resolve, 60));
-    const list = stepper.element.querySelector(".mtrl-stepper__list");
-    return { scrollWidth: list.scrollWidth, clientWidth: list.clientWidth };
-  });
-  assert.ok(dots.scrollWidth <= dots.clientWidth + 1, `horizontal dots at 312px: no scroll is added (${dots.scrollWidth} > ${dots.clientWidth})`);
-
-  // A shrink-to-fit stepper keeps its intrinsic width: nothing on the root
-  // turns the element into its own size container
-  await reset();
-  const intrinsic = await page.evaluate(async () => {
-    document.body.replaceChildren();
-    const wrap = document.createElement("div");
-    wrap.style.cssText = "display: flex; width: 880px";
-    document.body.append(wrap);
-    const stepper = window.stepper.createStepper({
-      orientation: "horizontal",
-      steps: [
-        { value: "store", label: "Store", content: "Choose a shop." },
-        { value: "time", label: "Pickup time and address", content: "Choose a time." },
-        { value: "review", label: "Review the order", content: "Review the order." },
-      ],
-    });
-    stepper.element.style.width = "fit-content";
-    wrap.append(stepper.element);
-    await new Promise((resolve) => setTimeout(resolve, 60));
-    const root = stepper.element.getBoundingClientRect();
-    return { width: Math.round(root.width), overflow: stepper.element.scrollWidth > stepper.element.clientWidth + 1 };
-  });
-  assert.ok(intrinsic.width > 300, `shrink-to-fit: the stepper keeps an intrinsic width (${intrinsic.width}px)`);
-  assert.equal(intrinsic.overflow, false, "shrink-to-fit: nothing overflows the stepper");
-
-  // The same row at a wide width keeps the connector rail and untruncated names
-  await reset();
-  const wide = await page.evaluate(async () => {
-    document.body.replaceChildren();
-    const stepper = window.stepper.createStepper({
-      orientation: "horizontal",
-      steps: [
-        { value: "store", label: "Store", content: "Choose a shop." },
-        { value: "time", label: "Pickup time and address", content: "Choose a time." },
-        { value: "review", label: "Review the order", content: "Review the order." },
-      ],
-    });
-    stepper.element.style.width = "880px";
-    document.body.append(stepper.element);
-    await new Promise((resolve) => setTimeout(resolve, 60));
-    const connectors = [...stepper.element.querySelectorAll(".mtrl-stepper__connector")].filter((node) => node.getBoundingClientRect().width > 0);
-    const labels = [...stepper.element.querySelectorAll(".mtrl-stepper__label")];
-    return {
-      connector: Math.round(connectors[0]?.getBoundingClientRect().width ?? 0),
-      truncated: labels.some((node) => node.scrollWidth > node.clientWidth),
-    };
-  });
-  assert.ok(wide.connector >= 32, `horizontal 880px: the connector keeps its rail (${wide.connector}px)`);
-  assert.equal(wide.truncated, false, "horizontal 880px: no label truncates");
 
   // Vertical compact modes: the active panel and its action stay visible, and
   // the hidden list is not a tab stop
@@ -599,7 +339,7 @@ try {
   assert.deepEqual(announce.cleared, { same: true, labels: true, listVisible: true, completed: true });
 
   assert.deepEqual(errors, []);
-  console.log("Stepper passes browser focus eligibility, panel and heading fallbacks, header focus, validationerror, slotted content, the compact displays, the vertical bottom label as an end label, and the truncated horizontal labels.");
+  console.log("Stepper passes browser focus eligibility, panel and heading fallbacks, header focus, validationerror, slotted content, the compact displays, and the vertical bottom label as an end label.");
 } finally {
   await browser?.close();
   await server.close();

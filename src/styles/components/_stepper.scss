@@ -150,55 +150,6 @@
   font-weight: var(--mtrl-stepper-label-inactive-weight);
 }
 
-// A narrow horizontal stepper truncates its labels rather than clipping them:
-// the item shrinks, the label ends in an ellipsis, and the full name stays in
-// the header's accessible name
-.mtrl-stepper--horizontal .mtrl-stepper__label,
-.mtrl-stepper--horizontal .mtrl-stepper__supporting-text {
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-// An ellipsis needs a box to end in, and the box can only be as wide as the
-// header has left. The label group asks for a readable floor but never for
-// more than its step has (the 100% resolves against the header's content
-// box), and the connector gives up its rail before the label does, so every
-// name truncates inside its header at any width. Nothing here measures the
-// whole stepper, so a shrink-to-fit stepper keeps its intrinsic width
-.mtrl-stepper--horizontal .mtrl-stepper__label-group {
-  flex: 0 1 auto;
-  min-width: min(2rem, 100%);
-}
-
-// With labels shown, a header never shrinks below its padding, its indicator
-// and a readable label, so the label always has a box inside it; the compact
-// displays have no label to protect and keep their own sizing
-.mtrl-stepper--horizontal.mtrl-stepper--display-labels .mtrl-stepper__header {
-  min-width: calc(
-    2 * var(--mtrl-stepper-header-padding) + var(--mtrl-stepper-indicator-size) +
-      var(--mtrl-stepper-header-gap) + 2rem
-  );
-}
-
-// Each item holds its own button: the item is never narrower than its
-// content, so adjacent buttons cannot overlap, and a row wider than the
-// stepper scrolls as a whole. The padding keeps the focus outline inside the
-// scrollport on every side, which overflow-x alone would clip
-.mtrl-stepper--horizontal .mtrl-stepper__item {
-  min-width: min-content;
-}
-
-.mtrl-stepper--horizontal .mtrl-stepper__list {
-  overflow-x: auto;
-  padding: 6px;
-}
-
-// The connector gives up its rail before the header gives up its label
-.mtrl-stepper--horizontal .mtrl-stepper__connector {
-  flex: 0 999 32px;
-  min-width: 0;
-}
-
 .mtrl-stepper__supporting-text {
   overflow: hidden;
   color: var(--mtrl-stepper-supporting-text-color);
@@ -293,16 +244,6 @@
 
 .mtrl-stepper--label-bottom .mtrl-stepper__label-group {
   align-items: center;
-  // The column header is as wide as its item: the group takes that width so
-  // the text truncates inside the header instead of growing past both edges
-  align-self: stretch;
-  min-width: 0;
-  max-width: 100%;
-}
-
-.mtrl-stepper--label-bottom .mtrl-stepper__label,
-.mtrl-stepper--label-bottom .mtrl-stepper__supporting-text {
-  max-width: 100%;
 }
 
 // The list after the panels
@@ -386,7 +327,6 @@
   position: absolute;
   width: 1px;
   height: 1px;
-  min-width: 0;
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
