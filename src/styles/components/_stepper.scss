@@ -150,6 +150,15 @@
   font-weight: var(--mtrl-stepper-label-inactive-weight);
 }
 
+// A narrow horizontal stepper truncates its labels rather than clipping them:
+// the item shrinks, the label ends in an ellipsis, and the full name stays in
+// the header's accessible name
+.mtrl-stepper--horizontal .mtrl-stepper__label,
+.mtrl-stepper--horizontal .mtrl-stepper__supporting-text {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .mtrl-stepper__supporting-text {
   overflow: hidden;
   color: var(--mtrl-stepper-supporting-text-color);
