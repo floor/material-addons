@@ -20,8 +20,8 @@ interface Runtime {
   value: string | null;
   values: string[];
   open: Set<string>;
-  loading: Set<string>;
-  loaded: Set<string>;
+  loading: Map<string, LoadRequest>;
+  loaded: WeakSet<TreeNode>;
   focus: string | null;
   disabled: boolean;
   selectionFollowsFocus: boolean;
@@ -33,6 +33,10 @@ interface Runtime {
   loadChildren?: (node: TreeNode) => Promise<TreeNode[]>;
   buffer: string;
   bufferAt: number;
+}
+
+interface LoadRequest {
+  node: TreeNode;
 }
 
 const defaults = (config: TreeConfig): Runtime => {
@@ -52,8 +56,8 @@ const defaults = (config: TreeConfig): Runtime => {
     value: config.value ?? null,
     values: config.values ? [...config.values] : [],
     open,
-    loading: new Set(),
-    loaded: new Set(),
+    loading: new Map(),
+    loaded: new WeakSet(),
     focus: null,
     disabled: config.disabled ?? false,
     selectionFollowsFocus: config.selectionFollowsFocus ?? false,
@@ -98,7 +102,7 @@ const parentOf = (runtime: Runtime, value: string): TreeNode | null => {
 };
 
 const isParent = (runtime: Runtime, node: TreeNode): boolean =>
-  !!node.children?.length || (node.lazy === true && !runtime.loaded.has(node.value));
+  !!node.children?.length || (node.lazy === true && !runtime.loaded.has(node));
 
 /** Creates a tree: the folder-style expanding list. */
 const createTree = (config: TreeConfig = {}): TreeComponent => {
@@ -313,26 +317,43 @@ const createTree = (config: TreeConfig = {}): TreeComponent => {
     render();
   };
 
-  const tryExpand = (node: TreeNode): boolean => {
-    if (runtime.disabled || node.disabled || !isParent(runtime, node) || runtime.open.has(node.value)) return false;
-    const event = vetoable<TreeBeforeExpandEvent>(TREE_EVENTS.BEFORE_EXPAND, () => ({ value: node.value, node }) as TreeBeforeExpandEvent, config.onBeforeExpand);
-    if (event.defaultPrevented) return false;
-    if (node.lazy && !runtime.loaded.has(node.value) && runtime.loadChildren) {
-      if (runtime.loading.has(node.value)) return false;
-      runtime.loading.add(node.value);
+  const loadAndExpand = async (request: LoadRequest, loadChildren: NonNullable<TreeConfig["loadChildren"]>): Promise<void> => {
+    const { node } = request;
+    const { value } = node;
+    let children: TreeNode[];
+    try {
+      children = await loadChildren(node);
+    } catch {
+      if (runtime.loading.get(value) !== request) return;
+      runtime.loading.delete(value);
       render();
-      runtime.loadChildren(node).then((children) => {
-        runtime.loading.delete(node.value);
-        runtime.loaded.add(node.value);
-        node.children = children;
-        emit<TreeExpandEvent & { type?: never }>(TREE_EVENTS.LOAD, { value: node.value, node }, config.onLoad);
-        if (children.length) openNode(node);
-        else { node.lazy = false; render(); }
-      }).catch(() => {
-        runtime.loading.delete(node.value);
-        emit(TREE_EVENTS.ERROR, { value: node.value, node }, config.onError);
-        render();
-      });
+      emit(TREE_EVENTS.ERROR, { value, node }, config.onError);
+      return;
+    }
+    if (runtime.loading.get(value) !== request) return;
+    runtime.loading.delete(value);
+    runtime.loaded.add(node);
+    node.children = children;
+    if (children.length) openNode(node);
+    else {
+      node.lazy = false;
+      render();
+    }
+    emit(TREE_EVENTS.LOAD, { value, node }, config.onLoad);
+    if (children.length && runtime.open.has(value) && find(runtime, value) === node) {
+      emit(TREE_EVENTS.EXPAND, { value, node }, config.onExpand);
+    }
+  };
+
+  const tryExpand = (node: TreeNode): boolean => {
+    if (runtime.disabled || node.disabled || !isParent(runtime, node) || runtime.open.has(node.value) || runtime.loading.has(node.value)) return false;
+    const event = vetoable<TreeBeforeExpandEvent>(TREE_EVENTS.BEFORE_EXPAND, () => ({ value: node.value, node }) as TreeBeforeExpandEvent, config.onBeforeExpand);
+    if (event.defaultPrevented || find(runtime, node.value) !== node) return false;
+    if (node.lazy && !runtime.loaded.has(node) && runtime.loadChildren) {
+      const request = { node };
+      runtime.loading.set(node.value, request);
+      render();
+      void loadAndExpand(request, runtime.loadChildren);
       return true;
     }
     openNode(node);
@@ -513,6 +534,9 @@ const createTree = (config: TreeConfig = {}): TreeComponent => {
     setNodes(nodes) {
       const open = [...runtime.open];
       runtime.nodes = nodes;
+      for (const [value, request] of runtime.loading) {
+        if (find(runtime, value) !== request.node) runtime.loading.delete(value);
+      }
       runtime.open = new Set(open.filter((id) => find(runtime, id)));
       render();
       return tree;
@@ -524,6 +548,7 @@ const createTree = (config: TreeConfig = {}): TreeComponent => {
     off(name, handler) { handlers[name]?.delete(handler); return tree; },
     focus: () => { if (runtime.focus !== null) focusNode(runtime.focus); },
     destroy() {
+      runtime.loading.clear();
       root.removeEventListener("keydown", onKeydown);
       root.removeEventListener("click", onClick);
       root.removeEventListener("focusin", onFocusIn);

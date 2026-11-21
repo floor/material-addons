@@ -15,6 +15,7 @@ beforeAll(() => {
   }
 });
 import createTree from "../src/components/tree";
+import type { TreeNode } from "../src/components/tree/types";
 
 const NODES = [
   { value: "src", label: "src", children: [
@@ -179,6 +180,73 @@ describe("createTree", () => {
     never.expand("end");
     expect(calls).toBe(1); // a childless non-lazy node never loads
     tree.destroy(); fail.destroy(); never.destroy();
+  });
+
+  test("lazy: a duplicate request is silent and listeners see the committed rows", async () => {
+    let finish!: (children: TreeNode[]) => void;
+    const pending = new Promise<TreeNode[]>((resolve) => { finish = resolve; });
+    const sequence: string[] = [];
+    const tree = createTree({
+      nodes: [{ value: "lazy", label: "Lazy", lazy: true }],
+      onBeforeExpand: () => { sequence.push("beforeexpand"); },
+      loadChildren: () => {
+        sequence.push(`fetch:${lazyRow()?.getAttribute("aria-busy")}`);
+        return pending;
+      },
+      onLoad: () => recordDOM("load"),
+      onExpand: () => recordDOM("expand"),
+    });
+    const lazyRow = () => tree.element.querySelector('[data-value="lazy"]');
+    const recordDOM = (name: string) => {
+      const expanded = lazyRow()?.getAttribute("aria-expanded");
+      const busy = lazyRow()?.hasAttribute("aria-busy");
+      const child = tree.element.querySelector('[data-value="child"]') !== null;
+      sequence.push(`${name}:${expanded}:${busy}:${child}`);
+    };
+    document.body.append(tree.element);
+
+    expect(tree.expand("lazy")).toBe(true);
+    expect(tree.expand("lazy")).toBe(false);
+    expect(tree.getExpanded()).toEqual([]);
+    expect(sequence).toEqual(["beforeexpand", "fetch:true"]);
+    finish([{ value: "child", label: "Child" }]);
+    await pending;
+    expect(sequence).toEqual(["beforeexpand", "fetch:true", "load:true:false:true", "expand:true:false:true"]);
+    expect(tree.getExpanded()).toEqual(["lazy"]);
+    tree.destroy();
+  });
+
+  test("lazy: a replaced folder ignores the old result even if its id is reused", async () => {
+    let finishOld!: (children: TreeNode[]) => void;
+    let finishNew!: (children: TreeNode[]) => void;
+    const oldLoad = new Promise<TreeNode[]>((resolve) => { finishOld = resolve; });
+    const newLoad = new Promise<TreeNode[]>((resolve) => { finishNew = resolve; });
+    const outcome: string[] = [];
+    const tree = createTree({
+      nodes: [{ value: "lazy", label: "Old", lazy: true }],
+      loadChildren: (node) => node.label === "Old" ? oldLoad : newLoad,
+      onLoad: ({ node }) => outcome.push(`load:${node.label}`),
+      onExpand: ({ node }) => outcome.push(`expand:${node.label}`),
+      onError: () => outcome.push("error"),
+    });
+    document.body.append(tree.element);
+    const lazyRow = () => tree.element.querySelector('[data-value="lazy"]');
+    expect(tree.expand("lazy")).toBe(true);
+    tree.setNodes([{ value: "lazy", label: "New", lazy: true }]);
+    expect(lazyRow()?.hasAttribute("aria-busy")).toBe(false);
+    expect(tree.expand("lazy")).toBe(true);
+    finishOld([{ value: "stale", label: "Stale" }]);
+    await oldLoad;
+    expect(outcome).toEqual([]);
+    expect(tree.getExpanded()).toEqual([]);
+    expect(lazyRow()?.getAttribute("aria-busy")).toBe("true");
+    finishNew([{ value: "fresh", label: "Fresh" }]);
+    await newLoad;
+    expect(outcome).toEqual(["load:New", "expand:New"]);
+    expect(tree.getExpanded()).toEqual(["lazy"]);
+    expect(tree.getNode("stale")).toBeNull();
+    expect(tree.getNode("fresh")?.label).toBe("Fresh");
+    tree.destroy();
   });
 
   test("type-ahead skips disabled; buffer, not a per-key reset", () => {
