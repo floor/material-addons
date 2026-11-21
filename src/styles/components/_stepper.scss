@@ -170,18 +170,27 @@
   min-width: min(2rem, 100%);
 }
 
-// A header never shrinks below its padding, its indicator and a readable
-// label — so the label always has a box inside it — and a row of them wider
-// than the stepper scrolls sideways instead of squeezing a label out
-.mtrl-stepper--horizontal .mtrl-stepper__header {
+// With labels shown, a header never shrinks below its padding, its indicator
+// and a readable label, so the label always has a box inside it; the compact
+// displays have no label to protect and keep their own sizing
+.mtrl-stepper--horizontal.mtrl-stepper--display-labels .mtrl-stepper__header {
   min-width: calc(
     2 * var(--mtrl-stepper-header-padding) + var(--mtrl-stepper-indicator-size) +
       var(--mtrl-stepper-header-gap) + 2rem
   );
 }
 
+// Each item holds its own button: the item is never narrower than its
+// content, so adjacent buttons cannot overlap, and a row wider than the
+// stepper scrolls as a whole. The padding keeps the focus outline inside the
+// scrollport on every side, which overflow-x alone would clip
+.mtrl-stepper--horizontal .mtrl-stepper__item {
+  min-width: min-content;
+}
+
 .mtrl-stepper--horizontal .mtrl-stepper__list {
   overflow-x: auto;
+  padding: 6px;
 }
 
 // The connector gives up its rail before the header gives up its label
