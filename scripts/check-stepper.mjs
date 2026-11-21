@@ -19,6 +19,10 @@ try {
   const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
+  // A resize loop surfaces as a console error rather than a page error
+  page.on("console", (message) => {
+    if (message.type() === "error" && /ResizeObserver loop/i.test(message.text())) errors.push(message.text());
+  });
   const reset = async () => {
     await page.goto(`http://127.0.0.1:${port}/test/browser/stepper.html`);
     await page.waitForFunction(() => !!window.stepper);
@@ -483,6 +487,36 @@ try {
     assert.equal(many.names.length, count, `${count} steps at 312px: every header keeps its name`);
     assert.deepEqual(many.selectedOverflow, Array.from({ length: count }, () => true), `${count} steps at 312px: selecting any step keeps the row inside its host`);
   }
+
+  // Crossings between full, compact, icon and dots rows raise no error: the
+  // observed height changes with every transition, so the decision ignores
+  // height-only entries and defers its class write
+  await reset();
+  const crossings = await page.evaluate(async () => {
+    document.body.replaceChildren();
+    const steps = (count) => Array.from({ length: count }, (_, index) => ({
+      value: `step-${index}`, label: `Step ${index + 1} with a longer title`, content: `Panel ${index}`,
+    }));
+    const states = [];
+    const settle = () => new Promise((resolve) => setTimeout(resolve, 140));
+    for (const width of [880, 500, 312, 880, 500, 312]) {
+      document.body.replaceChildren();
+      const stepper = window.stepper.createStepper({ orientation: "horizontal", steps: steps(width <= 312 ? 8 : 4) });
+      stepper.element.style.width = `${width}px`;
+      document.body.append(stepper.element);
+      await settle();
+      for (const target of [500, 312, 880].filter((value) => value !== width)) {
+        stepper.element.style.width = `${target}px`;
+        await settle();
+      }
+      states.push(width);
+      stepper.destroy();
+    }
+    return states;
+  });
+  assert.equal(crossings.length, 6, "the crossings ran");
+  const loopErrors = errors.filter((error) => /ResizeObserver loop/i.test(error));
+  assert.deepEqual(loopErrors, [], `no resize loop across the compact, icon and dots transitions (${loopErrors.join(" | ")})`);
 
   // Six steps in 312px cannot hold a label: every step shows its indicator
   await reset();

@@ -233,6 +233,7 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
       iconOnly = false;
       element.classList.remove(cls(STEPPER_MODIFIERS.COMPACT_LABELS), cls(STEPPER_MODIFIERS.COMPACT_ICONS));
     };
+    lastWidth = element.clientWidth;
     if (resolved !== "horizontal" || settings.display !== "labels" || element.clientWidth === 0) {
       reset();
       return;
@@ -293,10 +294,31 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
   };
 
   // A forced horizontal stepper has no orientation observer to lean on, so
-  // the renderer watches its own width for the compact threshold
+  // the renderer watches its own width for the compact threshold. Only an
+  // inline-size change re-decides — the class change itself alters the height,
+  // which would otherwise feed straight back — and the class write is deferred
+  // to the next frame, out of the observer callback, so a transition cannot
+  // raise a resize loop
+  let lastWidth = -1;
+  let measureFrame: number | null = null;
+  const scheduleMeasure = (): void => {
+    if (measureFrame !== null) return;
+    const raf = typeof requestAnimationFrame === "function"
+      ? requestAnimationFrame
+      : (callback: (time: number) => void) => setTimeout(() => callback(0), 0) as unknown as number;
+    measureFrame = raf(() => {
+      measureFrame = null;
+      measureLabels(lastResolved);
+    });
+  };
   let labelObserver: ResizeObserver | null = null;
   if (typeof ResizeObserver === "function") {
-    labelObserver = new ResizeObserver(() => measureLabels(lastResolved));
+    labelObserver = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width ?? element.clientWidth;
+      if (Math.abs(width - lastWidth) < 1) return;
+      lastWidth = width;
+      scheduleMeasure();
+    });
     labelObserver.observe(element);
   }
 
@@ -431,6 +453,11 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
     destroy: () => {
       labelObserver?.disconnect();
       labelObserver = null;
+      if (measureFrame !== null) {
+        if (typeof cancelAnimationFrame === "function") cancelAnimationFrame(measureFrame);
+        else clearTimeout(measureFrame);
+        measureFrame = null;
+      }
       element.replaceChildren();
     },
   };
