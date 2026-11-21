@@ -159,6 +159,27 @@
   text-overflow: ellipsis;
 }
 
+// An ellipsis needs a box to end in. In a narrow row the label group keeps a
+// readable floor while the connector gives up its share first, so every name
+// truncates instead of some collapsing to zero width. The threshold is the
+// stepper's own width, not the viewport's
+.mtrl-stepper {
+  container-type: inline-size;
+}
+
+@container (max-width: 24rem) {
+  .mtrl-stepper--horizontal .mtrl-stepper__label-group {
+    flex: 0 1 auto;
+    min-width: 2rem;
+  }
+
+  .mtrl-stepper--horizontal .mtrl-stepper__connector {
+    flex: 0 1 8px;
+    min-width: 0;
+    margin-inline: 2px;
+  }
+}
+
 .mtrl-stepper__supporting-text {
   overflow: hidden;
   color: var(--mtrl-stepper-supporting-text-color);
@@ -253,6 +274,16 @@
 
 .mtrl-stepper--label-bottom .mtrl-stepper__label-group {
   align-items: center;
+  // The column header is as wide as its item: the group takes that width so
+  // the text truncates inside the header instead of growing past both edges
+  align-self: stretch;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.mtrl-stepper--label-bottom .mtrl-stepper__label,
+.mtrl-stepper--label-bottom .mtrl-stepper__supporting-text {
+  max-width: 100%;
 }
 
 // The list after the panels
@@ -336,6 +367,7 @@
   position: absolute;
   width: 1px;
   height: 1px;
+  min-width: 0;
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;

@@ -245,9 +245,61 @@ try {
     assert.equal(row.labelBeside, true, `vertical bottom: the label sits beside the circle on step ${index + 1}`);
   }
 
-  // A narrow horizontal stepper truncates its labels with an ellipsis instead of clipping them
+  // A narrow horizontal stepper truncates its labels inside their headers, in
+  // both placements, and never shrinks one to an unreadable box
+  const narrow = async (placement) => {
+    await reset();
+    return page.evaluate(async (labelPlacement) => {
+      document.body.replaceChildren();
+      const stepper = window.stepper.createStepper({
+        orientation: "horizontal",
+        ...(labelPlacement ? { labelPlacement } : {}),
+        steps: [
+          { value: "store", label: "Store", content: "Choose a shop.", supportingText: "Open now" },
+          { value: "time", label: "Pickup time and address", content: "Choose a time.", supportingText: "Today, 4 pm" },
+          { value: "review", label: "Review the order", content: "Review the order.", supportingText: "One more step" },
+        ],
+      });
+      stepper.element.style.width = "312px";
+      document.body.append(stepper.element);
+      await new Promise((resolve) => setTimeout(resolve, 60));
+      return [...stepper.element.querySelectorAll(".mtrl-stepper__header")].map((header) => {
+        const measure = (node) => {
+          if (!node) return null;
+          const style = getComputedStyle(node);
+          const box = node.getBoundingClientRect();
+          const frame = header.getBoundingClientRect();
+          return {
+            width: Math.round(box.width),
+            inside: Math.round(box.left) >= Math.round(frame.left) - 1 && Math.round(box.right) <= Math.round(frame.right) + 1,
+            overflow: style.textOverflow,
+            nowrap: style.whiteSpace,
+            truncated: node.scrollWidth > node.clientWidth,
+          };
+        };
+        return { label: measure(header.querySelector(".mtrl-stepper__label")), supporting: measure(header.querySelector(".mtrl-stepper__supporting-text")) };
+      });
+    }, placement);
+  };
+  for (const placement of ["bottom", null]) {
+    const rows = await narrow(placement);
+    const name = placement ? `${placement} placement` : "end placement";
+    for (const [index, row] of rows.entries()) {
+      assert.ok(row.label.width >= 24, `horizontal 312px ${name}: label ${index + 1} keeps a readable box (${row.label.width}px)`);
+      assert.equal(row.label.inside, true, `horizontal 312px ${name}: label ${index + 1} stays inside its header`);
+      assert.equal(row.label.overflow, "ellipsis", `horizontal 312px ${name}: label ${index + 1} ends in an ellipsis`);
+      assert.equal(row.label.nowrap, "nowrap", `horizontal 312px ${name}: label ${index + 1} stays on one line`);
+      if (row.supporting) {
+        assert.equal(row.supporting.inside, true, `horizontal 312px ${name}: supporting text ${index + 1} stays inside its header`);
+        assert.ok(row.supporting.width > 0, `horizontal 312px ${name}: supporting text ${index + 1} keeps a box`);
+      }
+    }
+    assert.ok(rows.some((row) => row.label.truncated), `horizontal 312px ${name}: a long label truncates`);
+  }
+
+  // The same row at a wide width keeps the connector rail and untruncated names
   await reset();
-  const narrow = await page.evaluate(async () => {
+  const wide = await page.evaluate(async () => {
     document.body.replaceChildren();
     const stepper = window.stepper.createStepper({
       orientation: "horizontal",
@@ -257,27 +309,18 @@ try {
         { value: "review", label: "Review the order", content: "Review the order." },
       ],
     });
-    stepper.element.style.width = "312px";
+    stepper.element.style.width = "880px";
     document.body.append(stepper.element);
     await new Promise((resolve) => setTimeout(resolve, 60));
-    return [...stepper.element.querySelectorAll(".mtrl-stepper__header")].map((header) => {
-      const label = header.querySelector(".mtrl-stepper__label");
-      const style = getComputedStyle(label);
-      const box = label.getBoundingClientRect();
-      return {
-        overflow: style.textOverflow,
-        nowrap: style.whiteSpace,
-        fits: Math.round(box.right) <= Math.round(header.getBoundingClientRect().right) + 1,
-        truncated: label.scrollWidth > label.clientWidth,
-      };
-    });
+    const connectors = [...stepper.element.querySelectorAll(".mtrl-stepper__connector")].filter((node) => node.getBoundingClientRect().width > 0);
+    const labels = [...stepper.element.querySelectorAll(".mtrl-stepper__label")];
+    return {
+      connector: Math.round(connectors[0]?.getBoundingClientRect().width ?? 0),
+      truncated: labels.some((node) => node.scrollWidth > node.clientWidth),
+    };
   });
-  for (const [index, row] of narrow.entries()) {
-    assert.equal(row.overflow, "ellipsis", `horizontal 312px: label ${index + 1} ends in an ellipsis`);
-    assert.equal(row.nowrap, "nowrap", `horizontal 312px: label ${index + 1} stays on one line`);
-    assert.equal(row.fits, true, `horizontal 312px: label ${index + 1} stays inside its header`);
-  }
-  assert.ok(narrow.some((row) => row.truncated), "horizontal 312px: at least one label truncates rather than clipping");
+  assert.ok(wide.connector >= 32, `horizontal 880px: the connector keeps its rail (${wide.connector}px)`);
+  assert.equal(wide.truncated, false, "horizontal 880px: no label truncates");
 
   // Vertical compact modes: the active panel and its action stay visible, and
   // the hidden list is not a tab stop
