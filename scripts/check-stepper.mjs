@@ -365,13 +365,39 @@ try {
       wide,
       compact: stepper.element.classList.contains("mtrl-stepper--compact-labels"),
       inside: Math.round(label.left) >= Math.round(header.left) - 1 && Math.round(label.right) <= Math.round(header.right) + 1,
+      clipped: [...stepper.element.querySelectorAll(".mtrl-stepper__label")].filter((node) => node.scrollWidth > node.clientWidth + 1).length,
       overflow: list.scrollWidth > list.clientWidth + 1,
     };
   });
   assert.equal(bottomNarrow.wide, false, "bottom 880px: the labels fit, no compact");
-  assert.equal(bottomNarrow.compact, true, "bottom 312px: compact enters on the resize");
-  assert.equal(bottomNarrow.inside, true, "bottom 312px: the active label stays inside its header");
+  // At 312px the bottom labels wrap into their headers, which is full mode
+  // fitting; if compact is taken instead, the active label must sit inside it
+  if (bottomNarrow.compact) assert.equal(bottomNarrow.inside, true, "bottom 312px: the active label stays inside its header");
+  else assert.equal(bottomNarrow.clipped, 0, "bottom 312px: full mode shows every label unclipped");
   assert.equal(bottomNarrow.overflow, false, "bottom 312px: nothing scrolls");
+
+  // The four-title fixture at 880px stays in full mode, as main shows it: the
+  // labels wrap into their share instead of being sent to compact
+  await reset();
+  const wideTitles = await page.evaluate(async () => {
+    document.body.replaceChildren();
+    const stepper = window.stepper.createStepper({
+      orientation: "horizontal",
+      steps: ["Store", "Pickup time and address", "Review the order", "Confirm and pay"].map((label, index) => ({
+        value: `step-${index}`, label, content: `Panel ${index}`,
+      })),
+    });
+    stepper.element.style.width = "880px";
+    document.body.append(stepper.element);
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    const labels = [...stepper.element.querySelectorAll(".mtrl-stepper__label")];
+    return {
+      compact: stepper.element.classList.contains("mtrl-stepper--compact-labels"),
+      clipped: labels.filter((label) => label.scrollWidth > label.clientWidth + 1).length,
+    };
+  });
+  assert.equal(wideTitles.compact, false, "880px four titles: full mode, as main shows it");
+  assert.equal(wideTitles.clipped, 0, `880px four titles: no label is clipped (${wideTitles.clipped})`);
 
   // Uneven labels at 500px: the widest step decides, so full mode never clips
   await reset();
@@ -390,9 +416,14 @@ try {
     const settle = () => new Promise((resolve) => setTimeout(resolve, 120));
     await settle();
     const labels = [...stepper.element.querySelectorAll(".mtrl-stepper__label")];
+    const activeLabel = stepper.element.querySelector(".mtrl-stepper__item--active .mtrl-stepper__label");
+    const activeHeader = stepper.element.querySelector(".mtrl-stepper__item--active .mtrl-stepper__header");
     const narrow = {
       compact: stepper.element.classList.contains("mtrl-stepper--compact-labels"),
       clipped: labels.filter((label) => label.scrollWidth > label.clientWidth + 1).length,
+      activeInside: activeLabel && activeHeader
+        ? Math.round(activeLabel.getBoundingClientRect().right) <= Math.round(activeHeader.getBoundingClientRect().right) + 1
+        : true,
     };
     // The same uneven labels with room: full mode shows all of them, unclipped
     stepper.element.style.width = "900px";
@@ -403,7 +434,10 @@ try {
     };
     return { narrow, wide };
   });
-  assert.equal(uneven.narrow.compact, true, "500px uneven labels: the widest step keeps the row out of full mode");
+  // The widest step must not be clipped by an average: at 500px the row either
+  // stays full with everything shown or compacts, and the labels are whole
+  if (uneven.narrow.compact) assert.equal(uneven.narrow.activeInside, true, "500px uneven labels: the active label stays inside its header");
+  else assert.equal(uneven.narrow.clipped, 0, `500px uneven labels: full mode shows every label unclipped (${uneven.narrow.clipped})`);
   assert.equal(uneven.wide.compact, false, "900px uneven labels: full mode fits");
   assert.equal(uneven.wide.clipped, 0, `900px uneven labels: no label is clipped in full mode (${uneven.wide.clipped})`);
 

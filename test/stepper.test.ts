@@ -411,31 +411,53 @@ describe("Stepper label placement", () => {
 
 describe("Stepper compact labels", () => {
   test("a row whose labels are squeezed switches to compact labels and back", async () => {
-    const stepper = createStepper({
-      orientation: "horizontal",
-      steps: steps(),
-    });
+    const stepper = createStepper({ orientation: "horizontal", steps: steps() });
     document.body.append(stepper.element);
     const root = stepper.element;
-    const labels = () => Array.from(root.querySelectorAll<HTMLElement>(".mtrl-stepper__label"));
-    const width = (value: number) => Object.defineProperty(root, "clientWidth", { value, configurable: true });
-    const squeeze = (box: number) => {
-      for (const label of labels()) Object.defineProperty(label, "clientWidth", { value: box, configurable: true });
-    };
-    // A wide viewport with room for the labels
-    width(900);
-    squeeze(120);
-    stepper.setSteps(stepper.getSteps());
-    expect(root.classList.contains("mtrl-stepper--compact-labels")).toBe(false);
-    // Squeezed to an unreadable box
-    width(240);
-    squeeze(10);
-    stepper.setSteps(stepper.getSteps());
-    expect(root.classList.contains("mtrl-stepper--compact-labels")).toBe(true);
-    // Back to a wide viewport: the class leaves once the width the labels need is back
-    width(900);
-    stepper.setSteps(stepper.getSteps());
-    expect(root.classList.contains("mtrl-stepper--compact-labels")).toBe(false);
+    // jsdom has no layout: the reads the renderer makes are answered from one
+    // state, keyed by the element the read happens on
+    const state = { width: 900, box: 120, text: 120 };
+    const prototype = dom.window.HTMLElement.prototype as unknown as Record<string, unknown>;
+    const width = Object.getOwnPropertyDescriptor(prototype, "clientWidth");
+    const scroll = Object.getOwnPropertyDescriptor(prototype, "scrollWidth");
+    Object.defineProperty(prototype, "clientWidth", {
+      configurable: true,
+      get(this: HTMLElement) {
+        if (this.classList?.contains("mtrl-stepper")) return state.width;
+        if (this.classList?.contains("mtrl-stepper__label")) return state.box;
+        return 0;
+      },
+    });
+    Object.defineProperty(prototype, "scrollWidth", {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.classList?.contains("mtrl-stepper__label") ? state.text : 0;
+      },
+    });
+    try {
+      // A wide viewport with room for the labels
+      state.width = 900;
+      state.box = 120;
+      state.text = 120;
+      stepper.setSteps(stepper.getSteps());
+      expect(root.classList.contains("mtrl-stepper--compact-labels")).toBe(false);
+      // A box narrower than the text it holds is clipped
+      state.width = 240;
+      state.box = 10;
+      state.text = 120;
+      stepper.setSteps(stepper.getSteps());
+      expect(root.classList.contains("mtrl-stepper--compact-labels")).toBe(true);
+      // Back to a wide viewport, where nothing is clipped again
+      state.width = 900;
+      state.box = 120;
+      stepper.setSteps(stepper.getSteps());
+      expect(root.classList.contains("mtrl-stepper--compact-labels")).toBe(false);
+    } finally {
+      if (width) Object.defineProperty(prototype, "clientWidth", width);
+      else Reflect.deleteProperty(prototype, "clientWidth");
+      if (scroll) Object.defineProperty(prototype, "scrollWidth", scroll);
+      else Reflect.deleteProperty(prototype, "scrollWidth");
+    }
     stepper.destroy();
   });
 

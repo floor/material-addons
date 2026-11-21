@@ -226,15 +226,6 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
   let iconOnly = false;
   let lastResolved: "horizontal" | "vertical" = "horizontal";
 
-  /** A label's width on one line, whatever the current layout does to it */
-  const naturalWidth = (label: HTMLElement): number => {
-    const previous = label.style.whiteSpace;
-    label.style.whiteSpace = "nowrap";
-    const width = label.scrollWidth;
-    label.style.whiteSpace = previous;
-    return width;
-  };
-
   const measureLabels = (resolved: "horizontal" | "vertical"): void => {
     lastResolved = resolved;
     const reset = (): void => {
@@ -246,10 +237,16 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
       reset();
       return;
     }
-    // Measure in the full layout: the classes come off for the read and go
-    // back on with the answer, and the observer's next call reads the same
-    // widths, so the answer settles instead of oscillating
-    element.classList.remove(cls(STEPPER_MODIFIERS.COMPACT_LABELS), cls(STEPPER_MODIFIERS.COMPACT_ICONS));
+    // Measure the real full layout: the classes come off, every label is read
+    // as it renders there, and the answer is whether anything is clipped —
+    // the same test a reader sees, so a row that fits in full mode (a wide
+    // row, or labels that wrap into their share) stays in it
+    element.classList.remove(
+      cls(STEPPER_MODIFIERS.COMPACT_LABELS),
+      cls(STEPPER_MODIFIERS.COMPACT_ICONS),
+      cls(STEPPER_MODIFIERS.DISPLAY_DOTS),
+      cls(STEPPER_MODIFIERS.COMPACT_DOTS),
+    );
     const style = getComputedStyle(element);
     const value = (name: string, fallback: number): number =>
       Number.parseFloat(style.getPropertyValue(name)) || fallback;
@@ -258,31 +255,35 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
     const gap = value("--mtrl-stepper-header-gap", 12);
     const fixed = 2 * padding + indicator + gap;
     const indicatorOnly = 2 * padding + indicator;
-    const railFull = 32 + 16;
     const railMin = 8 + 4;
     const items = Array.from(list.children) as HTMLElement[];
-    let compactFootprint = 0;
-    let labels = 0;
-    let worstNeed = 0;
-    for (const item of items) {
-      const label = item.querySelector<HTMLElement>(`.${cls(STEPPER_CLASSES.LABEL)}`);
-      const rail = item.querySelector(`.${cls(STEPPER_CLASSES.CONNECTOR)}`);
-      const active = item.classList.contains(cls(STEPPER_MODIFIERS.ACTIVE));
-      const natural = label ? naturalWidth(label) : 0;
-      // In full mode the items share the row equally, so every step has to get
-      // its own need — the widest one decides, not the average
-      worstNeed = Math.max(worstNeed, fixed + natural + (rail ? railFull : 0));
-      compactFootprint += (active ? fixed : indicatorOnly) + (rail ? railMin : 0);
-      if (label && (label.textContent ?? "").trim()) labels += 1;
+    const labels = items
+      .map((item) => item.querySelector<HTMLElement>(`.${cls(STEPPER_CLASSES.LABEL)}`))
+      .filter((label): label is HTMLElement => Boolean(label && (label.textContent ?? "").trim()));
+    const clipped = labels.some((label) => label.scrollWidth > label.clientWidth + 1);
+    const overflows = list.scrollWidth > element.clientWidth + 1;
+    if (!clipped && !overflows) {
+      compact = false;
+      iconOnly = false;
+      return;
     }
-    const width = element.clientWidth;
-    const needs = labels > 0 && worstNeed * items.length > width + 1;
-    compact = needs;
+    compact = true;
     // Not even a small label box beside the indicators: the active label goes
     // too. The icon row has its own tighter padding, and when even that row
     // cannot hold the steps the dots display takes over
-    iconOnly = needs && compactFootprint + 16 > width + 1;
-    const rails = items.filter((item) => item.querySelector(`.${cls(STEPPER_CLASSES.CONNECTOR)}`)).length;
+    let compactFootprint = 0;
+    let rails = 0;
+    for (const item of items) {
+      const rail = item.querySelector(`.${cls(STEPPER_CLASSES.CONNECTOR)}`);
+      const active = item.classList.contains(cls(STEPPER_MODIFIERS.ACTIVE));
+      compactFootprint += active ? fixed : indicatorOnly;
+      if (rail) {
+        compactFootprint += railMin;
+        rails += 1;
+      }
+    }
+    const width = element.clientWidth;
+    iconOnly = compactFootprint + 16 > width + 1;
     const iconFootprint = items.length * (2 * 8 + indicator) + rails * railMin;
     const dotsFallback = iconOnly && iconFootprint > width + 1;
     element.classList.toggle(cls(STEPPER_MODIFIERS.DISPLAY_DOTS), dotsFallback);
