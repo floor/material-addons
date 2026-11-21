@@ -291,6 +291,14 @@
 
 // Last resort, when not even one label fits: every step shows its indicator,
 // the active step included
+// In the dots fallback the active dot is wider and the rail must give way,
+// so selecting any step keeps the row inside its host
+.mtrl-stepper--display-dots.mtrl-stepper--compact-dots .mtrl-stepper__connector {
+  flex: 0 1 8px;
+  min-width: 8px;
+  margin-inline: 2px;
+}
+
 // Six indicators need the tighter padding to share a narrow row
 .mtrl-stepper--compact-icons .mtrl-stepper__header {
   padding-inline: 8px;

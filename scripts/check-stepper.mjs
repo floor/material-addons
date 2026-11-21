@@ -425,12 +425,21 @@ try {
       const root = stepper.element;
       const list = root.querySelector(".mtrl-stepper__list");
       const boxes = [...root.querySelectorAll(".mtrl-stepper__header")].map((header) => header.getBoundingClientRect());
+      // Selecting any step widens the active dot: the row must stay inside the
+      // host for every one of them
+      const selectedOverflow = [];
+      for (let step = 0; step < steps; step += 1) {
+        stepper.setValue(`step-${step}`);
+        await new Promise((resolve) => setTimeout(resolve, 60));
+        selectedOverflow.push(list.scrollWidth <= list.clientWidth + 1);
+      }
       return {
         dots: root.classList.contains("mtrl-stepper--display-dots"),
         dotsFallback: root.classList.contains("mtrl-stepper--compact-dots"),
         overlap: boxes.some((box, index) => index > 0 && box.left < boxes[index - 1].right - 0.5),
         overflow: list.scrollWidth > list.clientWidth + 1,
         names: [...root.querySelectorAll(".mtrl-stepper__header")].map((header) => header.textContent.trim()),
+        selectedOverflow,
       };
     }, count);
     assert.equal(many.dots, true, `${count} steps at 312px: the dots display takes over`);
@@ -438,6 +447,7 @@ try {
     assert.equal(many.overlap, false, `${count} steps at 312px: the buttons do not overlap`);
     assert.equal(many.overflow, false, `${count} steps at 312px: nothing scrolls`);
     assert.equal(many.names.length, count, `${count} steps at 312px: every header keeps its name`);
+    assert.deepEqual(many.selectedOverflow, Array.from({ length: count }, () => true), `${count} steps at 312px: selecting any step keeps the row inside its host`);
   }
 
   // Six steps in 312px cannot hold a label: every step shows its indicator
