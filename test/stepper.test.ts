@@ -409,6 +409,43 @@ describe("Stepper label placement", () => {
   });
 });
 
+describe("Stepper compact labels", () => {
+  test("a row whose labels are squeezed switches to compact labels and back", async () => {
+    const stepper = createStepper({
+      orientation: "horizontal",
+      steps: steps(),
+    });
+    document.body.append(stepper.element);
+    const root = stepper.element;
+    const labels = () => Array.from(root.querySelectorAll<HTMLElement>(".mtrl-stepper__label"));
+    const width = (value: number) => Object.defineProperty(root, "clientWidth", { value, configurable: true });
+    const squeeze = (box: number) => {
+      for (const label of labels()) Object.defineProperty(label, "clientWidth", { value: box, configurable: true });
+    };
+    // A wide viewport with room for the labels
+    width(900);
+    squeeze(120);
+    stepper.setSteps(stepper.getSteps());
+    expect(root.classList.contains("mtrl-stepper--compact-labels")).toBe(false);
+    // Squeezed to an unreadable box
+    width(240);
+    squeeze(10);
+    stepper.setSteps(stepper.getSteps());
+    expect(root.classList.contains("mtrl-stepper--compact-labels")).toBe(true);
+    // Back to a wide viewport: the class leaves once the width the labels need is back
+    width(900);
+    stepper.setSteps(stepper.getSteps());
+    expect(root.classList.contains("mtrl-stepper--compact-labels")).toBe(false);
+    stepper.destroy();
+  });
+
+  test("a vertical stepper never takes the compact label class", () => {
+    const stepper = createStepper({ orientation: "vertical", steps: steps() });
+    expect(stepper.element.classList.contains("mtrl-stepper--compact-labels")).toBe(false);
+    stepper.destroy();
+  });
+});
+
 describe("Stepper keyboard", () => {
   test("arrows move focus without activating; Enter activates the focused step", async () => {
     const stepper = mount();

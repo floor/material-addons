@@ -217,6 +217,69 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
     });
   };
 
+  // Compact labels: when a full row would leave a label narrower than a
+  // readable box, the inactive steps show their indicator only and the active
+  // one keeps a truncated label. The width at which full labels fit again is
+  // read from the parts, not from the squeezed row, so the decision cannot
+  // depend on the mode it is measuring in
+  let compact = false;
+  let compactNeeded = 0;
+  let lastResolved: "horizontal" | "vertical" = "horizontal";
+
+  const labelMinimum = 32;
+
+  /** The row width at which every label keeps its minimum box */
+  const fullLabelWidth = (): number => {
+    const style = getComputedStyle(element);
+    const value = (name: string, fallback: number): number =>
+      Number.parseFloat(style.getPropertyValue(name)) || fallback;
+    const fixed =
+      2 * value("--mtrl-stepper-header-padding", 16) +
+      value("--mtrl-stepper-indicator-size", 24) +
+      value("--mtrl-stepper-header-gap", 12);
+    const rail = 32 + 16;
+    let need = 0;
+    for (const item of Array.from(list.children) as HTMLElement[]) {
+      const label = item.querySelector<HTMLElement>(`.${cls(STEPPER_CLASSES.LABEL)}`);
+      need += fixed + labelMinimum;
+      if (label && label.textContent?.trim()) need += 0;
+      if (item.querySelector(`.${cls(STEPPER_CLASSES.CONNECTOR)}`)) need += rail;
+    }
+    return need;
+  };
+
+  const measureLabels = (resolved: "horizontal" | "vertical"): void => {
+    lastResolved = resolved;
+    const showsLabels = settings.display === "labels";
+    if (resolved !== "horizontal" || !showsLabels) {
+      compact = false;
+      compactNeeded = 0;
+      element.classList.remove(cls(STEPPER_MODIFIERS.COMPACT_LABELS));
+      return;
+    }
+    if (compact) {
+      // Leave only when the viewport has room for every label's minimum box
+      if (element.clientWidth >= compactNeeded) compact = false;
+      element.classList.toggle(cls(STEPPER_MODIFIERS.COMPACT_LABELS), compact);
+      return;
+    }
+    const squeezed = Array.from(list.querySelectorAll<HTMLElement>(`.${cls(STEPPER_CLASSES.LABEL)}`)).some(
+      (label) => (label.textContent ?? "").trim().length > 0 && label.clientWidth < labelMinimum,
+    );
+    if (!squeezed) return;
+    compact = true;
+    compactNeeded = fullLabelWidth();
+    element.classList.add(cls(STEPPER_MODIFIERS.COMPACT_LABELS));
+  };
+
+  // A forced horizontal stepper has no orientation observer to lean on, so
+  // the renderer watches its own width for the compact threshold
+  let labelObserver: ResizeObserver | null = null;
+  if (typeof ResizeObserver === "function") {
+    labelObserver = new ResizeObserver(() => measureLabels(lastResolved));
+    labelObserver.observe(element);
+  }
+
   const sync = (steps: StepState[], resolved: "horizontal" | "vertical"): void => {
     const vertical = resolved === "vertical";
     element.classList.toggle(cls(STEPPER_MODIFIERS.VERTICAL), vertical);
@@ -257,8 +320,9 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
     element.classList.toggle(cls(STEPPER_MODIFIERS.DISPLAY_COUNT), settings.display === "count");
     element.classList.toggle(cls(STEPPER_MODIFIERS.DISPLAY_DOTS), settings.display === "dots");
     element.classList.toggle(cls(STEPPER_MODIFIERS.DISPLAY_PROGRESS), settings.display === "progress");
-    const compact = settings.display === "count" || settings.display === "progress";
-    list.hidden = compact;
+    measureLabels(resolved);
+    const compactDisplay = settings.display === "count" || settings.display === "progress";
+    list.hidden = compactDisplay;
     count.hidden = settings.display !== "count";
     progress.hidden = settings.display !== "progress";
     const off = element.getAttribute("aria-disabled") === "true";
@@ -328,7 +392,7 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
         // Vertical: the panel sits under its own header; horizontal: the panels
         // share one region below the list. In a compact display the list is
         // hidden, so its panels stay in the shared region too.
-        const parent = vertical && !compact ? item : panels;
+        const parent = vertical && !compactDisplay ? item : panels;
         if (wrapper.parentElement !== parent) parent.appendChild(wrapper);
       }
     });
@@ -344,6 +408,10 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
     panelElements,
     render,
     sync,
-    destroy: () => element.replaceChildren(),
+    destroy: () => {
+      labelObserver?.disconnect();
+      labelObserver = null;
+      element.replaceChildren();
+    },
   };
 };

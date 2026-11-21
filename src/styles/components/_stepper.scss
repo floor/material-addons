@@ -246,6 +246,50 @@
   align-items: center;
 }
 
+// Compact labels: the row does not fit, so the inactive steps show their
+// indicator only and the active step keeps its label, truncated inside its
+// own header. The hidden label groups stay in the accessibility tree, as the
+// dots display's do, so every header keeps its full name
+.mtrl-stepper--compact-labels .mtrl-stepper__item:not(.mtrl-stepper__item--active) .mtrl-stepper__label-group {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.mtrl-stepper--compact-labels .mtrl-stepper__item--active .mtrl-stepper__label,
+.mtrl-stepper--compact-labels .mtrl-stepper__item--active .mtrl-stepper__supporting-text {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+// The inactive steps size to their indicator; the active one takes what is
+// left and gives its label a readable box, which then truncates
+.mtrl-stepper--compact-labels .mtrl-stepper__item {
+  flex: 0 0 auto;
+}
+
+.mtrl-stepper--compact-labels .mtrl-stepper__item--active {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mtrl-stepper--compact-labels .mtrl-stepper__item--active .mtrl-stepper__label-group {
+  min-width: 2rem;
+}
+
+// The connector keeps its place as a short rail between the indicators and
+// gives up its width before a header does
+.mtrl-stepper--compact-labels .mtrl-stepper__connector {
+  flex: 0 1 16px;
+  min-width: 8px;
+  margin-inline: 4px;
+}
+
 // The list after the panels
 .mtrl-stepper--header-bottom {
   display: flex;
