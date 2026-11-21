@@ -226,6 +226,7 @@ const createTree = (config: TreeConfig = {}): TreeComponent => {
   const mount = document.createElement("div");
   mount.style.display = "contents";
   root.append(mount);
+  const rendered = new Map<string, HTMLElement>();
 
   const tabStop = (): string | null => {
     const rows = flattened.filter((entry) => !entry.node.disabled);
@@ -239,16 +240,17 @@ const createTree = (config: TreeConfig = {}): TreeComponent => {
   const render = (): void => {
     // Whether the tree holds DOM focus is read before the rebuild replaces
     // the node that had it, so the focused id can be re-focused after.
-    const heldFocus = root.contains(root.ownerDocument.activeElement);
+    const active = (root.getRootNode() as Document | ShadowRoot).activeElement;
+    const heldFocus = root.contains(active ?? null);
     flatten();
     const owner = root.ownerDocument;
     const previousFocus = runtime.focus;
-    const stop = previousFocus && byId.has(previousFocus) && !byId.get(previousFocus)!.node.disabled
+    const stop = previousFocus !== null && byId.has(previousFocus) && !byId.get(previousFocus)!.node.disabled
       ? previousFocus
       : tabStop();
     runtime.focus = stop;
     mount.replaceChildren();
-    const stack: { children: HTMLElement[]; depth: number; list: TreeNode[]; index: number }[] = [];
+    rendered.clear();
     const containerOf = (depth: number, parentItem: HTMLElement | null): HTMLElement => {
       if (!parentItem || depth === 0) return mount;
       const group = owner.createElement("div");
@@ -263,12 +265,13 @@ const createTree = (config: TreeConfig = {}): TreeComponent => {
       for (const node of list) {
         const item = rowOf(node, depth);
         item.setAttribute("part", "item");
+        item.tabIndex = node.value === stop ? 0 : -1;
+        rendered.set(node.value, item);
         box.append(item);
         if (runtime.open.has(node.value) && node.children?.length) renderInto(node.children, depth + 1, item);
       }
     };
     renderInto(runtime.nodes, 0, null);
-    void stack;
     if (runtime.selection === "multiple") root.setAttribute("aria-multiselectable", "true");
     else root.removeAttribute("aria-multiselectable");
     root.setAttribute("aria-label", runtime.ariaLabel ?? "");
@@ -276,21 +279,7 @@ const createTree = (config: TreeConfig = {}): TreeComponent => {
     root.setAttribute("aria-disabled", runtime.disabled ? "true" : "");
     if (!runtime.disabled) root.removeAttribute("aria-disabled");
     if (runtime.disabled) root.removeAttribute("tabindex");
-    else if (stop) {
-      const stopItem = mount.querySelector<HTMLElement>(`[data-value="${stop}"]`);
-      if (stopItem) stopItem.tabIndex = 0;
-    }
-    // A rebuild replaces the node that held DOM focus; the tree held it
-    // inside itself before, so the focused id is re-focused on the new node.
-    if (heldFocus && runtime.focus) {
-      const next = mount.querySelector<HTMLElement>(`[data-value="${runtime.focus}"]`);
-      next?.focus();
-    }
-    // Every rendered treeitem carries a tabindex: 0 on the stop, -1 elsewhere.
-    for (const entry of Array.from(mount.querySelectorAll<HTMLElement>("[role='treeitem']"))) {
-      entry.tabIndex = entry.dataset.value === stop ? 0 : -1;
-    }
-
+    if (heldFocus && stop !== null) rendered.get(stop)?.focus();
   };
 
   const commitSelection = (nextValue: string | null, nextValues: string[] | null, selecting: string | null): boolean => {
@@ -369,11 +358,32 @@ const createTree = (config: TreeConfig = {}): TreeComponent => {
     return commitSelection(null, next, value);
   };
 
-  const focusNode = (value: string): void => {
+  const setFocus = (value: string, item: HTMLElement): void => {
+    const previous = runtime.focus === null ? undefined : rendered.get(runtime.focus);
+    if (previous) previous.tabIndex = -1;
     runtime.focus = value;
-    const item = mount.querySelector<HTMLElement>(`[data-value="${value}"]`);
-    if (item) item.focus();
-    else render();
+    item.tabIndex = 0;
+  };
+
+  const focusNode = (value: string): void => {
+    const item = rendered.get(value);
+    if (!item) return;
+    setFocus(value, item);
+    item.focus();
+  };
+
+  const onFocusIn = (event: FocusEvent): void => {
+    const item = (event.target as HTMLElement).closest<HTMLElement>("[role='treeitem']");
+    const value = item?.dataset.value;
+    if (item && value !== undefined && rendered.get(value) === item && !runtime.disabled && !byId.get(value)?.node.disabled) {
+      setFocus(value, item);
+    }
+  };
+
+  const moveTo = (value: string): void => {
+    if (value === runtime.focus) return;
+    focusNode(value);
+    if (runtime.selectionFollowsFocus && runtime.selection === "single") select(value);
   };
 
   const moveFocus = (delta: number): void => {
@@ -381,12 +391,7 @@ const createTree = (config: TreeConfig = {}): TreeComponent => {
     if (!rows.length) return;
     const index = rows.findIndex((entry) => entry.node.value === runtime.focus);
     const next = rows[Math.max(0, Math.min(rows.length - 1, (index < 0 ? 0 : index) + delta))];
-    if (next && next.node.value !== runtime.focus) {
-      focusNode(next.node.value);
-      if (runtime.selectionFollowsFocus && runtime.selection === "single" && !next.node.disabled) {
-        commitSelection(next.node.value, null, next.node.value);
-      }
-    }
+    moveTo(next.node.value);
   };
 
   const typeAhead = (character: string): void => {
@@ -406,7 +411,7 @@ const createTree = (config: TreeConfig = {}): TreeComponent => {
 
   const onKeydown = (event: KeyboardEvent): void => {
     if (runtime.disabled) return;
-    const node = runtime.focus ? byId.get(runtime.focus)?.node ?? null : null;
+    const node = runtime.focus === null ? null : byId.get(runtime.focus)?.node ?? null;
     const key = event.key;
     if (key === "ArrowDown") { event.preventDefault(); moveFocus(1); return; }
     if (key === "ArrowUp") { event.preventDefault(); moveFocus(-1); return; }
@@ -430,8 +435,13 @@ const createTree = (config: TreeConfig = {}): TreeComponent => {
       }
       return;
     }
-    if (key === "Home") { event.preventDefault(); const rows = flattened.filter((e) => !e.node.disabled); if (rows.length) focusNode(rows[0].node.value); return; }
-    if (key === "End") { event.preventDefault(); const rows = flattened.filter((e) => !e.node.disabled); if (rows.length) focusNode(rows[rows.length - 1].node.value); return; }
+    if (key === "Home" || key === "End") {
+      event.preventDefault();
+      const rows = flattened.filter((entry) => !entry.node.disabled);
+      const next = key === "Home" ? rows[0] : rows[rows.length - 1];
+      if (next) moveTo(next.node.value);
+      return;
+    }
     if (key === "Enter") {
       event.preventDefault();
       if (node) {
@@ -477,6 +487,7 @@ const createTree = (config: TreeConfig = {}): TreeComponent => {
 
   root.addEventListener("keydown", onKeydown);
   root.addEventListener("click", onClick);
+  root.addEventListener("focusin", onFocusIn);
 
   render();
 
@@ -511,10 +522,11 @@ const createTree = (config: TreeConfig = {}): TreeComponent => {
     isDisabled: () => runtime.disabled,
     on(name, handler) { (handlers[name] ??= new Set()).add(handler); return tree; },
     off(name, handler) { handlers[name]?.delete(handler); return tree; },
-    focus: () => { if (runtime.focus) focusNode(runtime.focus); },
+    focus: () => { if (runtime.focus !== null) focusNode(runtime.focus); },
     destroy() {
       root.removeEventListener("keydown", onKeydown);
       root.removeEventListener("click", onClick);
+      root.removeEventListener("focusin", onFocusIn);
       for (const node of Array.from(mount.querySelectorAll("[tabindex]"))) (node as HTMLElement).tabIndex = -1;
       root.remove();
       base.destroy?.();

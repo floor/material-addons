@@ -222,6 +222,52 @@ try {
   });
   console.log("element vetoes: before events cancel expansion, collapse and selection");
 
+  // The focused parent survives a shadow rebuild and focus has one tab stop.
+  await reset();
+  const shadowFocus = await page.evaluate(() => {
+    document.body.innerHTML = `
+      <m-tree selection="single" value="src" selection-follows-focus>
+        <m-tree-item value="src" label="src">
+          <m-tree-item value="tree" label="tree.ts"></m-tree-item>
+        </m-tree-item>
+        <m-tree-item value="readme" label="README"></m-tree-item>
+      </m-tree>`;
+    window.tree.defineTree();
+    const host = document.querySelector("m-tree");
+    const shadow = host.shadowRoot;
+    const row = (value) => shadow.querySelector(`[data-value="${value}"]`);
+    const key = (key) => shadow.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }));
+    const focus = () => ({
+      active: shadow.activeElement?.dataset.value,
+      stops: [...shadow.querySelectorAll("[role='treeitem'][tabindex='0']")].map((item) => item.dataset.value),
+    });
+    const original = row("src");
+    original.focus();
+    key("ArrowRight");
+    const opened = { ...focus(), expanded: row("src").getAttribute("aria-expanded"), rebuilt: row("src") !== original };
+    const proposed = [];
+    const changes = [];
+    const veto = (event) => { proposed.push(event.detail.value); event.preventDefault(); };
+    host.addEventListener("beforechange", veto);
+    host.addEventListener("change", (event) => changes.push(event.detail.value));
+    key("End");
+    const end = { ...focus(), selected: host.component.getValue(), changes: [...changes] };
+    key("Home");
+    const home = { ...focus(), selected: host.component.getValue(), changes: [...changes] };
+    host.removeEventListener("beforechange", veto);
+    key("End");
+    const accepted = { ...focus(), selected: host.component.getValue(), changes };
+    return { opened, end, home, proposed, accepted };
+  });
+  assert.deepEqual(shadowFocus, {
+    opened: { active: "src", stops: ["src"], expanded: "true", rebuilt: true },
+    end: { active: "readme", stops: ["readme"], selected: "src", changes: [] },
+    home: { active: "src", stops: ["src"], selected: "src", changes: [] },
+    proposed: ["readme", "src"],
+    accepted: { active: "readme", stops: ["readme"], selected: "readme", changes: ["readme"] },
+  });
+  console.log("shadow keyboard: rebuild restores focus, Home and End move the tab stop and honor selection vetoes");
+
   assert.deepEqual(errors, [], "no page errors");
   console.log("Passed tree browser checks.");
 } finally {
