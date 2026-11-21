@@ -196,6 +196,53 @@ try {
   assert.ok(compact.dots.activeDot > compact.dots.dot, `active dot wider: ${JSON.stringify(compact.dots)}`);
   assert.equal(compact.dotsMoved, "b");
 
+  // A bottom label under a vertical stepper: the label reads as the end
+  // layout, so the circle, connector and label keep one axis
+  await reset();
+  const verticalBottom = await page.evaluate(async () => {
+    document.body.replaceChildren();
+    const stepper = window.stepper.createStepper({
+      orientation: "vertical",
+      labelPlacement: "bottom",
+      steps: [
+        { value: "store", label: "Store", content: "Choose a shop." },
+        { value: "time", label: "Pickup time", content: "Choose a time." },
+        { value: "review", label: "Review", content: "Review the order." },
+      ],
+    });
+    stepper.element.style.width = "480px";
+    document.body.append(stepper.element);
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    const root = stepper.element;
+    const items = [...root.querySelectorAll(".mtrl-stepper__item")];
+    const rows = items.map((item) => {
+      const indicator = item.querySelector(".mtrl-stepper__indicator");
+      const label = item.querySelector(".mtrl-stepper__label");
+      const connector = item.querySelector(".mtrl-stepper__connector");
+      const box = (node) => (node ? node.getBoundingClientRect() : null);
+      const circle = box(indicator);
+      const words = box(label);
+      const line = box(connector);
+      return {
+        centered: circle ? Math.round(circle.left + circle.width / 2) : null,
+        line: line ? Math.round(line.left + line.width / 2) : null,
+        labelBeside: Boolean(circle && words && words.left >= circle.right - 1),
+      };
+    });
+    return {
+      bottomClass: root.classList.contains("mtrl-stepper--label-bottom"),
+      endClass: root.classList.contains("mtrl-stepper--label-end"),
+      rows,
+    };
+  });
+  assert.equal(verticalBottom.bottomClass, false, "a vertical stepper drops the bottom label class");
+  assert.equal(verticalBottom.endClass, true, "a vertical stepper takes the end label class");
+  for (const [index, row] of verticalBottom.rows.entries()) {
+    // The last item draws no connector, so there is no rail to line up there
+    if (row.line > 0) assert.ok(Math.abs(row.line - row.centered) <= 1, `vertical bottom: circle and connector share a centre on step ${index + 1}: ${JSON.stringify(row)}`);
+    assert.equal(row.labelBeside, true, `vertical bottom: the label sits beside the circle on step ${index + 1}`);
+  }
+
   // Vertical compact modes: the active panel and its action stay visible, and
   // the hidden list is not a tab stop
   await reset();
@@ -292,7 +339,7 @@ try {
   assert.deepEqual(announce.cleared, { same: true, labels: true, listVisible: true, completed: true });
 
   assert.deepEqual(errors, []);
-  console.log("Stepper passes browser focus eligibility, panel and heading fallbacks, header focus, validationerror, slotted content and the compact displays.");
+  console.log("Stepper passes browser focus eligibility, panel and heading fallbacks, header focus, validationerror, slotted content, the compact displays, and the vertical bottom label as an end label.");
 } finally {
   await browser?.close();
   await server.close();
