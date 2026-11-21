@@ -299,6 +299,64 @@ try {
   }
   }
 
+  // The label floor is per step, not per stepper: four steps at the old cutoff
+  // and five in a 480px row keep every label inside its header, on both sides
+  // of any width where a whole-stepper rule would have switched behaviour
+  for (const [count, width] of [[4, 312], [4, 384], [4, 385], [5, 480]]) {
+    await reset();
+    const rows = await page.evaluate(async ({ count, width }) => {
+      document.body.replaceChildren();
+      const steps = ["Store", "Pickup time and address", "Review the order", "Confirm and pay", "Done"].slice(0, count).map((label, index) => ({
+        value: `step-${index}`, label, content: `Panel ${index}`,
+      }));
+      const stepper = window.stepper.createStepper({ orientation: "horizontal", steps });
+      stepper.element.style.width = `${width}px`;
+      document.body.append(stepper.element);
+      await new Promise((resolve) => setTimeout(resolve, 60));
+      return [...stepper.element.querySelectorAll(".mtrl-stepper__header")].map((header) => {
+        const label = header.querySelector(".mtrl-stepper__label");
+        const box = label.getBoundingClientRect();
+        const frame = header.getBoundingClientRect();
+        return {
+          width: Math.round(box.width),
+          inside: Math.round(box.left) >= Math.round(frame.left) - 1 && Math.round(box.right) <= Math.round(frame.right) + 1,
+          ellipsis: getComputedStyle(label).textOverflow === "ellipsis" && getComputedStyle(label).whiteSpace === "nowrap",
+        };
+      });
+    }, { count, width });
+    for (const [index, row] of rows.entries()) {
+      assert.equal(row.inside, true, `${count} steps at ${width}px: label ${index + 1} stays inside its header`);
+      assert.equal(row.ellipsis, true, `${count} steps at ${width}px: label ${index + 1} ends in an ellipsis`);
+    }
+    const readable = rows.filter((row) => row.width >= 24).length;
+    assert.ok(readable >= 1, `${count} steps at ${width}px: at least one label keeps a readable box`);
+  }
+
+  // A shrink-to-fit stepper keeps its intrinsic width: nothing on the root
+  // turns the element into its own size container
+  await reset();
+  const intrinsic = await page.evaluate(async () => {
+    document.body.replaceChildren();
+    const wrap = document.createElement("div");
+    wrap.style.cssText = "display: flex; width: 880px";
+    document.body.append(wrap);
+    const stepper = window.stepper.createStepper({
+      orientation: "horizontal",
+      steps: [
+        { value: "store", label: "Store", content: "Choose a shop." },
+        { value: "time", label: "Pickup time and address", content: "Choose a time." },
+        { value: "review", label: "Review the order", content: "Review the order." },
+      ],
+    });
+    stepper.element.style.width = "fit-content";
+    wrap.append(stepper.element);
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    const root = stepper.element.getBoundingClientRect();
+    return { width: Math.round(root.width), overflow: stepper.element.scrollWidth > stepper.element.clientWidth + 1 };
+  });
+  assert.ok(intrinsic.width > 300, `shrink-to-fit: the stepper keeps an intrinsic width (${intrinsic.width}px)`);
+  assert.equal(intrinsic.overflow, false, "shrink-to-fit: nothing overflows the stepper");
+
   // The same row at a wide width keeps the connector rail and untruncated names
   await reset();
   const wide = await page.evaluate(async () => {

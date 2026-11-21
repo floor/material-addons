@@ -159,25 +159,35 @@
   text-overflow: ellipsis;
 }
 
-// An ellipsis needs a box to end in. In a narrow row the label group keeps a
-// readable floor while the connector gives up its share first, so every name
-// truncates instead of some collapsing to zero width. The threshold is the
-// stepper's own width, not the viewport's
-.mtrl-stepper {
-  container-type: inline-size;
+// An ellipsis needs a box to end in, and the box can only be as wide as the
+// header has left. The label group asks for a readable floor but never for
+// more than its step has (the 100% resolves against the header's content
+// box), and the connector gives up its rail before the label does, so every
+// name truncates inside its header at any width. Nothing here measures the
+// whole stepper, so a shrink-to-fit stepper keeps its intrinsic width
+.mtrl-stepper--horizontal .mtrl-stepper__label-group {
+  flex: 0 1 auto;
+  min-width: min(2rem, 100%);
 }
 
-@container (max-width: 32rem) {
-  .mtrl-stepper--horizontal .mtrl-stepper__label-group {
-    flex: 0 1 auto;
-    min-width: 2rem;
-  }
+// A header never shrinks below its padding, its indicator and a readable
+// label — so the label always has a box inside it — and a row of them wider
+// than the stepper scrolls sideways instead of squeezing a label out
+.mtrl-stepper--horizontal .mtrl-stepper__header {
+  min-width: calc(
+    2 * var(--mtrl-stepper-header-padding) + var(--mtrl-stepper-indicator-size) +
+      var(--mtrl-stepper-header-gap) + 2rem
+  );
+}
 
-  .mtrl-stepper--horizontal .mtrl-stepper__connector {
-    flex: 0 1 8px;
-    min-width: 0;
-    margin-inline: 2px;
-  }
+.mtrl-stepper--horizontal .mtrl-stepper__list {
+  overflow-x: auto;
+}
+
+// The connector gives up its rail before the header gives up its label
+.mtrl-stepper--horizontal .mtrl-stepper__connector {
+  flex: 0 999 32px;
+  min-width: 0;
 }
 
 .mtrl-stepper__supporting-text {
