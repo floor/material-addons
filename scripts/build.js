@@ -145,6 +145,38 @@ const MODULES = [
     outDir: "dist/components",
   },
   {
+    name: "tree constants",
+    entry: "src/components/tree/constants.ts",
+    outDir: "dist/components/tree",
+    basename: "constants",
+  },
+  {
+    name: "tree component",
+    entry: "src/components/tree/index.ts",
+    outDir: "dist/components/tree",
+    basename: "index",
+  },
+  {
+    name: "tree virtual",
+    entry: "src/components/tree/virtual.ts",
+    outDir: "dist/components/tree",
+    basename: "virtual",
+    // The ONLY tree module that may touch vlist; the default entry's
+    // graph stays vlist-free (asserted by the package check).
+    plugins: [{
+      name: "tree-vlist-external",
+      setup(build) {
+        build.onResolve({ filter: /^vlist(\/|$)/ }, (args) => ({ path: args.path, external: true }));
+      },
+    }],
+  },
+  {
+    name: "tree element",
+    entry: "src/elements/tree.ts",
+    outDir: "dist/elements",
+    basename: "tree",
+  },
+  {
     name: "skeleton constants",
     entry: "src/components/skeleton/constants.ts",
     outDir: "dist/components/skeleton",
@@ -293,7 +325,7 @@ const buildStyles = async () => {
 const buildElementStyles = async () => {
   const dir = join(DIST_DIR, "elements/css");
   await mkdir(dir, { recursive: true });
-  for (const name of ["stepper", "expansion-panel", "avatar", "skeleton"]) {
+  for (const name of ["stepper", "expansion-panel", "avatar", "skeleton", "tree"]) {
     const source = `src/styles/components/_${name}.scss`;
     const result = Bun.spawn(
       ["npx", "sass", source, "--style=compressed", "--no-source-map", "--load-path=node_modules"],

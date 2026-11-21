@@ -43,6 +43,8 @@ jobs:
         run: bun run check:stepper
       - name: Expansion panel browser behavior
         run: bun run check:expansion-panel
+      - name: Tree browser behavior
+        run: bun run check:tree
       - name: Skeleton browser behavior
         run: bun run check:skeleton
       - name: Skeleton adapters in Chromium
