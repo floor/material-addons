@@ -8,9 +8,9 @@
  * @module elements
  */
 
-import { camel, defineElement, getPrefix, type DefineOptions, type ElementInstance, type ElementSpec } from "material/elements";
+import { camel, defineElement, getPrefix, type DefineOptions, type ElementHost, type ElementInstance, type ElementSpec } from "material/elements";
 import createTree from "../components/tree";
-import type { TreeComponent, TreeConfig, TreeNode } from "../components/tree/types";
+import type { TreeBeforeChangeEvent, TreeBeforeExpandEvent, TreeComponent, TreeConfig, TreeNode } from "../components/tree/types";
 
 /** One `<m-tree-item>`'s authored attributes. */
 export interface TreeItemAttributes {
@@ -82,6 +82,18 @@ const spec = {
     if (selection === "multiple") treeConfig.values = selectedIds(host, itemTag);
     return treeConfig;
   },
+  setup: (host: ElementHost<TreeComponent>, component: TreeComponent) => {
+    const bind = (name: "beforeexpand" | "beforecollapse" | "beforechange") => {
+      const listener = (detail: TreeBeforeExpandEvent | TreeBeforeChangeEvent) => {
+        const event = new CustomEvent(name, { detail, bubbles: true, composed: true, cancelable: true });
+        if (!host.dispatchEvent(event)) detail.preventDefault();
+      };
+      component.on(name, listener);
+      return () => component.off(name, listener);
+    };
+    const unbind = [bind("beforeexpand"), bind("beforecollapse"), bind("beforechange")];
+    return () => { for (const remove of unbind) remove(); };
+  },
   events: {
     expand: {},
     collapse: {},
@@ -94,6 +106,9 @@ const spec = {
 
 export type TreeSpec = typeof spec;
 export type TreeElementEventMap = {
+  beforeexpand: CustomEvent<TreeBeforeExpandEvent>;
+  beforecollapse: CustomEvent<TreeBeforeExpandEvent>;
+  beforechange: CustomEvent<TreeBeforeChangeEvent>;
   expand: CustomEvent<{ value: string }>;
   collapse: CustomEvent<{ value: string }>;
   change: CustomEvent<{ value: string | null }>;

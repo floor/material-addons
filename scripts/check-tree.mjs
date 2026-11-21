@@ -165,6 +165,63 @@ try {
   assert.equal(element.label, "Files", "the aria-label reaches the tree root");
   console.log("element: pre-upgrade hidden, declarations render, selection lands");
 
+  // The host can cancel each operation before the factory commits it.
+  await reset();
+  const vetoes = await page.evaluate(() => {
+    document.body.innerHTML = `
+      <m-tree selection="single" value="readme">
+        <m-tree-item value="closed" label="Closed">
+          <m-tree-item value="hidden" label="Hidden"></m-tree-item>
+        </m-tree-item>
+        <m-tree-item value="open" label="Open" expanded>
+          <m-tree-item value="shown" label="Shown"></m-tree-item>
+        </m-tree-item>
+        <m-tree-item value="readme" label="README"></m-tree-item>
+      </m-tree>`;
+    window.tree.defineTree();
+    const host = document.querySelector("m-tree");
+    const before = [];
+    const after = [];
+    for (const name of ["expand", "collapse", "change"]) {
+      host.addEventListener(`before${name}`, (event) => {
+        before.push([event.type, event.detail.value, event.bubbles, event.composed, event.cancelable]);
+        event.preventDefault();
+      });
+      host.addEventListener(name, () => after.push(name));
+    }
+    const row = (value) => host.shadowRoot.querySelector(`[data-value="${value}"]`);
+    const outcomes = [host.component.expand("closed"), host.component.collapse("open"), host.component.select("shown")];
+    return {
+      before, after, outcomes,
+      expanded: host.component.getExpanded(),
+      value: host.component.getValue(),
+      closed: row("closed").getAttribute("aria-expanded"),
+      open: row("open").getAttribute("aria-expanded"),
+      hiddenChild: !!row("hidden"),
+      shownChild: !!row("shown"),
+      selected: row("readme").getAttribute("aria-selected"),
+      proposed: row("shown").getAttribute("aria-selected"),
+    };
+  });
+  assert.deepEqual(vetoes, {
+    before: [
+      ["beforeexpand", "closed", true, true, true],
+      ["beforecollapse", "open", true, true, true],
+      ["beforechange", "shown", true, true, true],
+    ],
+    after: [],
+    outcomes: [false, false, false],
+    expanded: ["open"],
+    value: "readme",
+    closed: "false",
+    open: "true",
+    hiddenChild: false,
+    shownChild: true,
+    selected: "true",
+    proposed: "false",
+  });
+  console.log("element vetoes: before events cancel expansion, collapse and selection");
+
   assert.deepEqual(errors, [], "no page errors");
   console.log("Passed tree browser checks.");
 } finally {
