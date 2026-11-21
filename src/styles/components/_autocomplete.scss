@@ -1,3 +1,11 @@
+// The popup is material's listbox: the surface, corner, elevation and row
+// metrics come from its own sheet, so a page that loads this add-on's
+// stylesheet gets a Material popup without also loading
+// `material/styles/listbox` (https://m3.material.io/components/menus/specs,
+// read 2026-11-21: surface container, 4dp corner, level 2, 48dp rows with 12dp
+// padding).
+@use "material/src/styles/components/listbox";
+
 .mtrl-autocomplete__status {
   position: absolute;
   width: 1px;

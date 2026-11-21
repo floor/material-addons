@@ -61,6 +61,17 @@ try {
         const background = luminance(getComputedStyle(listbox).backgroundColor);
         const contrast = (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05);
         const trailing = textField.trailingIcon.getBoundingClientRect();
+        // The popup is material's listbox: surface, 4dp corner, level 2 and
+        // 48dp rows with 12dp padding come from that sheet, which the add-on's
+        // stylesheet must bring in on its own
+        const popupStyle = getComputedStyle(listbox);
+        const probe = document.createElement("div");
+        probe.style.cssText = "position:absolute;width:0;height:0;background-color:var(--mtrl-sys-color-surface-container)";
+        document.body.append(probe);
+        const surface = getComputedStyle(probe).backgroundColor;
+        probe.remove();
+        const option = listbox.querySelector(".mtrl-listbox__option");
+        const optionStyle = option ? getComputedStyle(option) : null;
         return {
           edge: listbox.dir === "rtl" ? popup.right - anchor.right : popup.left - anchor.left,
           gap: popup.top - anchor.bottom,
@@ -70,6 +81,14 @@ try {
           variant: textField.getVariant(),
           clear: textField.trailingIcon.getAttribute("aria-label"),
           trailingSide: (trailing.left + trailing.width / 2 > anchor.left + anchor.width / 2) === (listbox.dir === "ltr"),
+          popup: {
+            background: popupStyle.backgroundColor,
+            surface,
+            radius: popupStyle.borderTopLeftRadius,
+            shadow: popupStyle.boxShadow,
+            rowHeight: optionStyle?.minHeight ?? null,
+            rowPadding: optionStyle?.paddingTop ?? null,
+          },
         };
       });
       assert.ok(Math.abs(boxes.edge) < 1 && Math.abs(boxes.gap) < 1, JSON.stringify(boxes));
@@ -78,6 +97,12 @@ try {
       assert.equal(boxes.variant, variant);
       assert.equal(boxes.clear, "Clear");
       assert.equal(boxes.trailingSide, true);
+      assert.equal(boxes.popup.background, boxes.popup.surface, `${mode}/${direction} popup takes the surface-container colour`);
+      assert.equal(boxes.popup.radius, "4px", `${mode}/${direction} popup takes the 4dp corner`);
+      assert.match(boxes.popup.shadow, /0px 1px 2px/, `${mode}/${direction} popup carries level 2 elevation`);
+      assert.match(boxes.popup.shadow, /0px 2px 6px/, `${mode}/${direction} popup carries the level 2 second shadow`);
+      assert.equal(boxes.popup.rowHeight, "48px", `${mode}/${direction} rows are 48dp`);
+      assert.equal(boxes.popup.rowPadding, "12px", `${mode}/${direction} rows carry 12dp padding`);
       assert.equal(await input.inputValue(), "San ");
       await input.press("Escape");
       const editableKeys = ["Home", "End", direction === "ltr" ? "ArrowLeft" : "ArrowRight"];
