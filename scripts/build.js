@@ -241,6 +241,12 @@ const buildStyles = async () => {
       ? (await Bun.file(CSS_OUTPUT).size) / 1024
       : 0;
 
+    // The autocomplete popup is material's listbox. Its stylesheet ships with
+    // this add-on's document sheet, added after the Sass compile so the copy
+    // is the peer's own — already in `@layer mtrl.listbox`, which keeps the
+    // cascade identical for a page that also loads `material/styles/listbox`
+    await Bun.write(CSS_OUTPUT, `${await Bun.file(CSS_OUTPUT).text()}\n${readListboxStyle()}`);
+
     const autocomplete = (await Bun.file(AUTOCOMPLETE_CSS).text()).replace(/\/\*# sourceMappingURL=.*?\*\/\s*$/, "");
     const styles = { listbox: readListboxStyle(), autocomplete };
     await Bun.write(join(DIST_DIR, "elements/autocomplete-css.mjs"), [

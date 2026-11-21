@@ -444,12 +444,11 @@ document.body.append(...results.map((result) => {
 
 ## Autocomplete
 
-The factory uses Material's text field and listbox styles. Pass strings for simple suggestions or objects with a stable value and a display label.
+The factory uses Material's text field styles, and this add-on's stylesheet carries Material's listbox sheet for the popup, so no separate listbox import is needed. Pass strings for simple suggestions or objects with a stable value and a display label.
 
 <!-- example: run, shows "France" -->
 ```javascript
 import 'material/styles';
-import 'material/styles/listbox';
 import 'material-addons/styles';
 import { createAutocomplete } from 'material-addons/components/autocomplete';
 
