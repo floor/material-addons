@@ -43,6 +43,8 @@ jobs:
         run: bun run check:stepper
       - name: Expansion panel browser behavior
         run: bun run check:expansion-panel
+      - name: Data grid browser behavior
+        run: bun run check:data-grid
       - name: Skeleton browser behavior
         run: bun run check:skeleton
       - name: Skeleton adapters in Chromium
@@ -51,5 +53,11 @@ jobs:
         run: bun run check:stepper-adapters
       - name: Avatar and framework adapters in Chromium
         run: bun run check:avatar
+      - name: Paginator and framework adapters in Chromium
+        run: bun run check:paginator
+      - name: Breadcrumb and framework adapters in Chromium
+        run: bun run check:breadcrumb
+      - name: Alert and framework adapters in Chromium
+        run: bun run check:alert
       - name: Rating half steps, form value, and adapters in Chromium
         run: bun run check:rating

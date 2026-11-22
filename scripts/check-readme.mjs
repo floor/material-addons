@@ -137,6 +137,8 @@ try {
   const untar = spawnSync("tar", ["-xzf", packed.tarball, "--strip-components=1", "-C", addon]);
   assert.equal(untar.status, 0, String(untar.stderr));
   symlinkSync(resolve(root, "node_modules/material"), join(modules, "material"), "junction");
+  // the package's one runtime dependency installs with it
+  symlinkSync(resolve(root, "node_modules/vlist"), join(modules, "vlist"), "junction");
   writeFileSync(join(fixture, "package.json"), '{"type":"module"}');
 
   // Specifiers and names, resolved by Node from the fixture.
