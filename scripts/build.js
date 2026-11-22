@@ -27,7 +27,7 @@ const PREUPGRADE_CSS = join(DIST_DIR, "elements/preupgrade.css");
 const adapterPlugin = {
   name: "adapter-element-entry",
   setup(build) {
-    build.onResolve({ filter: /^(?:\.\.\/)+elements\/(stepper|autocomplete|avatar)$/ }, ({ path }) => ({
+    build.onResolve({ filter: /^(?:\.\.\/)+elements\/(stepper|autocomplete|avatar|alert|rating)$/ }, ({ path }) => ({
       path: `material-addons/${path.slice(path.lastIndexOf("elements/"))}`, external: true,
     }));
   },
@@ -46,6 +46,18 @@ const MODULES = [
   { name: "svelte autocomplete runtime", entry: "src/adapters/autocomplete/svelte.ts", outDir: "dist/svelte", basename: "autocomplete-runtime", adapter: true },
   { name: "svelte avatar runtime", entry: "src/adapters/avatar/svelte.ts", outDir: "dist/svelte", basename: "avatar-runtime", adapter: true },
   { name: "svelte skeleton runtime", entry: "src/adapters/skeleton/svelte.ts", outDir: "dist/svelte", basename: "skeleton-runtime", adapter: true },
+  { name: "svelte alert runtime", entry: "src/adapters/alert/svelte.ts", outDir: "dist/svelte", basename: "alert-runtime", adapter: true },
+  {
+    name: "alert", entry: "src/components/alert/index.ts", outDir: "dist/components/alert",
+  },
+  {
+    name: "alert constants", entry: "src/components/alert/constants.ts", outDir: "dist/components/alert", basename: "constants",
+  },
+  {
+    name: "alert element", entry: "src/elements/alert.ts", outDir: "dist/elements", basename: "alert",
+    plugins: [externalEntry(/^\.\.\/components\/alert$/, "../components/alert/index.mjs")],
+  },
+  { name: "svelte rating runtime", entry: "src/adapters/rating/svelte.ts", outDir: "dist/svelte", basename: "rating-runtime", adapter: true },
   {
     name: "avatar", entry: "src/components/avatar/index.ts", outDir: "dist/components/avatar",
   },
@@ -55,6 +67,42 @@ const MODULES = [
   {
     name: "avatar element", entry: "src/elements/avatar.ts", outDir: "dist/elements", basename: "avatar",
     plugins: [externalEntry(/^\.\.\/components\/avatar$/, "../components/avatar/index.mjs")],
+  },
+  {
+    name: "paginator", entry: "src/components/paginator/index.ts", outDir: "dist/components/paginator",
+  },
+  {
+    name: "paginator constants", entry: "src/components/paginator/constants.ts", outDir: "dist/components/paginator", basename: "constants",
+  },
+  {
+    name: "paginator element", entry: "src/elements/paginator.ts", outDir: "dist/elements", basename: "paginator",
+    plugins: [externalEntry(/^\.\.\/components\/paginator$/, "../components/paginator/index.mjs")],
+  },
+  {
+    name: "svelte paginator runtime", entry: "src/adapters/paginator/svelte.ts", outDir: "dist/svelte", basename: "paginator-runtime", adapter: true,
+  },
+  {
+    name: "breadcrumb", entry: "src/components/breadcrumb/index.ts", outDir: "dist/components/breadcrumb",
+  },
+  {
+    name: "breadcrumb constants", entry: "src/components/breadcrumb/constants.ts", outDir: "dist/components/breadcrumb", basename: "constants",
+  },
+  {
+    name: "breadcrumb element", entry: "src/elements/breadcrumb.ts", outDir: "dist/elements", basename: "breadcrumb",
+    plugins: [externalEntry(/^\.\.\/components\/breadcrumb$/, "../components/breadcrumb/index.mjs")],
+  },
+  {
+    name: "svelte breadcrumb runtime", entry: "src/adapters/breadcrumb/svelte.ts", outDir: "dist/svelte", basename: "breadcrumb-runtime", adapter: true,
+  },
+  {
+    name: "rating", entry: "src/components/rating/index.ts", outDir: "dist/components/rating",
+  },
+  {
+    name: "rating constants", entry: "src/components/rating/constants.ts", outDir: "dist/components/rating", basename: "constants",
+  },
+  {
+    name: "rating element", entry: "src/elements/rating.ts", outDir: "dist/elements", basename: "rating",
+    plugins: [externalEntry(/^\.\.\/components\/rating$/, "../components/rating/index.mjs")],
   },
   {
     name: "form constants",
@@ -195,6 +243,18 @@ const MODULES = [
     basename: "skeleton",
   },
   {
+    name: "data grid constants",
+    entry: "src/components/data-grid/constants.ts",
+    outDir: "dist/components/data-grid",
+    basename: "constants",
+  },
+  {
+    name: "data grid component",
+    entry: "src/components/data-grid/index.ts",
+    outDir: "dist/components/data-grid",
+    basename: "index",
+  },
+  {
     name: "stepper constants",
     entry: "src/components/stepper/constants.ts",
     outDir: "dist/components/stepper",
@@ -211,7 +271,11 @@ const MODULES = [
     entry: "src/elements/index.ts",
     outDir: "dist/elements",
     basename: "index",
-    plugins: [externalEntry(/^\.\/avatar$/, "./avatar.mjs")],
+    plugins: [
+      externalEntry(/^\.\/avatar$/, "./avatar.mjs"),
+      externalEntry(/^\.\/alert$/, "./alert.mjs"),
+      externalEntry(/^\.\/rating$/, "./rating.mjs"),
+    ],
   },
 ];
 
@@ -325,7 +389,7 @@ const buildStyles = async () => {
 const buildElementStyles = async () => {
   const dir = join(DIST_DIR, "elements/css");
   await mkdir(dir, { recursive: true });
-  for (const name of ["stepper", "expansion-panel", "avatar", "skeleton", "tree"]) {
+  for (const name of ["stepper", "expansion-panel", "avatar", "skeleton", "paginator", "breadcrumb", "alert", "rating", "tree"]) {
     const source = `src/styles/components/_${name}.scss`;
     const result = Bun.spawn(
       ["npx", "sass", source, "--style=compressed", "--no-source-map", "--load-path=node_modules"],
@@ -382,7 +446,7 @@ const buildModule = async (module) => {
     naming: {
       entry: `${basename}.mjs`,
     },
-    external: module.adapter ? ["material", "material-addons", "react", "vue", "solid-js", "svelte"] : ["material"],
+    external: module.adapter ? ["material", "material-addons", "react", "vue", "solid-js", "svelte"] : ["material", "vlist"],
     plugins: module.adapter ? [adapterPlugin] : module.plugins,
     banner: module.name === "react" ? '"use client";' : undefined,
   });
@@ -422,7 +486,7 @@ const buildApp = async () => {
       naming: {
         entry: "index.mjs",
       },
-      external: ["material"],
+      external: ["material", "vlist"],
     });
 
     if (!esmResult.success) {

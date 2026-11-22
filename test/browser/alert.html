@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Alert test</title>
+<div id="fixture"></div>
+<script type="module">
+  import "material/styles";
+  import "material-addons/styles";
+
+  const fixture = document.getElementById("fixture");
+  const framework = new URL(location.href).searchParams.get("framework");
+  window.alertEvents = [];
+  window.vetoAlertDismiss = true;
+  window.recordAlertAction = (event) => {
+    window.alertEvents.push(["action", event.detail.severity]);
+  };
+  window.recordAlertBeforeDismiss = (event) => {
+    window.alertEvents.push(["beforedismiss", event.detail.severity, event.detail.reason]);
+    if (window.vetoAlertDismiss) event.preventDefault();
+  };
+  window.recordAlertDismiss = (event) => {
+    window.alertEvents.push(["dismiss", event.detail.severity, event.detail.reason]);
+  };
+
+  const props = {
+    severity: "warning",
+    variant: "tonal",
+    label: "Quota warning",
+    supportingText: "90% of storage used",
+    action: "Upgrade",
+    dismissible: true,
+    onAction: window.recordAlertAction,
+    onBeforedismiss: window.recordAlertBeforeDismiss,
+    onDismiss: window.recordAlertDismiss,
+  };
+
+  if (framework === "react") {
+    const { createElement: h } = await import("react");
+    const { createRoot } = await import("react-dom/client");
+    const { Alert } = await import("material-addons/react");
+    createRoot(fixture).render(h(Alert, props));
+  } else if (framework === "vue") {
+    const { createApp, h } = await import("vue");
+    const { MAlert } = await import("material-addons/vue");
+    createApp({
+      setup() {
+        return () => h(MAlert, props);
+      },
+    }).mount(fixture);
+  } else if (framework === "solid") {
+    const { createComponent } = await import("solid-js");
+    const { render } = await import("solid-js/web");
+    const { Alert } = await import("material-addons/solid");
+    render(() => createComponent(Alert, props), fixture);
+  } else if (framework === "svelte") {
+    const { mount } = await import("svelte");
+    const { default: App } = await import("./AlertSvelteFixture.svelte");
+    mount(App, { target: fixture });
+  } else {
+    const { createAlert } = await import("material-addons/components/alert");
+    await import("material-addons/elements/css/alert");
+    const { defineAlert } = await import("material-addons/elements/alert");
+    window.createAlert = createAlert;
+    window.defineAlert = defineAlert;
+
+    const severities = ["info", "success", "warning", "error"];
+    const variants = ["tonal", "outlined", "filled"];
+    for (const severity of severities) {
+      for (const variant of variants) {
+        const alert = createAlert({
+          severity,
+          variant,
+          label: `${severity} ${variant}`,
+          supportingText: "Secondary status message",
+          action: "Retry",
+          dismissible: true,
+        });
+        alert.element.id = `alert-${severity}-${variant}`;
+        fixture.append(alert.element);
+      }
+    }
+
+    fixture.insertAdjacentHTML("beforeend", `
+      <m-alert id="el-alert" severity="error" variant="outlined" label="Submission failed" action="Fix" dismissible>
+        Please check the highlighted fields.
+      </m-alert>
+      <span id="forced-reference" style="color:CanvasText;border:2px solid CanvasText;outline:2px solid Highlight;forced-color-adjust:none"></span>
+    `);
+    defineAlert();
+  }
+</script>

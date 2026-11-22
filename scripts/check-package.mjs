@@ -9,6 +9,30 @@ import { releasePack } from "./release-pack.mjs";
 // Recorded before the first commit on this branch, from
 // `fnm exec --using=22 -- npm pack --dry-run --json` after a production build.
 const EXPECTED_PATHS = [
+  "dist/adapters/alert/contract.d.ts",
+  "dist/adapters/alert/react.d.ts",
+  "dist/adapters/alert/solid.d.ts",
+  "dist/adapters/alert/svelte.d.ts",
+  "dist/adapters/alert/vue.d.ts",
+  "dist/components/alert/alert.d.ts",
+  "dist/components/alert/config.d.ts",
+  "dist/components/alert/constants.d.ts",
+  "dist/components/alert/constants.mjs",
+  "dist/components/alert/features/withDismiss.d.ts",
+  "dist/components/alert/features/withRenderer.d.ts",
+  "dist/components/alert/index.d.ts",
+  "dist/components/alert/index.mjs",
+  "dist/components/alert/types.d.ts",
+  "dist/elements/alert.d.ts",
+  "dist/elements/alert.mjs",
+  "dist/elements/css/alert.css",
+  "dist/elements/css/alert.d.ts",
+  "dist/elements/css/alert.js",
+  "dist/svelte/Alert.svelte",
+  "dist/svelte/Alert.svelte.d.ts",
+  "dist/svelte/alert-runtime.mjs",
+  "src/styles/components/_alert.scss",
+  "src/styles/elements/_alert.scss",
   "dist/components/tree/constants.d.ts",
   "dist/components/tree/constants.mjs",
   "dist/components/tree/index.d.ts",
@@ -47,6 +71,57 @@ const EXPECTED_PATHS = [
   "src/styles/components/_skeleton.scss",
   "LICENSE",
   "README.md",
+  "dist/adapters/paginator.d.ts",
+  "dist/adapters/paginator/svelte.d.ts",
+  "dist/adapters/react-paginator.d.ts",
+  "dist/adapters/solid-paginator.d.ts",
+  "dist/adapters/vue-paginator.d.ts",
+  "dist/components/paginator/api.d.ts",
+  "dist/components/paginator/config.d.ts",
+  "dist/components/paginator/constants.d.ts",
+  "dist/components/paginator/constants.mjs",
+  "dist/components/paginator/features/withNavigation.d.ts",
+  "dist/components/paginator/features/withNumberedPages.d.ts",
+  "dist/components/paginator/features/withPageSize.d.ts",
+  "dist/components/paginator/index.d.ts",
+  "dist/components/paginator/paginator.d.ts",
+  "dist/components/paginator/types.d.ts",
+  "dist/components/paginator/index.mjs",
+  "dist/elements/css/paginator.css",
+  "dist/elements/css/paginator.d.ts",
+  "dist/elements/css/paginator.js",
+  "dist/elements/paginator.d.ts",
+  "dist/elements/paginator.mjs",
+  "dist/svelte/Paginator.svelte",
+  "dist/svelte/Paginator.svelte.d.ts",
+  "dist/svelte/paginator-runtime.mjs",
+  "src/styles/components/_paginator.scss",
+  "src/styles/elements/_paginator.scss",
+  "dist/adapters/breadcrumb.d.ts",
+  "dist/adapters/breadcrumb/svelte.d.ts",
+  "dist/adapters/react-breadcrumb.d.ts",
+  "dist/adapters/solid-breadcrumb.d.ts",
+  "dist/adapters/vue-breadcrumb.d.ts",
+  "dist/components/breadcrumb/api.d.ts",
+  "dist/components/breadcrumb/breadcrumb.d.ts",
+  "dist/components/breadcrumb/config.d.ts",
+  "dist/components/breadcrumb/constants.d.ts",
+  "dist/components/breadcrumb/constants.mjs",
+  "dist/components/breadcrumb/features/withCollapse.d.ts",
+  "dist/components/breadcrumb/features/withTrail.d.ts",
+  "dist/components/breadcrumb/index.d.ts",
+  "dist/components/breadcrumb/index.mjs",
+  "dist/components/breadcrumb/types.d.ts",
+  "dist/elements/breadcrumb.d.ts",
+  "dist/elements/breadcrumb.mjs",
+  "dist/elements/css/breadcrumb.css",
+  "dist/elements/css/breadcrumb.d.ts",
+  "dist/elements/css/breadcrumb.js",
+  "dist/svelte/Breadcrumb.svelte",
+  "dist/svelte/Breadcrumb.svelte.d.ts",
+  "dist/svelte/breadcrumb-runtime.mjs",
+  "src/styles/components/_breadcrumb.scss",
+  "src/styles/elements/_breadcrumb.scss",
   "dist/adapters/autocomplete/contract.d.ts",
   "dist/adapters/autocomplete/react.d.ts",
   "dist/adapters/autocomplete/solid.d.ts",
@@ -57,6 +132,11 @@ const EXPECTED_PATHS = [
   "dist/adapters/avatar/solid.d.ts",
   "dist/adapters/avatar/svelte.d.ts",
   "dist/adapters/avatar/vue.d.ts",
+  "dist/adapters/rating/contract.d.ts",
+  "dist/adapters/rating/react.d.ts",
+  "dist/adapters/rating/solid.d.ts",
+  "dist/adapters/rating/svelte.d.ts",
+  "dist/adapters/rating/vue.d.ts",
   "dist/adapters/expansion-panel.d.ts",
   "dist/adapters/react-expansion.d.ts",
   "dist/adapters/react.d.ts",
@@ -87,6 +167,16 @@ const EXPECTED_PATHS = [
   "dist/components/avatar/index.d.ts",
   "dist/components/avatar/index.mjs",
   "dist/components/avatar/types.d.ts",
+  "dist/components/rating/config.d.ts",
+  "dist/components/rating/constants.d.ts",
+  "dist/components/rating/constants.mjs",
+  "dist/components/rating/features/withForm.d.ts",
+  "dist/components/rating/features/withKeyboard.d.ts",
+  "dist/components/rating/features/withStars.d.ts",
+  "dist/components/rating/index.d.ts",
+  "dist/components/rating/index.mjs",
+  "dist/components/rating/rating.d.ts",
+  "dist/components/rating/types.d.ts",
   "dist/components/colorpicker/api.d.ts",
   "dist/components/colorpicker/colorpicker.d.ts",
   "dist/components/colorpicker/config.d.ts",
@@ -131,6 +221,15 @@ const EXPECTED_PATHS = [
   "dist/components/form/types.d.ts",
   "dist/components/index.d.ts",
   "dist/components/index.mjs",
+  "dist/components/data-grid/columns.d.ts",
+  "dist/components/data-grid/config.d.ts",
+  "dist/components/data-grid/constants.d.ts",
+  "dist/components/data-grid/constants.mjs",
+  "dist/components/data-grid/data-grid.d.ts",
+  "dist/components/data-grid/features/withCellFocus.d.ts",
+  "dist/components/data-grid/index.d.ts",
+  "dist/components/data-grid/index.mjs",
+  "dist/components/data-grid/types.d.ts",
   "dist/components/stepper/api.d.ts",
   "dist/components/stepper/config.d.ts",
   "dist/components/stepper/constants.d.ts",
@@ -180,6 +279,9 @@ const EXPECTED_PATHS = [
   "dist/elements/css/avatar.css",
   "dist/elements/css/avatar.d.ts",
   "dist/elements/css/avatar.js",
+  "dist/elements/css/rating.css",
+  "dist/elements/css/rating.d.ts",
+  "dist/elements/css/rating.js",
   "dist/elements/css/expansion-panel.css",
   "dist/elements/css/expansion-panel.d.ts",
   "dist/elements/css/expansion-panel.js",
@@ -191,6 +293,8 @@ const EXPECTED_PATHS = [
   "dist/elements/index.d.ts",
   "dist/elements/index.mjs",
   "dist/elements/preupgrade.css",
+  "dist/elements/rating.d.ts",
+  "dist/elements/rating.mjs",
   "dist/elements/stepper.d.ts",
   "dist/elements/stepper.mjs",
   "dist/index.d.ts",
@@ -216,6 +320,9 @@ const EXPECTED_PATHS = [
   "dist/svelte/Stepper.svelte",
   "dist/svelte/Stepper.svelte.d.ts",
   "dist/svelte/avatar-runtime.mjs",
+  "dist/svelte/Rating.svelte",
+  "dist/svelte/Rating.svelte.d.ts",
+  "dist/svelte/rating-runtime.mjs",
   "dist/svelte/index.d.ts",
   "dist/svelte/index.js",
   "dist/svelte/runtime.mjs",
@@ -224,6 +331,7 @@ const EXPECTED_PATHS = [
   "package.json",
   "src/styles/components/_autocomplete.scss",
   "src/styles/components/_avatar.scss",
+  "src/styles/components/_rating.scss",
   "src/styles/components/_colorpicker.scss",
   "src/styles/components/_expansion-panel.scss",
   "src/styles/components/_form.scss",
@@ -231,6 +339,7 @@ const EXPECTED_PATHS = [
   "src/styles/core/_layout.scss",
   "src/styles/elements/_autocomplete.scss",
   "src/styles/elements/_avatar.scss",
+  "src/styles/elements/_rating.scss",
   "src/styles/elements/_expansion-panel.scss",
   "src/styles/elements/_stepper.scss",
   "src/styles/index.scss",
@@ -283,8 +392,8 @@ try {
     assert(read("dist/components/tree/virtual.mjs").includes("vlist"), "the virtual tree entry lost its vlist import");
   }
   symlinkSync(resolve(root, "node_modules/material"), join(modules, "material"), "junction");
-  // The virtual tree entry imports vlist at load: the fixture resolves it
-  // to the repo's own copy, as a consumer's node_modules would.
+  // The package's one runtime dependency installs with it; the fixture links
+  // the copy the checkout tested against
   symlinkSync(resolve(root, "node_modules/vlist"), join(modules, "vlist"), "junction");
   const pkg = JSON.parse(readFileSync(join(addon, "package.json"), "utf8"));
   assert.equal(Object.hasOwn(pkg, "scripts"), false);
@@ -306,7 +415,7 @@ try {
   const specifiers = [];
   const adapters = new Map([["./react", "react"], ["./vue", "vue"], ["./solid", "solid-js"]]);
   for (const [entry, conditions] of Object.entries(pkg.exports)) {
-    const components = entry.includes("*") ? ["form", "colorpicker", "autocomplete", "stepper", "expansion-panel", "avatar"] : [""];
+    const components = entry.includes("*") ? ["form", "colorpicker", "autocomplete", "stepper", "expansion-panel", "avatar", "alert", "rating"] : [""];
     for (const component of components) {
       const paths = typeof conditions === "string" ? [conditions] : Object.values(conditions);
       for (const path of paths) {
@@ -317,7 +426,7 @@ try {
       }
     }
   }
-  assert.equal(specifiers.length, 32);
+  assert.equal(specifiers.length, 49);
   run(process.execPath, ["--input-type=module", "-e", `
     import assert from 'node:assert/strict';
     import { createRequire } from 'node:module';
@@ -340,6 +449,8 @@ try {
       assert.ok(adapter.${name} && adapter.${child});
       assert.ok(adapter.${prefix}Autocomplete && adapter.${prefix}AutocompleteOption);
       assert.ok(adapter.${prefix}Avatar);
+      assert.ok(adapter.${prefix}Alert);
+      assert.ok(adapter.${prefix}Rating);
     `], fixture);
   }
   assert.match(readFileSync(join(addon, "dist/react/index.mjs"), "utf8"), /^"use client";/);
@@ -357,6 +468,10 @@ try {
     "dist/elements/autocomplete-css.mjs",
     "dist/components/avatar/index.mjs",
     "dist/elements/avatar.mjs", "dist/elements/css/avatar.css",
+    "dist/components/alert/index.mjs",
+    "dist/elements/alert.mjs", "dist/elements/css/alert.css",
+    "dist/components/rating/index.mjs",
+    "dist/elements/rating.mjs", "dist/elements/css/rating.css",
   ]) {
     const bytes = readFileSync(join(addon, path));
     console.log(`${path}: ${bytes.length} B raw, ${gzipSync(bytes, { level: 9 }).length} B gzip`);

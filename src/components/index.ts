@@ -112,3 +112,58 @@ export {
 
 export * from "./autocomplete";
 export * from "./avatar";
+
+// Paginator
+export { createPaginator } from "./paginator";
+export type {
+  PaginatorBeforeChangeEvent,
+  PaginatorChangeEvent,
+  PaginatorComponent,
+  PaginatorConfig,
+  PaginatorEvents,
+  PaginatorRange,
+} from "./paginator/types";
+
+// Breadcrumb
+export { createBreadcrumb } from "./breadcrumb";
+export type {
+  BreadcrumbBeforeChangeEvent,
+  BreadcrumbChangeEvent,
+  BreadcrumbComponent,
+  BreadcrumbConfig,
+  BreadcrumbEvents,
+  BreadcrumbItemConfig,
+  BreadcrumbItemState,
+} from "./breadcrumb/types";
+
+export { createAlert } from "./alert";
+export type {
+  AlertActionEvent,
+  AlertBeforeDismissEvent,
+  AlertComponent,
+  AlertConfig,
+  AlertDismissEvent,
+  AlertDismissReason,
+  AlertEvents,
+  AlertSeverity,
+  AlertVariant,
+} from "./alert/types";
+
+export { createDataGrid } from "./data-grid";
+export type {
+  DataGridAlign,
+  DataGridChange,
+  DataGridColumn,
+  DataGridComponent,
+  DataGridConfig,
+  DataGridDensity,
+  DataGridFill,
+  DataGridItem,
+  DataGridMotion,
+  DataGridSelection,
+  DataGridSort,
+  DataGridSortDirection,
+  DataGridSortState,
+} from "./data-grid";
+
+export * from "./rating";
