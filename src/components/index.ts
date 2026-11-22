@@ -140,3 +140,20 @@ export type {
   AlertSeverity,
   AlertVariant,
 } from "./alert/types";
+
+export { createDataGrid } from "./data-grid";
+export type {
+  DataGridAlign,
+  DataGridChange,
+  DataGridColumn,
+  DataGridComponent,
+  DataGridConfig,
+  DataGridDensity,
+  DataGridFill,
+  DataGridItem,
+  DataGridMotion,
+  DataGridSelection,
+  DataGridSort,
+  DataGridSortDirection,
+  DataGridSortState,
+} from "./data-grid";

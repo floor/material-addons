@@ -200,6 +200,18 @@ const MODULES = [
     basename: "skeleton",
   },
   {
+    name: "data grid constants",
+    entry: "src/components/data-grid/constants.ts",
+    outDir: "dist/components/data-grid",
+    basename: "constants",
+  },
+  {
+    name: "data grid component",
+    entry: "src/components/data-grid/index.ts",
+    outDir: "dist/components/data-grid",
+    basename: "index",
+  },
+  {
     name: "stepper constants",
     entry: "src/components/stepper/constants.ts",
     outDir: "dist/components/stepper",
@@ -387,7 +399,7 @@ const buildModule = async (module) => {
     naming: {
       entry: `${basename}.mjs`,
     },
-    external: module.adapter ? ["material", "material-addons", "react", "vue", "solid-js", "svelte"] : ["material"],
+    external: module.adapter ? ["material", "material-addons", "react", "vue", "solid-js", "svelte"] : ["material", "vlist"],
     plugins: module.adapter ? [adapterPlugin] : module.plugins,
     banner: module.name === "react" ? '"use client";' : undefined,
   });
@@ -427,7 +439,7 @@ const buildApp = async () => {
       naming: {
         entry: "index.mjs",
       },
-      external: ["material"],
+      external: ["material", "vlist"],
     });
 
     if (!esmResult.success) {
