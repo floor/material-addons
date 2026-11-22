@@ -608,6 +608,70 @@ Measured as standalone minified ESM bundles, gzipped, with `material` external; 
 | Compiled stylesheet | 1,072 B | 900 B |
 | Combined | 5,412 B | 3,200 B |
 
+## Breadcrumb
+
+A trail of ancestor pages with the current one last. Material Design 3 publishes no breadcrumb; the landmark, the ordered list and `aria-current="page"` follow the WAI-ARIA pattern. The current item is the last item in the trail, and `value` is its stable id.
+
+<!-- example: run, shows "Chair" -->
+```javascript
+import 'material/styles';
+import 'material-addons/styles';
+import { createBreadcrumb } from 'material-addons/components/breadcrumb';
+
+const trail = createBreadcrumb({
+  items: [
+    { value: 'home', label: 'Home', href: '#home' },
+    { value: 'rooms', label: 'Rooms', href: '#rooms' },
+    { value: 'chair', label: 'Chair' },
+  ],
+});
+document.body.append(trail.element);
+
+trail.on('change', (event) => {
+  document.title = String(event.value);
+});
+```
+
+An ancestor with `href` is a link and one without it is a button. `goTo(value)` emits `beforechange`, and a cancelled event leaves the trail unchanged; the component never rewrites the items, the caller sets the new trail with `setItems`. `setValue` and `setItems` are silent.
+
+When the row overflows, the middle items collapse into material's menu behind an overflow button, so the popup sits in the top layer, and the first item and the current page stay visible. `collapse: false` skips that and lets the row scroll, as `no-collapse` does on the element.
+
+<!-- example: fragment -->
+```html
+<m-breadcrumb>
+  <m-breadcrumb-item value="home" href="/">Home</m-breadcrumb-item>
+  <m-breadcrumb-item value="chair">Chair</m-breadcrumb-item>
+</m-breadcrumb>
+```
+
+<!-- example: fragment -->
+```javascript
+import 'material-addons/elements/css/breadcrumb';
+import { defineBreadcrumb } from 'material-addons/elements/breadcrumb';
+
+defineBreadcrumb();
+```
+
+The element reads its item children and rebuilds the trail when they change. The last child is current and its `href` is ignored. The element dispatches two events. The first is `beforechange` and it is cancelable. Its detail carries `previousValue` and `value`. The second is `change` and it follows the commit.
+
+| Framework | Import | Component | Events |
+| --- | --- | --- | --- |
+| React | `material-addons/react` | `Breadcrumb` | `onBeforechange`, `onChange` |
+| Vue | `material-addons/vue` | `MBreadcrumb` | `@beforechange`, `@change` |
+| Svelte 5 | `material-addons/svelte` | `Breadcrumb` | `onbeforechange`, `onchange` |
+| Solid | `material-addons/solid` | `Breadcrumb` | `onBeforechange`, `onChange` |
+
+### Size
+
+Measured as standalone minified ESM bundles, gzipped, with `material` external; the element's bundle also has the factory external. `scripts/breadcrumb-size.mjs` prints the row.
+
+| Artifact | Gzip | Spec estimate |
+| --- | ---: | ---: |
+| Factory | 2,809 B | 1,800 B |
+| Client elements | 1,310 B | 800 B |
+| Compiled stylesheet | 933 B | 900 B |
+| Combined | 5,052 B | 3,500 B |
+
 ## Layout
 
 `createLayout` takes an array: a tag or a factory, a name when the item is to be read back, its options, then its children. It returns the root element and each named component.
@@ -689,6 +753,8 @@ The gestures:
 | The skeleton element and its shadow styles | `material-addons/elements/skeleton`, `material-addons/elements/css/skeleton` |
 | The paginator factory | `material-addons/components/paginator` |
 | The paginator element and its shadow styles | `material-addons/elements/paginator`, `material-addons/elements/css/paginator` |
+| The breadcrumb factory | `material-addons/components/breadcrumb` |
+| The breadcrumb elements and their shadow styles | `material-addons/elements/breadcrumb`, `material-addons/elements/css/breadcrumb` |
 | The expansion panel elements | `material-addons/elements/expansion-panel` |
 | The stepper's shadow styles | `material-addons/elements/css/stepper` |
 | The expansion panel's shadow styles | `material-addons/elements/css/expansion-panel` |

@@ -115,3 +115,15 @@ export type {
   PaginatorEvents,
   PaginatorRange,
 } from "./paginator/types";
+
+// Breadcrumb
+export { createBreadcrumb } from "./breadcrumb";
+export type {
+  BreadcrumbBeforeChangeEvent,
+  BreadcrumbChangeEvent,
+  BreadcrumbComponent,
+  BreadcrumbConfig,
+  BreadcrumbEvents,
+  BreadcrumbItemConfig,
+  BreadcrumbItemState,
+} from "./breadcrumb/types";

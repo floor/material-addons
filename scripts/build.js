@@ -70,6 +70,19 @@ const MODULES = [
     name: "svelte paginator runtime", entry: "src/adapters/paginator/svelte.ts", outDir: "dist/svelte", basename: "paginator-runtime", adapter: true,
   },
   {
+    name: "breadcrumb", entry: "src/components/breadcrumb/index.ts", outDir: "dist/components/breadcrumb",
+  },
+  {
+    name: "breadcrumb constants", entry: "src/components/breadcrumb/constants.ts", outDir: "dist/components/breadcrumb", basename: "constants",
+  },
+  {
+    name: "breadcrumb element", entry: "src/elements/breadcrumb.ts", outDir: "dist/elements", basename: "breadcrumb",
+    plugins: [externalEntry(/^\.\.\/components\/breadcrumb$/, "../components/breadcrumb/index.mjs")],
+  },
+  {
+    name: "svelte breadcrumb runtime", entry: "src/adapters/breadcrumb/svelte.ts", outDir: "dist/svelte", basename: "breadcrumb-runtime", adapter: true,
+  },
+  {
     name: "form constants",
     entry: "src/components/form/constants.ts",
     outDir: "dist/components/form",
@@ -306,7 +319,7 @@ const buildStyles = async () => {
 const buildElementStyles = async () => {
   const dir = join(DIST_DIR, "elements/css");
   await mkdir(dir, { recursive: true });
-  for (const name of ["stepper", "expansion-panel", "avatar", "skeleton", "paginator"]) {
+  for (const name of ["stepper", "expansion-panel", "avatar", "skeleton", "paginator", "breadcrumb"]) {
     const source = `src/styles/components/_${name}.scss`;
     const result = Bun.spawn(
       ["npx", "sass", source, "--style=compressed", "--no-source-map", "--load-path=node_modules"],

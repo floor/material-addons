@@ -12,6 +12,9 @@
 export { paginatorElement, definePaginator } from "./paginator";
 export type { PaginatorElement, PaginatorSpec } from "./paginator";
 
+export { breadcrumbElement, breadcrumbItemDeclaration, defineBreadcrumb } from "./breadcrumb";
+export type { BreadcrumbElement, BreadcrumbItemElement, BreadcrumbSpec } from "./breadcrumb";
+
 export { skeletonElement, defineSkeleton, skeletonElementEventNames } from "./skeleton";
 export type { SkeletonElement, SkeletonElementEventMap, SkeletonSpec } from "./skeleton";
 
