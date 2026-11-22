@@ -56,15 +56,152 @@ export function withRenderer(settings: AvatarSettings) {
       return nodes.flatMap(node => node.localName === "img" ? [node as HTMLImageElement] : Array.from(node.querySelectorAll("img")));
     }
 
+    // The image fallback: a failed image (error event, or naturalWidth 0
+    // once the browser gave up) hides the broken picture; whatever other
+    // content was authored — an icon beside it — keeps showing, and when
+    // nothing readable remains the initials take the shape instead.
+    const failedImages = new Set<HTMLImageElement>();
+
+    // The author's inline display, value and priority, and their aria-hidden,
+    // saved before the failure hides the image: recovery and destroy restore
+    // exactly what was there.
+    const savedDisplay = new Map<HTMLImageElement, { value: string; priority: string }>();
+    const savedAriaHidden = new Map<HTMLImageElement, string | null>();
+
+    function hideImage(img: HTMLImageElement): void {
+      if (!savedDisplay.has(img)) {
+        savedDisplay.set(img, {
+          value: img.style.getPropertyValue("display"),
+          priority: img.style.getPropertyPriority("display"),
+        });
+      }
+      // Inline and important, not just the class: a document reset like
+      // img{display:block} outranks a ::slotted rule in the cascade for
+      // slotted content, and the reset outranks a plain inline none.
+      img.style.setProperty("display", "none", "important");
+    }
+
+    function unhideImage(img: HTMLImageElement): void {
+      const saved = savedDisplay.get(img);
+      if (saved) {
+        if (saved.value === "" && saved.priority === "") img.style.removeProperty("display");
+        else img.style.setProperty("display", saved.value, saved.priority as never);
+        savedDisplay.delete(img);
+      } else {
+        img.style.removeProperty("display");
+      }
+    }
+
+    function imageFailed(img: HTMLImageElement): void {
+      if (failedImages.has(img)) return;
+      failedImages.add(img);
+      img.classList.add(`${AVATAR_CLASSES.ROOT}__img--failed`);
+      if (!savedAriaHidden.has(img)) savedAriaHidden.set(img, img.getAttribute("aria-hidden"));
+      img.setAttribute("aria-hidden", "true");
+      hideImage(img);
+      syncFallback();
+      // The name may now come from the root: a hidden image cannot name
+      // itself in the image variant or beside an authored icon.
+      updateName();
+    }
+
+    function restoreAriaHidden(img: HTMLImageElement): void {
+      const saved = savedAriaHidden.get(img);
+      if (saved === null || saved === undefined) img.removeAttribute("aria-hidden");
+      else img.setAttribute("aria-hidden", saved);
+      savedAriaHidden.delete(img);
+    }
+
+    function imageRecovered(img: HTMLImageElement): void {
+      if (!failedImages.delete(img)) return;
+      img.classList.remove(`${AVATAR_CLASSES.ROOT}__img--failed`);
+      restoreAriaHidden(img);
+      unhideImage(img);
+      syncFallback();
+      updateName();
+    }
+
+    /** Every image failed, and nothing else in the content is showing. */
+    function contentIsBlank(): boolean {
+      const nodes = slot?.assignedElements({ flatten: true }) ?? Array.from(content.children);
+      const others = nodes.flatMap(node =>
+        node.localName === "img" ? [] : (node.textContent?.trim() || node.localName === "svg" || node.children.length > 0) && node.localName !== "slot" ? [node] : []);
+      const liveImages = images().filter((img) => !failedImages.has(img));
+      return others.length === 0 && liveImages.length === 0;
+    }
+
+    /** The initials the fallback shows: the text, or the label's first letters. */
+    function fallbackInitials(): string {
+      const source = settings.text || (settings.label ?? "");
+      return Array.from(source).slice(0, 2).join("");
+    }
+
+    function syncFallback(): void {
+      if (settings.variant !== "image") return;
+      const blank = contentIsBlank();
+      const initials = fallbackInitials();
+      const fallen = blank;
+      root.classList.toggle(`${AVATAR_CLASSES.ROOT}--image-fallback`, fallen);
+      // The content node stays mounted — hidden by the class — so a later
+      // valid src still fires load on a node under the root, and the alt
+      // keeps feeding the accessible name. The initials render beside it
+      // when there are any.
+      text.textContent = initials;
+      if (fallen && initials && text.parentElement !== shape) shape.append(text);
+      else if ((!fallen || !initials) && text.parentElement === shape) text.remove();
+      // The name the root carries depends on the fallback state.
+      updateName();
+    }
+
+    /** An image element, without an instanceof that a jsdom page cannot name. */
+    const isImage = (node: EventTarget | null): node is HTMLImageElement =>
+      !!node && (node as Element).localName === "img";
+
+    /** Browsers fire error without bubbling; the root hears it in capture. */
+    function imageError(event: Event): void {
+      if (isImage(event.target)) imageFailed(event.target);
+    }
+
+    function checkImagesLoaded(): void {
+      for (const img of images()) {
+        if (failedImages.has(img)) {
+          if (img.complete && img.naturalWidth > 0) imageRecovered(img);
+        } else if (img.complete && img.naturalWidth === 0 && (img.getAttribute("src") ?? "") !== "") {
+          imageFailed(img);
+        }
+      }
+      syncFallback();
+    }
+
     function updateName() {
       const pictures = settings.variant === "image" ? images() : [];
       const first = pictures[0];
-      const imageLabel = first && (first.getAttribute("alt") || hiddenImages.get(first));
-      const name = settings.ariaLabel ?? (settings.label || (settings.variant === "text" ? settings.text : imageLabel)) ?? "";
+      // A whitespace-only alt names nothing: trim before using it, so the
+      // fallback falls through to the initials.
+      const altOf = (img: HTMLImageElement): string => (img.getAttribute("alt") || hiddenImages.get(img) || "").trim();
+      const imageLabel = first ? altOf(first) || undefined : undefined;
+      // On the initials fallback the image is hidden, so its own alt cannot
+      // name anything: the root takes the name — the alt when there is one,
+      // else the initials.
+      // Any named image that failed and is now hidden leaves its name
+      // unreachable — the initials fallback in the image variant, or a
+      // failed img beside an authored icon.
+      // One name rule for every variant and every path: a failed image that
+      // carried the only name hands that name to the root, in the image
+      // variant, beside a decorative icon, or anywhere else an img fails.
+      const failedImage = images().find((img) => failedImages.has(img));
+      const fallen = root.classList.contains(`${AVATAR_CLASSES.ROOT}--image-fallback`) || !!failedImage;
+      // The fallback name: the failed image's alt when it is non-empty,
+      // else the initials. An empty or missing alt does not leave the root
+      // nameless — role img without a name would make the initials
+      // presentational too.
+      const failedAlt = failedImage ? altOf(failedImage) : "";
+      const fallbackName = fallen ? (failedAlt || fallbackInitials()) || undefined : undefined;
+      const name = settings.ariaLabel ?? (settings.label || (settings.variant === "text" ? settings.text : imageLabel) || fallbackName) ?? "";
       const description = settings.supportingText;
       const announcement = badge.name();
       const namedRoot = root.localName !== "div" || settings.variant !== "image" ||
-        settings.ariaLabel !== undefined || !!settings.label || !!description || !!announcement;
+        settings.ariaLabel !== undefined || !!settings.label || !!description || !!announcement || !!fallbackName;
 
       for (const [img, original] of hiddenImages) {
         if (!namedRoot || !pictures.includes(img)) restoreImage(img, original);
@@ -75,7 +212,16 @@ export function withRenderer(settings: AvatarSettings) {
         if (current !== "") img.alt = "";
       }
 
-      const role = root.localName === "div" ? (namedRoot ? (first || description ? "group" : "img") : undefined)
+      // On the fallback a hidden image cannot name itself: a non-interactive
+      // avatar becomes role img carrying the name (the alt, else the
+      // initials) — in the image variant and in the icon path, where a
+      // failed slotted img hides beside an authored icon; an interactive one
+      // keeps its button and its name.
+      // Never role img without a name: a nameless img makes its children
+      // presentational, hiding the initials the fallback just showed.
+      const fallenRoot = root.localName === "div" && fallen && !!name;
+      const role = fallenRoot ? "img"
+        : root.localName === "div" ? (namedRoot ? (first || description ? "group" : name ? "img" : undefined) : undefined)
         : root.localName === "a" && settings.disabled ? "link" : undefined;
       const fullName = [name, announcement].filter(Boolean).join(", ");
       setAttribute(root, "role", role);
@@ -88,11 +234,13 @@ export function withRenderer(settings: AvatarSettings) {
     const imageObserver = new MutationObserver(updateName);
     function observeImages() {
       imageObserver.disconnect();
-      imageObserver.observe(content, { childList: true, subtree: true, attributes: true, attributeFilter: ["alt"] });
+      imageObserver.observe(content, { childList: true, subtree: true, attributes: true, attributeFilter: ["alt", "src"] });
       for (const node of slot?.assignedElements({ flatten: true }) ?? []) {
-        imageObserver.observe(node, { childList: true, subtree: true, attributes: true, attributeFilter: ["alt"] });
+        imageObserver.observe(node, { childList: true, subtree: true, attributes: true, attributeFilter: ["alt", "src"] });
       }
+      checkImagesLoaded();
       updateName();
+      syncFallback();
     }
 
     function setContent(next: AvatarSettings["content"]) {
@@ -112,10 +260,10 @@ export function withRenderer(settings: AvatarSettings) {
         const replacement = document.createElement(tag);
         for (const attr of Array.from(root.attributes)) replacement.setAttribute(attr.name, attr.value);
         replacement.append(...Array.from(root.childNodes));
-        root.removeEventListener("click", click);
+        unbindRootListeners();
         root.replaceWith(replacement);
         root = replacement;
-        root.addEventListener("click", click);
+        bindRootListeners();
       }
       setAttribute(root, "type", tag === "button" ? "button" : undefined);
       syncDisabled();
@@ -156,7 +304,9 @@ export function withRenderer(settings: AvatarSettings) {
         if (previous === content || previous === text) previous.replaceWith(next);
         else shape.prepend(next);
       }
+      if (settings.variant !== "image") root.classList.remove(`${AVATAR_CLASSES.ROOT}--image-fallback`);
       updateName();
+      syncFallback();
     }
 
     function renderText() {
@@ -169,7 +319,26 @@ export function withRenderer(settings: AvatarSettings) {
       updateName();
     }
 
-    root.addEventListener("click", click);
+    // error does not bubble and load fires per resource; both are heard in
+    // capture on the CURRENT root, because setInteractive replaces the root
+    // node and rebinds them along with click.
+    function imageLoad(event: Event): void {
+      if (isImage(event.target)) checkImagesLoaded();
+    }
+
+    function bindRootListeners(): void {
+      root.addEventListener("click", click);
+      root.addEventListener("error", imageError, true);
+      root.addEventListener("load", imageLoad, true);
+    }
+
+    function unbindRootListeners(): void {
+      root.removeEventListener("click", click);
+      root.removeEventListener("error", imageError, true);
+      root.removeEventListener("load", imageLoad, true);
+    }
+
+    bindRootListeners();
     setModifier("variant", settings.variant);
     setModifier("size", settings.size);
     setModifier("shape", settings.shape);
@@ -188,7 +357,13 @@ export function withRenderer(settings: AvatarSettings) {
       setBadge(config: AvatarSettings["badge"]) { badge.set(config); placeBadge(); },
       destroy() {
         imageObserver.disconnect();
+        unbindRootListeners();
         slot?.removeEventListener("slotchange", observeImages);
+        for (const img of failedImages) {
+          img.classList.remove(`${AVATAR_CLASSES.ROOT}__img--failed`);
+          restoreAriaHidden(img);
+          unhideImage(img);
+        }
         for (const [img, original] of hiddenImages) restoreImage(img, original);
         root.removeEventListener("click", click);
         badge.destroy();
