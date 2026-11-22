@@ -5,10 +5,11 @@
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { createServer } from "vite";
+import { MATERIAL_DEPS } from "./vite-deps.mjs";
 
 const server = await createServer({
   configFile: false,
-  optimizeDeps: { entries: ["test/browser/stepper.html"] },
+  optimizeDeps: { include: MATERIAL_DEPS, entries: ["test/browser/stepper.html"] },
   server: { host: "127.0.0.1", port: 0, hmr: false },
 });
 let browser;
@@ -21,7 +22,10 @@ try {
   page.on("pageerror", (error) => errors.push(error.message));
   const reset = async () => {
     await page.goto(`http://127.0.0.1:${port}/test/browser/stepper.html`);
-    await page.waitForFunction(() => !!window.stepper);
+    // A dependency discovered mid-run reloads the page: settle the network
+    // before waiting for the fixture, with room for a slow cold start
+    await page.waitForLoadState("networkidle");
+    await page.waitForFunction(() => !!window.stepper, {}, { timeout: 60000 });
   };
 
   // A destination whose first candidate cannot take focus

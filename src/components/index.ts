@@ -104,6 +104,30 @@ export {
 
 export * from "./autocomplete";
 export * from "./avatar";
+
+// Paginator
+export { createPaginator } from "./paginator";
+export type {
+  PaginatorBeforeChangeEvent,
+  PaginatorChangeEvent,
+  PaginatorComponent,
+  PaginatorConfig,
+  PaginatorEvents,
+  PaginatorRange,
+} from "./paginator/types";
+
+// Breadcrumb
+export { createBreadcrumb } from "./breadcrumb";
+export type {
+  BreadcrumbBeforeChangeEvent,
+  BreadcrumbChangeEvent,
+  BreadcrumbComponent,
+  BreadcrumbConfig,
+  BreadcrumbEvents,
+  BreadcrumbItemConfig,
+  BreadcrumbItemState,
+} from "./breadcrumb/types";
+
 export { createAlert } from "./alert";
 export type {
   AlertActionEvent,
