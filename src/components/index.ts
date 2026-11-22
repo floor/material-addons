@@ -104,3 +104,14 @@ export {
 
 export * from "./autocomplete";
 export * from "./avatar";
+
+// Paginator
+export { createPaginator } from "./paginator";
+export type {
+  PaginatorBeforeChangeEvent,
+  PaginatorChangeEvent,
+  PaginatorComponent,
+  PaginatorConfig,
+  PaginatorEvents,
+  PaginatorRange,
+} from "./paginator/types";

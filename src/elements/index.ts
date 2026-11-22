@@ -9,6 +9,9 @@
  * @module elements
  */
 
+export { paginatorElement, definePaginator } from "./paginator";
+export type { PaginatorElement, PaginatorSpec } from "./paginator";
+
 export { skeletonElement, defineSkeleton, skeletonElementEventNames } from "./skeleton";
 export type { SkeletonElement, SkeletonElementEventMap, SkeletonSpec } from "./skeleton";
 

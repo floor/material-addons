@@ -27,3 +27,8 @@ import { createVueSkeleton } from "../adapters/skeleton/vue";
 export const MSkeleton = /*#__PURE__*/ createVueSkeleton();
 export type { VueSkeletonProps } from "../adapters/skeleton/vue";
 export type { SkeletonElementEventMap } from "../elements/skeleton";
+import "material-addons/elements/css/paginator";
+import { createVuePaginator } from "../adapters/vue-paginator";
+export const MPaginator = /*#__PURE__*/ createVuePaginator();
+export type { VuePaginatorProps, VuePaginatorEmits } from "../adapters/vue-paginator";
+export type { PaginatorElementEventMap } from "../adapters/paginator";
