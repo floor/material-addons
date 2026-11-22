@@ -6,6 +6,7 @@ A form builder, a stepper, an autocomplete, a colour picker, a layout schema and
 - **Autocomplete.** An editable text field with a suggestion popup, keyboard navigation and optional async suggestions.
 - **Stepper.** An ordered list of steps over one panel at a time, with linear or free progression, a validation pipeline and compact displays.
 - **Expansion panel.** A disclosure panel with a header button and a collapsible body, and an accordion that coordinates several of them.
+- **Alert.** An inline status or severity callout with a leading icon, a headline and body copy, an optional action button and a cancellable dismiss.
 - **Colour picker.** An HSV area, a hue slider, swatches, a hex field and an eyedropper; inline, as a dropdown or as a dialog.
 - **Layout.** Builds a tree of elements and components from an array, and gives each named component back.
 - **Gestures.** Tap, swipe, long press, pan, pinch and rotate, on touch and mouse.
@@ -672,6 +673,63 @@ Measured as standalone minified ESM bundles, gzipped, with `material` external; 
 | Compiled stylesheet | 933 B | 900 B |
 | Combined | 5,052 B | 3,500 B |
 
+## Alert
+
+An inline callout for status notices, warnings and validation summaries. The four severities are info, success, warning and error: the first two use `role="status"` and the last two use `role="alert"`. The visual variants are tonal, outlined and filled.
+
+<!-- example: run, shows "Update available" -->
+```javascript
+import 'material/styles';
+import 'material-addons/styles';
+import { createAlert } from 'material-addons/components/alert';
+
+const alert = createAlert({
+  severity: 'info',
+  variant: 'tonal',
+  label: 'Update available',
+  supportingText: 'Restart to apply the new release.',
+  action: 'Restart',
+  dismissible: true,
+});
+document.body.append(alert.element);
+```
+
+Clicking the action button emits `action`. Clicking the close button or calling `dismiss()` runs a cancellable `beforedismiss` before hiding the callout; it then emits `dismiss`, and `show()` reveals the callout again. Set `noIcon: true` to omit the severity icon.
+
+<!-- example: fragment -->
+```html
+<m-alert severity="error" variant="outlined" label="Submission failed" dismissible>
+  Please check the highlighted fields before continuing.
+</m-alert>
+```
+
+<!-- example: fragment -->
+```javascript
+import 'material-addons/elements/css/alert';
+import { defineAlert } from 'material-addons/elements/alert';
+
+defineAlert();
+```
+
+| Framework | Import | Component | Events |
+| --- | --- | --- | --- |
+| React | `material-addons/react` | `Alert` | `onAction`, `onBeforedismiss`, `onDismiss` |
+| Vue | `material-addons/vue` | `MAlert` | `@action`, `@beforedismiss`, `@dismiss` |
+| Svelte 5 | `material-addons/svelte` | `Alert` | `onaction`, `onbeforedismiss`, `ondismiss` |
+| Solid | `material-addons/solid` | `Alert` | `onAction`, `onBeforedismiss`, `onDismiss` |
+
+The adapters register `<m-alert>` and its shadow styles on the client. Each entry exports `AlertElementEventMap`.
+
+### Size
+
+Measured as standalone minified ESM bundles, gzipped, with `material` external; the element bundle keeps the factory external. `scripts/alert-size.mjs` prints the rows.
+
+| Artifact | Measured | Target |
+| --- | --- | --- |
+| `createAlert` | 3.6 KB | 1.8 KB |
+| `<m-alert>` | 1.1 KB | 0.9 KB |
+| The compiled stylesheet | 1.5 KB | 1.1 KB |
+
 ## Layout
 
 `createLayout` takes an array: a tag or a factory, a name when the item is to be read back, its options, then its children. It returns the root element and each named component.
@@ -732,7 +790,9 @@ The gestures:
 
 | Import | From |
 |--------|------|
-| The form, the stepper, the autocomplete, the colour picker, the colour conversions, the expansion panel, the skeleton and the avatar, plus the layout and gestures | `material-addons` |
+| The form, the stepper, the autocomplete, the colour picker, the colour conversions, the expansion panel, the skeleton, the avatar and the alert, plus the layout and gestures | `material-addons` |
+| The alert factory and types | `material-addons/components/alert` |
+| The alert element and its shadow styles | `material-addons/elements/alert`, `material-addons/elements/css/alert` |
 | The avatar factory and types | `material-addons/components/avatar` |
 | The avatar element and its shadow styles | `material-addons/elements/avatar`, `material-addons/elements/css/avatar` |
 | The autocomplete factory and types | `material-addons/components/autocomplete` |
@@ -758,7 +818,7 @@ The gestures:
 | The expansion panel elements | `material-addons/elements/expansion-panel` |
 | The stepper's shadow styles | `material-addons/elements/css/stepper` |
 | The expansion panel's shadow styles | `material-addons/elements/css/expansion-panel` |
-| A component's constants | `material-addons/components/form/constants`, `material-addons/components/colorpicker/constants`, `material-addons/components/autocomplete/constants`, `material-addons/components/stepper/constants`, `material-addons/components/expansion-panel/constants`, `material-addons/components/skeleton/constants`, `material-addons/components/avatar/constants` |
+| A component's constants | `material-addons/components/form/constants`, `material-addons/components/colorpicker/constants`, `material-addons/components/autocomplete/constants`, `material-addons/components/stepper/constants`, `material-addons/components/expansion-panel/constants`, `material-addons/components/skeleton/constants`, `material-addons/components/avatar/constants`, `material-addons/components/alert/constants` |
 | The stylesheet | `material-addons/styles` |
 
 ## Upgrading
@@ -788,6 +848,7 @@ bun run check:package       # the packed package: its files, its manifest, its e
 bun run readme:check        # this file's examples, in Chromium
 bun run check:autocomplete  # autocomplete interactions and form behavior, in Chromium
 bun run check:avatar        # avatar styles, native activation, and adapters, in Chromium
+bun run check:alert         # alert severities, variants, dismiss lifecycle, and adapters, in Chromium
 bun run check:stepper       # stepper focus and validation, in Chromium
 bun run check:stepper-adapters # framework stepper bindings, in Chromium
 bun run link:material       # use the material checkout in ../material

@@ -37,3 +37,8 @@ import { createVuePaginator } from "../adapters/vue-paginator";
 export const MPaginator = /*#__PURE__*/ createVuePaginator();
 export type { VuePaginatorProps, VuePaginatorEmits } from "../adapters/vue-paginator";
 export type { PaginatorElementEventMap } from "../adapters/paginator";
+import "material-addons/elements/css/alert";
+import { createVueAlert } from "../adapters/alert/vue";
+export const MAlert = /*#__PURE__*/ createVueAlert();
+export type { VueAlertProps, VueAlertEmits } from "../adapters/alert/vue";
+export type { AlertElementEventMap } from "../elements/alert";

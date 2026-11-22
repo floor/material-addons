@@ -37,3 +37,8 @@ import { createSolidPaginator } from "../adapters/solid-paginator";
 export const Paginator = /*#__PURE__*/ createSolidPaginator();
 export type { SolidPaginatorProps } from "../adapters/solid-paginator";
 export type { PaginatorElementEventMap } from "../adapters/paginator";
+import "material-addons/elements/css/alert";
+import { createSolidAlert } from "../adapters/alert/solid";
+export const Alert = /*#__PURE__*/ createSolidAlert();
+export type { SolidAlertProps } from "../adapters/alert/solid";
+export type { AlertElementEventMap } from "../elements/alert";

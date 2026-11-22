@@ -127,3 +127,16 @@ export type {
   BreadcrumbItemConfig,
   BreadcrumbItemState,
 } from "./breadcrumb/types";
+
+export { createAlert } from "./alert";
+export type {
+  AlertActionEvent,
+  AlertBeforeDismissEvent,
+  AlertComponent,
+  AlertConfig,
+  AlertDismissEvent,
+  AlertDismissReason,
+  AlertEvents,
+  AlertSeverity,
+  AlertVariant,
+} from "./alert/types";

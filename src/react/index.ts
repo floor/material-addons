@@ -38,3 +38,8 @@ import { createReactPaginator } from "../adapters/react-paginator";
 export const Paginator = /*#__PURE__*/ createReactPaginator();
 export type { ReactPaginatorProps } from "../adapters/react-paginator";
 export type { PaginatorElementEventMap } from "../adapters/paginator";
+import "material-addons/elements/css/alert";
+import { createReactAlert } from "../adapters/alert/react";
+export const Alert = /*#__PURE__*/ createReactAlert();
+export type { ReactAlertProps } from "../adapters/alert/react";
+export type { AlertElementEventMap } from "../elements/alert";

@@ -29,3 +29,6 @@ export type {
 
 export { avatarElement, defineAvatar } from "./avatar";
 export type { AvatarElement, AvatarElementEventMap } from "./avatar";
+
+export { alertElement, defineAlert, alertElementEventNames } from "./alert";
+export type { AlertElement, AlertElementEventMap, AlertSpec } from "./alert";
