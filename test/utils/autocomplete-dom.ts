@@ -11,6 +11,7 @@ export function installAutocompleteDom() {
       window: win, document: win.document, Element: win.Element, Node: win.Node,
       HTMLElement: win.HTMLElement, HTMLInputElement: win.HTMLInputElement,
       MutationObserver: win.MutationObserver, Event: win.Event, CustomEvent: win.CustomEvent,
+      KeyboardEvent: win.KeyboardEvent, MouseEvent: win.MouseEvent, FocusEvent: win.FocusEvent, ResizeObserver: (win as unknown as { ResizeObserver?: unknown }).ResizeObserver, PointerEvent: (win as unknown as { PointerEvent?: unknown }).PointerEvent,
       AbortController: win.AbortController, AbortSignal: win.AbortSignal,
       customElements: win.customElements, getComputedStyle: win.getComputedStyle.bind(win),
       requestAnimationFrame: win.requestAnimationFrame.bind(win),

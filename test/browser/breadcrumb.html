@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en" data-theme="baseline">
+<meta charset="utf-8">
+<title>Breadcrumb browser fixture</title>
+<body>
+<script type="module">
+  import 'material/styles';
+  import 'material-addons/styles';
+  import 'material-addons/elements/css/breadcrumb';
+  import { createBreadcrumb } from 'material-addons/components/breadcrumb';
+  import { defineBreadcrumb } from 'material-addons/elements/breadcrumb';
+  window.breadcrumb = { createBreadcrumb, defineBreadcrumb };
+</script>

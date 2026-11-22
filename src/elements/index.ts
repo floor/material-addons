@@ -9,7 +9,15 @@
  * @module elements
  */
 
+export { paginatorElement, definePaginator } from "./paginator";
+export type { PaginatorElement, PaginatorSpec } from "./paginator";
+
+export { breadcrumbElement, breadcrumbItemDeclaration, defineBreadcrumb } from "./breadcrumb";
+export type { BreadcrumbElement, BreadcrumbItemElement, BreadcrumbSpec } from "./breadcrumb";
+
 export { skeletonElement, defineSkeleton, skeletonElementEventNames } from "./skeleton";
+export { treeElement, defineTree, treeItemDeclaration } from "./tree";
+export type { TreeElement, TreeItemAttributes, TreeSpec } from "./tree";
 export type { SkeletonElement, SkeletonElementEventMap, SkeletonSpec } from "./skeleton";
 
 export { stepperElement, stepDeclaration, defineStepper, stepperElementEventNames } from "./stepper";
@@ -23,3 +31,9 @@ export type {
 
 export { avatarElement, defineAvatar } from "./avatar";
 export type { AvatarElement, AvatarElementEventMap } from "./avatar";
+
+export { alertElement, defineAlert, alertElementEventNames } from "./alert";
+export type { AlertElement, AlertElementEventMap, AlertSpec } from "./alert";
+
+export { ratingElement, defineRating, ratingElementEventNames } from "./rating";
+export type { RatingElement, RatingElementEventMap, RatingSpec } from "./rating";

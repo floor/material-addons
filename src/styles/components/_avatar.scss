@@ -66,6 +66,20 @@
     object-fit: cover;
   }
 
+  // A failed image hides; the initials or an authored icon take the shape.
+  // The failed mark hides it in the image variant AND beside an authored
+  // icon, where a displayed broken img would clip the icon.
+  &__content > .mtrl-avatar__img--failed,
+  &__content ::slotted(.mtrl-avatar__img--failed) {
+    display: none;
+  }
+
+  // The initials fallback: the content stays mounted (a later valid src
+  // still loads and the alt still names the avatar) but is not shown.
+  &--image-fallback &__content {
+    display: none;
+  }
+
   &--icon &__content > :is(svg, img),
   &--icon &__content ::slotted(:is(svg, img)) {
     inline-size: var(--_avatar-icon-size);

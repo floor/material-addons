@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en" data-theme="baseline">
+<meta charset="utf-8">
+<title>Tree browser fixture</title>
+<body>
+<div id="fixture"></div>
+<script type="module">
+  import "material/styles";
+  import "material-addons/styles";
+  import "material-addons/elements/css/tree";
+  import { createTree } from "material-addons/components/tree";
+  import { defineTree } from "material-addons/elements/tree";
+  if (new URLSearchParams(location.search).has("virtual")) {
+    const [{ createVirtualTree }] = await Promise.all([
+      import("material-addons/components/tree/virtual"),
+      import("vlist/styles"),
+      import("vlist/styles/tree"),
+    ]);
+    window.createVirtualTree = createVirtualTree;
+  }
+  window.tree = { createTree, defineTree };
+</script>

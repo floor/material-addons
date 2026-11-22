@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en" data-theme="baseline">
+<meta charset="utf-8">
+<title>Paginator browser fixture</title>
+<body>
+<script type="module">
+  import 'material/styles';
+  import 'material-addons/styles';
+  import 'material-addons/elements/css/paginator';
+  import { createPaginator } from 'material-addons/components/paginator';
+  import { definePaginator } from 'material-addons/elements/paginator';
+  window.paginator = { createPaginator, definePaginator };
+</script>

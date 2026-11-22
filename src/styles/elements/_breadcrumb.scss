@@ -1,0 +1,7 @@
+// src/styles/elements/_breadcrumb.scss
+//
+// Before its definition arrives, a trail keeps its items in one inline row
+// rather than wrapping into a broken block.
+
+m-breadcrumb:not(:defined) { display: block; }
+m-breadcrumb:not(:defined) > m-breadcrumb-item { display: inline; }
