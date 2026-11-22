@@ -1,0 +1,192 @@
+// src/styles/components/_breadcrumb.scss
+//
+// The breadcrumb. Material Design 3 publishes no breadcrumb; the landmark,
+// the ordered list and the current-page marker follow the WAI-ARIA pattern,
+// on the shipped system roles. Every number the note fixes is a token
+// (breadcrumb-spec.md, 2026-11-20).
+
+// Private: a top-level variable is not forwarded, so it cannot collide with
+// another component's own
+$-breadcrumb: "mtrl-breadcrumb";
+
+.#{$-breadcrumb} {
+  --#{$-breadcrumb}-gap: 8px;
+  --#{$-breadcrumb}-min-height: 48px;
+  --#{$-breadcrumb}-target: 48px;
+  --#{$-breadcrumb}-icon-size: 24px;
+  --#{$-breadcrumb}-font: var(--mtrl-sys-typescale-label-large-size, 0.875rem);
+  --#{$-breadcrumb}-link-color: var(--mtrl-sys-color-on-surface-variant);
+  --#{$-breadcrumb}-current-color: var(--mtrl-sys-color-on-surface);
+  --#{$-breadcrumb}-separator-color: var(--mtrl-sys-color-on-surface-variant);
+  --#{$-breadcrumb}-disabled-color: color-mix(in srgb, var(--mtrl-sys-color-on-surface) 38%, transparent);
+  --#{$-breadcrumb}-focus-outline: 2px solid var(--mtrl-sys-color-secondary);
+  --#{$-breadcrumb}-state-hover: 0.08;
+  --#{$-breadcrumb}-state-pressed: 0.1;
+
+  display: block;
+  min-block-size: var(--#{$-breadcrumb}-min-height);
+  font-family: var(--mtrl-ref-typeface-plain, Roboto, sans-serif);
+  font-size: var(--#{$-breadcrumb}-font);
+}
+
+.#{$-breadcrumb}__list {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+  min-block-size: var(--#{$-breadcrumb}-min-height);
+}
+
+.#{$-breadcrumb}__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--#{$-breadcrumb}-gap);
+  flex: none;
+}
+
+// A collapsed item leaves the row entirely: the display rule above would
+// otherwise beat the user agent's [hidden] rule
+.#{$-breadcrumb}__item[hidden] {
+  display: none;
+}
+
+.#{$-breadcrumb}__separator {
+  display: inline-grid;
+  place-items: center;
+  inline-size: var(--#{$-breadcrumb}-icon-size);
+  block-size: var(--#{$-breadcrumb}-icon-size);
+  color: var(--#{$-breadcrumb}-separator-color);
+}
+
+.#{$-breadcrumb}__separator svg {
+  inline-size: var(--#{$-breadcrumb}-icon-size);
+  block-size: var(--#{$-breadcrumb}-icon-size);
+  fill: currentColor;
+}
+
+.#{$-breadcrumb}__link {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--#{$-breadcrumb}-target);
+  padding: 0 4px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--#{$-breadcrumb}-link-color);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 100ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (hover: hover) {
+  .#{$-breadcrumb}__link:hover:not(:disabled) {
+    background: color-mix(in srgb, currentColor calc(var(--#{$-breadcrumb}-state-hover) * 100%), transparent);
+  }
+}
+
+.#{$-breadcrumb}__link:focus-visible,
+.#{$-breadcrumb}__overflow:focus-visible,
+.#{$-breadcrumb}__menu-item:focus-visible {
+  outline: var(--#{$-breadcrumb}-focus-outline);
+  outline-offset: 2px;
+}
+
+.#{$-breadcrumb}__link:active:not(:disabled) {
+  background: color-mix(in srgb, currentColor calc(var(--#{$-breadcrumb}-state-pressed) * 100%), transparent);
+}
+
+.#{$-breadcrumb}__link:disabled {
+  color: var(--#{$-breadcrumb}-disabled-color);
+  cursor: default;
+}
+
+.#{$-breadcrumb}__current {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--#{$-breadcrumb}-target);
+  padding: 0 4px;
+  color: var(--#{$-breadcrumb}-current-color);
+  font-weight: 500;
+}
+
+.#{$-breadcrumb}__overflow {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  inline-size: var(--#{$-breadcrumb}-target);
+  block-size: var(--#{$-breadcrumb}-target);
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  background: none;
+  color: var(--#{$-breadcrumb}-link-color);
+  cursor: pointer;
+}
+
+.#{$-breadcrumb}__overflow svg {
+  inline-size: var(--#{$-breadcrumb}-icon-size);
+  block-size: var(--#{$-breadcrumb}-icon-size);
+  fill: currentColor;
+}
+
+.#{$-breadcrumb}__overflow:disabled {
+  color: var(--#{$-breadcrumb}-disabled-color);
+  cursor: default;
+}
+
+// A disabled trail paints its destinations disabled. A link is an anchor, so
+// `:disabled` never matches it; the root's own modifier carries the state.
+.mtrl-breadcrumb--disabled .#{$-breadcrumb}__link {
+  color: var(--#{$-breadcrumb}-disabled-color);
+  cursor: default;
+}
+
+// The separator chevron points along the reading direction
+[dir="rtl"] .#{$-breadcrumb}__separator svg {
+  transform: scaleX(-1);
+}
+
+@media (forced-colors: active) {
+  .#{$-breadcrumb}__link {
+    color: LinkText;
+  }
+
+  .#{$-breadcrumb}__current {
+    color: CanvasText;
+  }
+
+  .#{$-breadcrumb}__overflow {
+    color: ButtonText;
+  }
+
+  .#{$-breadcrumb}__link:focus-visible,
+  .#{$-breadcrumb}__overflow:focus-visible,
+  .#{$-breadcrumb}__menu-item:focus-visible {
+    outline: 2px solid Highlight;
+  }
+
+  .#{$-breadcrumb}__link:disabled,
+  .#{$-breadcrumb}__overflow:disabled {
+    color: GrayText;
+  }
+
+}
+
+@media (forced-colors: active) {
+  // material's menu paints its own forced-colours border, but the top
+  // layer's [popover] reset outranks that rule; the breadcrumb restates the
+  // border for the menu it opens, above that reset's specificity
+  .#{$-breadcrumb} .mtrl-menu {
+    border: 1px solid ButtonText;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .#{$-breadcrumb}__link {
+    transition: none;
+  }
+}

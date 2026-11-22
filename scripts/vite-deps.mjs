@@ -12,11 +12,11 @@ export const MATERIAL_DEPS = [
   "material/core/compose",
   "material/core/dom",
   "material/core/icons",
-  "material/core/state",
-  "material/core/utils",
   "material/elements",
   "material/elements/css/checkbox",
   "material/elements/css/menu",
   "material/elements/css/ripple",
+  "material/core/state",
+  "material/core/utils",
   "vlist",
 ];

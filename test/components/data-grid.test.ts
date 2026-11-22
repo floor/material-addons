@@ -27,7 +27,6 @@ class TestResizeObserver {
   unobserve(): void {}
   disconnect(): void {}
 }
-(globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver ??= TestResizeObserver;
 
 import { createDataGrid } from "../../src/components/data-grid";
 import { alignFor } from "../../src/components/data-grid/columns";
@@ -35,6 +34,7 @@ import { alignFor } from "../../src/components/data-grid/columns";
 installAutocompleteDom();
 
 beforeEach(() => {
+  Object.defineProperty(globalThis, "ResizeObserver", { value: TestResizeObserver, configurable: true, writable: true });
   const prototype = window.Element.prototype as unknown as { getBoundingClientRect: () => unknown };
   prototype.getBoundingClientRect = () => ({
     x: 0, y: 0, top: 0, left: 0, width: 800, height: 400, right: 800, bottom: 400, toJSON() { return this; },

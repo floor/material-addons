@@ -6,6 +6,7 @@ A form builder, a stepper, an autocomplete, a colour picker, a layout schema and
 - **Autocomplete.** An editable text field with a suggestion popup, keyboard navigation and optional async suggestions.
 - **Stepper.** An ordered list of steps over one panel at a time, with linear or free progression, a validation pipeline and compact displays.
 - **Expansion panel.** A disclosure panel with a header button and a collapsible body, and an accordion that coordinates several of them.
+- **Alert.** An inline status or severity callout with a leading icon, a headline and body copy, an optional action button and a cancellable dismiss.
 - **Colour picker.** An HSV area, a hue slider, swatches, a hex field and an eyedropper; inline, as a dropdown or as a dialog.
 - **Layout.** Builds a tree of elements and components from an array, and gives each named component back.
 - **Gestures.** Tap, swipe, long press, pan, pinch and rotate, on touch and mouse.
@@ -554,6 +555,181 @@ Production CI measures each artifact separately at gzip level 9. Material depend
 | Compiled stylesheet | 1,244 B | 800 B |
 | Combined | 4,977 B | 2,500 B |
 
+## Paginator
+
+One page of a set: a rows-per-page select, the live range, and first, previous, next and last. Material Design 3 publishes no paginator; the row geometry and the 25-row page follow the MD2 data-table behavior, on the shipped system roles. `page` is the model, 1-based and clamped to the page count.
+
+<!-- example: run, shows "26–50 of 100" -->
+```javascript
+import 'material/styles';
+import 'material-addons/styles';
+import { createPaginator } from 'material-addons/components/paginator';
+
+const paginator = createPaginator({ page: 2, pageSize: 25, total: 100 });
+document.body.append(paginator.element);
+
+const status = document.createElement('p');
+status.textContent = paginator.range.textContent;
+paginator.on('change', (event) => { status.textContent = `${event.page} / ${event.pageSize}`; });
+document.body.append(status);
+```
+
+`goTo(page)` is the guarded move. It emits `beforechange`, and only then `change`. `setPage` and `setPageSize` are silent and clamp. So is `setTotal`. `numbered` adds page buttons between previous and next. The page list keeps `siblingCount` around the current page and `boundaryCount` at the ends. `ends: false` drops first and last, as `no-ends` does on the element.
+
+<!-- example: fragment -->
+```html
+<m-paginator page="2" page-size="25" total="100" numbered></m-paginator>
+```
+
+<!-- example: fragment -->
+```javascript
+import 'material-addons/elements/css/paginator';
+import { definePaginator } from 'material-addons/elements/paginator';
+
+definePaginator();
+```
+
+The element dispatches one cancelable change. Its detail is `{ page, pageSize }`, raised from the factory's beforechange. Calling `preventDefault()` leaves the page where it was. `pageSizes` is a property. The data grid composes this contract.
+
+| Framework | Import | Component | Event |
+| --- | --- | --- | --- |
+| React | `material-addons/react` | `Paginator` | `onChange` |
+| Vue | `material-addons/vue` | `MPaginator` | `@change` |
+| Svelte 5 | `material-addons/svelte` | `Paginator` | `onchange` |
+| Solid | `material-addons/solid` | `Paginator` | `onChange` |
+
+### Size
+
+Measured as standalone minified ESM bundles, gzipped, with `material` external; the element's bundle also has the factory external. `scripts/paginator-size.mjs` prints the row.
+
+| Artifact | Gzip | Spec estimate |
+| --- | ---: | ---: |
+| Factory | 3,426 B | 1,600 B |
+| Client element | 914 B | 700 B |
+| Compiled stylesheet | 1,072 B | 900 B |
+| Combined | 5,412 B | 3,200 B |
+
+## Breadcrumb
+
+A trail of ancestor pages with the current one last. Material Design 3 publishes no breadcrumb; the landmark, the ordered list and `aria-current="page"` follow the WAI-ARIA pattern. The current item is the last item in the trail, and `value` is its stable id.
+
+<!-- example: run, shows "Chair" -->
+```javascript
+import 'material/styles';
+import 'material-addons/styles';
+import { createBreadcrumb } from 'material-addons/components/breadcrumb';
+
+const trail = createBreadcrumb({
+  items: [
+    { value: 'home', label: 'Home', href: '#home' },
+    { value: 'rooms', label: 'Rooms', href: '#rooms' },
+    { value: 'chair', label: 'Chair' },
+  ],
+});
+document.body.append(trail.element);
+
+trail.on('change', (event) => {
+  document.title = String(event.value);
+});
+```
+
+An ancestor with `href` is a link and one without it is a button. `goTo(value)` emits `beforechange`, and a cancelled event leaves the trail unchanged; the component never rewrites the items, the caller sets the new trail with `setItems`. `setValue` and `setItems` are silent.
+
+When the row overflows, the middle items collapse into material's menu behind an overflow button, so the popup sits in the top layer, and the first item and the current page stay visible. `collapse: false` skips that and lets the row scroll, as `no-collapse` does on the element.
+
+<!-- example: fragment -->
+```html
+<m-breadcrumb>
+  <m-breadcrumb-item value="home" href="/">Home</m-breadcrumb-item>
+  <m-breadcrumb-item value="chair">Chair</m-breadcrumb-item>
+</m-breadcrumb>
+```
+
+<!-- example: fragment -->
+```javascript
+import 'material-addons/elements/css/breadcrumb';
+import { defineBreadcrumb } from 'material-addons/elements/breadcrumb';
+
+defineBreadcrumb();
+```
+
+The element reads its item children and rebuilds the trail when they change. The last child is current and its `href` is ignored. The element dispatches two events. The first is `beforechange` and it is cancelable. Its detail carries `previousValue` and `value`. The second is `change` and it follows the commit.
+
+| Framework | Import | Component | Events |
+| --- | --- | --- | --- |
+| React | `material-addons/react` | `Breadcrumb` | `onBeforechange`, `onChange` |
+| Vue | `material-addons/vue` | `MBreadcrumb` | `@beforechange`, `@change` |
+| Svelte 5 | `material-addons/svelte` | `Breadcrumb` | `onbeforechange`, `onchange` |
+| Solid | `material-addons/solid` | `Breadcrumb` | `onBeforechange`, `onChange` |
+
+### Size
+
+Measured as standalone minified ESM bundles, gzipped, with `material` external; the element's bundle also has the factory external. `scripts/breadcrumb-size.mjs` prints the row.
+
+| Artifact | Gzip | Spec estimate |
+| --- | ---: | ---: |
+| Factory | 2,809 B | 1,800 B |
+| Client elements | 1,310 B | 800 B |
+| Compiled stylesheet | 933 B | 900 B |
+| Combined | 5,052 B | 3,500 B |
+
+## Alert
+
+An inline callout for status notices, warnings and validation summaries. The four severities are info, success, warning and error: the first two use `role="status"` and the last two use `role="alert"`. The visual variants are tonal, outlined and filled.
+
+<!-- example: run, shows "Update available" -->
+```javascript
+import 'material/styles';
+import 'material-addons/styles';
+import { createAlert } from 'material-addons/components/alert';
+
+const alert = createAlert({
+  severity: 'info',
+  variant: 'tonal',
+  label: 'Update available',
+  supportingText: 'Restart to apply the new release.',
+  action: 'Restart',
+  dismissible: true,
+});
+document.body.append(alert.element);
+```
+
+Clicking the action button emits `action`. Clicking the close button or calling `dismiss()` runs a cancellable `beforedismiss` before hiding the callout; it then emits `dismiss`, and `show()` reveals the callout again. Set `noIcon: true` to omit the severity icon.
+
+<!-- example: fragment -->
+```html
+<m-alert severity="error" variant="outlined" label="Submission failed" dismissible>
+  Please check the highlighted fields before continuing.
+</m-alert>
+```
+
+<!-- example: fragment -->
+```javascript
+import 'material-addons/elements/css/alert';
+import { defineAlert } from 'material-addons/elements/alert';
+
+defineAlert();
+```
+
+| Framework | Import | Component | Events |
+| --- | --- | --- | --- |
+| React | `material-addons/react` | `Alert` | `onAction`, `onBeforedismiss`, `onDismiss` |
+| Vue | `material-addons/vue` | `MAlert` | `@action`, `@beforedismiss`, `@dismiss` |
+| Svelte 5 | `material-addons/svelte` | `Alert` | `onaction`, `onbeforedismiss`, `ondismiss` |
+| Solid | `material-addons/solid` | `Alert` | `onAction`, `onBeforedismiss`, `onDismiss` |
+
+The adapters register `<m-alert>` and its shadow styles on the client. Each entry exports `AlertElementEventMap`.
+
+### Size
+
+Measured as standalone minified ESM bundles, gzipped, with `material` external; the element bundle keeps the factory external. `scripts/alert-size.mjs` prints the rows.
+
+| Artifact | Measured | Target |
+| --- | --- | --- |
+| `createAlert` | 3.6 KB | 1.8 KB |
+| `<m-alert>` | 1.1 KB | 0.9 KB |
+| The compiled stylesheet | 1.5 KB | 1.1 KB |
+
 ## Layout
 
 `createLayout` takes an array: a tag or a factory, a name when the item is to be read back, its options, then its children. It returns the root element and each named component.
@@ -614,7 +790,9 @@ The gestures:
 
 | Import | From |
 |--------|------|
-| The form, the stepper, the autocomplete, the colour picker, the colour conversions, the expansion panel, the skeleton and the avatar, plus the layout and gestures | `material-addons` |
+| The form, the stepper, the autocomplete, the colour picker, the colour conversions, the expansion panel, the skeleton, the avatar and the alert, plus the layout and gestures | `material-addons` |
+| The alert factory and types | `material-addons/components/alert` |
+| The alert element and its shadow styles | `material-addons/elements/alert`, `material-addons/elements/css/alert` |
 | The avatar factory and types | `material-addons/components/avatar` |
 | The avatar element and its shadow styles | `material-addons/elements/avatar`, `material-addons/elements/css/avatar` |
 | The autocomplete factory and types | `material-addons/components/autocomplete` |
@@ -633,10 +811,14 @@ The gestures:
 | The Svelte 5 adapter | `material-addons/svelte` |
 | The stepper element | `material-addons/elements`, `material-addons/elements/stepper` |
 | The skeleton element and its shadow styles | `material-addons/elements/skeleton`, `material-addons/elements/css/skeleton` |
+| The paginator factory | `material-addons/components/paginator` |
+| The paginator element and its shadow styles | `material-addons/elements/paginator`, `material-addons/elements/css/paginator` |
+| The breadcrumb factory | `material-addons/components/breadcrumb` |
+| The breadcrumb elements and their shadow styles | `material-addons/elements/breadcrumb`, `material-addons/elements/css/breadcrumb` |
 | The expansion panel elements | `material-addons/elements/expansion-panel` |
 | The stepper's shadow styles | `material-addons/elements/css/stepper` |
 | The expansion panel's shadow styles | `material-addons/elements/css/expansion-panel` |
-| A component's constants | `material-addons/components/form/constants`, `material-addons/components/colorpicker/constants`, `material-addons/components/autocomplete/constants`, `material-addons/components/stepper/constants`, `material-addons/components/expansion-panel/constants`, `material-addons/components/skeleton/constants`, `material-addons/components/avatar/constants` |
+| A component's constants | `material-addons/components/form/constants`, `material-addons/components/colorpicker/constants`, `material-addons/components/autocomplete/constants`, `material-addons/components/stepper/constants`, `material-addons/components/expansion-panel/constants`, `material-addons/components/skeleton/constants`, `material-addons/components/avatar/constants`, `material-addons/components/alert/constants` |
 | The stylesheet | `material-addons/styles` |
 
 ## Upgrading
@@ -666,6 +848,7 @@ bun run check:package       # the packed package: its files, its manifest, its e
 bun run readme:check        # this file's examples, in Chromium
 bun run check:autocomplete  # autocomplete interactions and form behavior, in Chromium
 bun run check:avatar        # avatar styles, native activation, and adapters, in Chromium
+bun run check:alert         # alert severities, variants, dismiss lifecycle, and adapters, in Chromium
 bun run check:stepper       # stepper focus and validation, in Chromium
 bun run check:stepper-adapters # framework stepper bindings, in Chromium
 bun run link:material       # use the material checkout in ../material
