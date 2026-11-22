@@ -33,3 +33,8 @@ import { createReactSkeleton } from "../adapters/skeleton/react";
 export const Skeleton = /*#__PURE__*/ createReactSkeleton();
 export type { ReactSkeletonProps } from "../adapters/skeleton/react";
 export type { SkeletonElementEventMap } from "../elements/skeleton";
+import "material-addons/elements/css/paginator";
+import { createReactPaginator } from "../adapters/react-paginator";
+export const Paginator = /*#__PURE__*/ createReactPaginator();
+export type { ReactPaginatorProps } from "../adapters/react-paginator";
+export type { PaginatorElementEventMap } from "../adapters/paginator";

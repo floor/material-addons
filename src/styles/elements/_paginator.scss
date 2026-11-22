@@ -1,0 +1,6 @@
+// src/styles/elements/_paginator.scss
+//
+// Before its definition arrives the paginator is an empty block: it has no
+// light-DOM content of its own.
+
+m-paginator:not(:defined) { display: block; }

@@ -21,6 +21,8 @@
 // @forward "./components/datagrid";      // Advanced grid functionality
 // @forward "./components/treeview";      // Tree navigation
 
+@forward "./components/paginator";
+@forward "./elements/paginator";
 @forward "./components/breadcrumb";
 @forward "./elements/breadcrumb";
 @forward "./components/avatar";

@@ -38,6 +38,14 @@
       "types": "./dist/components/stepper/index.d.ts",
       "import": "./dist/components/stepper/index.mjs"
     },
+    "./components/paginator": {
+      "types": "./dist/components/paginator/index.d.ts",
+      "import": "./dist/components/paginator/index.mjs"
+    },
+    "./components/paginator/constants": {
+      "types": "./dist/components/paginator/constants.d.ts",
+      "import": "./dist/components/paginator/constants.mjs"
+    },
     "./components/breadcrumb": {
       "types": "./dist/components/breadcrumb/index.d.ts",
       "import": "./dist/components/breadcrumb/index.mjs"
@@ -62,6 +70,10 @@
       "types": "./dist/elements/stepper.d.ts",
       "import": "./dist/elements/stepper.mjs"
     },
+    "./elements/paginator": {
+      "types": "./dist/elements/paginator.d.ts",
+      "import": "./dist/elements/paginator.mjs"
+    },
     "./elements/breadcrumb": {
       "types": "./dist/elements/breadcrumb.d.ts",
       "import": "./dist/elements/breadcrumb.mjs"
@@ -73,6 +85,10 @@
     "./elements/css/stepper": {
       "types": "./dist/elements/css/stepper.d.ts",
       "import": "./dist/elements/css/stepper.js"
+    },
+    "./elements/css/paginator": {
+      "types": "./dist/elements/css/paginator.d.ts",
+      "import": "./dist/elements/css/paginator.js"
     },
     "./elements/css/breadcrumb": {
       "types": "./dist/elements/css/breadcrumb.d.ts",
@@ -147,7 +163,7 @@
     "ts:check": "tsc --noEmit -p scripts/tsconfig.check.json",
     "bench": "ADDONS_BENCH=1 bun test test/benchmarks/",
     "test": "bun test",
-    "prepublishOnly": "bun run adapters:check && bun run ts:check && bun test && bun run build --production && bun run check:package && bun run readme:check && bun run check:stepper && bun run check:stepper-adapters && bun run check:autocomplete && bun run check:expansion-panel && bun run check:avatar && bun run check:breadcrumb",
+    "prepublishOnly": "bun run adapters:check && bun run ts:check && bun test && bun run build --production && bun run check:package && bun run readme:check && bun run check:stepper && bun run check:stepper-adapters && bun run check:autocomplete && bun run check:expansion-panel && bun run check:avatar && bun run check:paginator && bun run check:breadcrumb",
     "release:pack": "bun run prepublishOnly && node scripts/release-pack.mjs",
     "link:material": "node scripts/link-material.mjs",
     "check:package": "node scripts/check-package.mjs",
@@ -161,6 +177,7 @@
     "adapters:check": "bun scripts/generate-adapters.mjs --check",
     "check:stepper-adapters": "node scripts/check-stepper-adapters.mjs",
     "check:expansion-panel": "node scripts/check-expansion-panel.mjs",
+    "check:paginator": "node scripts/check-paginator.mjs",
     "check:breadcrumb": "node scripts/check-breadcrumb.mjs"
   },
   "repository": {

@@ -32,3 +32,8 @@ import { createSolidSkeleton } from "../adapters/skeleton/solid";
 export const Skeleton = /*#__PURE__*/ createSolidSkeleton();
 export type { SolidSkeletonProps } from "../adapters/skeleton/solid";
 export type { SkeletonElementEventMap } from "../elements/skeleton";
+import "material-addons/elements/css/paginator";
+import { createSolidPaginator } from "../adapters/solid-paginator";
+export const Paginator = /*#__PURE__*/ createSolidPaginator();
+export type { SolidPaginatorProps } from "../adapters/solid-paginator";
+export type { PaginatorElementEventMap } from "../adapters/paginator";
