@@ -45,6 +45,8 @@ jobs:
         run: bun run check:expansion-panel
       - name: Data grid browser behavior
         run: bun run check:data-grid
+      - name: Tree browser behavior
+        run: bun run check:tree
       - name: Skeleton browser behavior
         run: bun run check:skeleton
       - name: Skeleton adapters in Chromium

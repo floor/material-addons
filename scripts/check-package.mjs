@@ -33,6 +33,21 @@ const EXPECTED_PATHS = [
   "dist/svelte/alert-runtime.mjs",
   "src/styles/components/_alert.scss",
   "src/styles/elements/_alert.scss",
+  "dist/components/tree/constants.d.ts",
+  "dist/components/tree/constants.mjs",
+  "dist/components/tree/index.d.ts",
+  "dist/components/tree/index.mjs",
+  "dist/components/tree/tree.d.ts",
+  "dist/components/tree/types.d.ts",
+  "dist/components/tree/virtual.d.ts",
+  "dist/components/tree/virtual.mjs",
+  "dist/elements/css/tree.css",
+  "dist/elements/css/tree.d.ts",
+  "dist/elements/css/tree.js",
+  "dist/elements/tree.d.ts",
+  "dist/elements/tree.mjs",
+  "src/styles/components/_tree.scss",
+  "src/styles/elements/_tree.scss",
   "dist/adapters/skeleton/contract.d.ts",
   "dist/adapters/skeleton/react.d.ts",
   "dist/adapters/skeleton/solid.d.ts",
@@ -369,6 +384,13 @@ try {
   const addon = join(modules, "material-addons");
   mkdirSync(addon, { recursive: true });
   run("tar", ["-xzf", packed.tarball, "--strip-components=1", "-C", addon], root);
+  // The default tree entry must not pull vlist: the virtual entry is the
+  // only tree module that may, and it keeps vlist external.
+  {
+    const read = (path) => readFileSync(join(addon, path), "utf8");
+    assert(!read("dist/components/tree/index.mjs").includes("vlist"), "the default tree entry bundles vlist");
+    assert(read("dist/components/tree/virtual.mjs").includes("vlist"), "the virtual tree entry lost its vlist import");
+  }
   symlinkSync(resolve(root, "node_modules/material"), join(modules, "material"), "junction");
   // The package's one runtime dependency installs with it; the fixture links
   // the copy the checkout tested against
@@ -404,7 +426,7 @@ try {
       }
     }
   }
-  assert.equal(specifiers.length, 44);
+  assert.equal(specifiers.length, 49);
   run(process.execPath, ["--input-type=module", "-e", `
     import assert from 'node:assert/strict';
     import { createRequire } from 'node:module';

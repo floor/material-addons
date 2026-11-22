@@ -1,0 +1,13 @@
+// src/styles/elements/_tree.scss
+//
+// Pre-upgrade rules: nested items stay hidden until the definition renders
+// the owned tree, so a deep authoring does not flash every node.
+
+m-tree:not(:defined),
+m-tree-item:not(:defined) {
+  display: block;
+}
+
+m-tree:not(:defined) m-tree-item m-tree-item {
+  display: none;
+}

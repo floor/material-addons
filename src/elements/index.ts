@@ -16,6 +16,8 @@ export { breadcrumbElement, breadcrumbItemDeclaration, defineBreadcrumb } from "
 export type { BreadcrumbElement, BreadcrumbItemElement, BreadcrumbSpec } from "./breadcrumb";
 
 export { skeletonElement, defineSkeleton, skeletonElementEventNames } from "./skeleton";
+export { treeElement, defineTree, treeItemDeclaration } from "./tree";
+export type { TreeElement, TreeItemAttributes, TreeSpec } from "./tree";
 export type { SkeletonElement, SkeletonElementEventMap, SkeletonSpec } from "./skeleton";
 
 export { stepperElement, stepDeclaration, defineStepper, stepperElementEventNames } from "./stepper";

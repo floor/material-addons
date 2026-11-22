@@ -27,6 +27,14 @@ export type {
   CancelHandler,
 } from "./form/types";
 
+// Tree component (the folder-style expanding list)
+export { createTree } from "./tree";
+export type {
+  TreeActivateEvent, TreeBeforeChangeEvent, TreeBeforeExpandEvent, TreeChangeEvent,
+  TreeComponent, TreeConfig, TreeErrorEvent, TreeExpandEvent, TreeLoadEvent,
+  TreeNode, TreePlacement, TreeSelection,
+} from "./tree/types";
+
 // Skeleton component (the loading placeholder primitive)
 export { createSkeleton, registerSkeleton, skeletonFor } from "./skeleton";
 export type {
