@@ -343,7 +343,7 @@ try {
       }
     }
   }
-  assert.equal(specifiers.length, 31);
+  assert.equal(specifiers.length, 35);
   run(process.execPath, ["--input-type=module", "-e", `
     import assert from 'node:assert/strict';
     import { createRequire } from 'node:module';
