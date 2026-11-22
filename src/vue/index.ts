@@ -42,3 +42,8 @@ import { createVueAlert } from "../adapters/alert/vue";
 export const MAlert = /*#__PURE__*/ createVueAlert();
 export type { VueAlertProps, VueAlertEmits } from "../adapters/alert/vue";
 export type { AlertElementEventMap } from "../elements/alert";
+import "material-addons/elements/css/rating";
+import { createVueRating } from "../adapters/rating/vue";
+export const MRating = /*#__PURE__*/ createVueRating();
+export type { VueRatingProps, VueRatingEmits } from "../adapters/rating/vue";
+export type { RatingElementEventMap } from "../elements/rating";

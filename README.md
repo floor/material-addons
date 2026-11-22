@@ -730,6 +730,57 @@ Measured as standalone minified ESM bundles, gzipped, with `material` external; 
 | `<m-alert>` | 1.1 KB | 0.9 KB |
 | The compiled stylesheet | 1.5 KB | 1.1 KB |
 
+## Rating
+
+A rating shows a score as stars. Half steps follow the writing direction. The control is a radio group, or a read-only image.
+
+<!-- example: run, shows "Quality" -->
+```javascript
+import 'material/styles';
+import 'material-addons/styles';
+import { createRating } from 'material-addons/components/rating';
+
+const rating = createRating({ label: 'Quality', value: 4, max: 5 });
+document.body.append(rating.element);
+```
+
+`value` is the score, from 0 up to `max`. Set `half` for steps of one half. A second click on the current value clears it, unless `noClear` or `required` is set.
+
+Pass `readOnly` for an image of the score, including a fraction such as 3.7. `disabled` blocks input. `name` submits the score, and `required` makes an empty score invalid.
+
+<!-- example: fragment -->
+```html
+<m-rating name="score" value="3.5" half label="Quality" show-value></m-rating>
+```
+
+<!-- example: fragment -->
+```javascript
+import 'material-addons/elements/css/rating';
+import { defineRating } from 'material-addons/elements/rating';
+
+defineRating();
+```
+
+| Framework | Import | Component | Binding |
+| --- | --- | --- | --- |
+| React | `material-addons/react` | `Rating` | `value` and `onChange` |
+| Vue | `material-addons/vue` | `MRating` | `v-model` |
+| Svelte 5 | `material-addons/svelte` | `Rating` | `bind:value` |
+| Solid | `material-addons/solid` | `Rating` | `value` and `onChange` |
+
+The adapters register the client element and its shadow styles. Each entry exports `RatingElementEventMap`. `change` carries the score, and `hover` carries the preview.
+
+### Size
+
+`scripts/rating-size.mjs` prints the measured row. These are the targets that script prints against. The per-component ceiling is 5.0 KB.
+
+| Artifact | Gzip target |
+| --- | ---: |
+| Factory | 2.2 KB |
+| Client element | 1.0 KB |
+| Compiled stylesheet | 1.0 KB |
+| Combined | 4.2 KB |
+
 ## Layout
 
 `createLayout` takes an array: a tag or a factory, a name when the item is to be read back, its options, then its children. It returns the root element and each named component.
@@ -790,9 +841,11 @@ The gestures:
 
 | Import | From |
 |--------|------|
-| The form, the stepper, the autocomplete, the colour picker, the colour conversions, the expansion panel, the skeleton, the avatar and the alert, plus the layout and gestures | `material-addons` |
+| The form, the stepper, the autocomplete, the colour picker, the colour conversions, the expansion panel, the skeleton, the avatar, the alert and the rating, plus the layout and gestures | `material-addons` |
 | The alert factory and types | `material-addons/components/alert` |
 | The alert element and its shadow styles | `material-addons/elements/alert`, `material-addons/elements/css/alert` |
+| The rating factory and types | `material-addons/components/rating` |
+| The rating element and its shadow styles | `material-addons/elements/rating`, `material-addons/elements/css/rating` |
 | The avatar factory and types | `material-addons/components/avatar` |
 | The avatar element and its shadow styles | `material-addons/elements/avatar`, `material-addons/elements/css/avatar` |
 | The autocomplete factory and types | `material-addons/components/autocomplete` |
@@ -818,7 +871,7 @@ The gestures:
 | The expansion panel elements | `material-addons/elements/expansion-panel` |
 | The stepper's shadow styles | `material-addons/elements/css/stepper` |
 | The expansion panel's shadow styles | `material-addons/elements/css/expansion-panel` |
-| A component's constants | `material-addons/components/form/constants`, `material-addons/components/colorpicker/constants`, `material-addons/components/autocomplete/constants`, `material-addons/components/stepper/constants`, `material-addons/components/expansion-panel/constants`, `material-addons/components/skeleton/constants`, `material-addons/components/avatar/constants`, `material-addons/components/alert/constants` |
+| A component's constants | `material-addons/components/form/constants`, `material-addons/components/colorpicker/constants`, `material-addons/components/autocomplete/constants`, `material-addons/components/stepper/constants`, `material-addons/components/expansion-panel/constants`, `material-addons/components/skeleton/constants`, `material-addons/components/avatar/constants`, `material-addons/components/alert/constants`, `material-addons/components/rating/constants` |
 | The stylesheet | `material-addons/styles` |
 
 ## Upgrading
@@ -849,6 +902,7 @@ bun run readme:check        # this file's examples, in Chromium
 bun run check:autocomplete  # autocomplete interactions and form behavior, in Chromium
 bun run check:avatar        # avatar styles, native activation, and adapters, in Chromium
 bun run check:alert         # alert severities, variants, dismiss lifecycle, and adapters, in Chromium
+bun run check:rating        # rating half steps, form value, and adapters, in Chromium
 bun run check:stepper       # stepper focus and validation, in Chromium
 bun run check:stepper-adapters # framework stepper bindings, in Chromium
 bun run link:material       # use the material checkout in ../material

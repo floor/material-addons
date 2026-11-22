@@ -27,7 +27,7 @@ const PREUPGRADE_CSS = join(DIST_DIR, "elements/preupgrade.css");
 const adapterPlugin = {
   name: "adapter-element-entry",
   setup(build) {
-    build.onResolve({ filter: /^(?:\.\.\/)+elements\/(stepper|autocomplete|avatar|alert)$/ }, ({ path }) => ({
+    build.onResolve({ filter: /^(?:\.\.\/)+elements\/(stepper|autocomplete|avatar|alert|rating)$/ }, ({ path }) => ({
       path: `material-addons/${path.slice(path.lastIndexOf("elements/"))}`, external: true,
     }));
   },
@@ -57,6 +57,7 @@ const MODULES = [
     name: "alert element", entry: "src/elements/alert.ts", outDir: "dist/elements", basename: "alert",
     plugins: [externalEntry(/^\.\.\/components\/alert$/, "../components/alert/index.mjs")],
   },
+  { name: "svelte rating runtime", entry: "src/adapters/rating/svelte.ts", outDir: "dist/svelte", basename: "rating-runtime", adapter: true },
   {
     name: "avatar", entry: "src/components/avatar/index.ts", outDir: "dist/components/avatar",
   },
@@ -92,6 +93,16 @@ const MODULES = [
   },
   {
     name: "svelte breadcrumb runtime", entry: "src/adapters/breadcrumb/svelte.ts", outDir: "dist/svelte", basename: "breadcrumb-runtime", adapter: true,
+  },
+  {
+    name: "rating", entry: "src/components/rating/index.ts", outDir: "dist/components/rating",
+  },
+  {
+    name: "rating constants", entry: "src/components/rating/constants.ts", outDir: "dist/components/rating", basename: "constants",
+  },
+  {
+    name: "rating element", entry: "src/elements/rating.ts", outDir: "dist/elements", basename: "rating",
+    plugins: [externalEntry(/^\.\.\/components\/rating$/, "../components/rating/index.mjs")],
   },
   {
     name: "form constants",
@@ -228,7 +239,11 @@ const MODULES = [
     entry: "src/elements/index.ts",
     outDir: "dist/elements",
     basename: "index",
-    plugins: [externalEntry(/^\.\/avatar$/, "./avatar.mjs"), externalEntry(/^\.\/alert$/, "./alert.mjs")],
+    plugins: [
+      externalEntry(/^\.\/avatar$/, "./avatar.mjs"),
+      externalEntry(/^\.\/alert$/, "./alert.mjs"),
+      externalEntry(/^\.\/rating$/, "./rating.mjs"),
+    ],
   },
 ];
 
@@ -342,7 +357,7 @@ const buildStyles = async () => {
 const buildElementStyles = async () => {
   const dir = join(DIST_DIR, "elements/css");
   await mkdir(dir, { recursive: true });
-  for (const name of ["stepper", "expansion-panel", "avatar", "skeleton", "paginator", "breadcrumb", "alert"]) {
+  for (const name of ["stepper", "expansion-panel", "avatar", "skeleton", "paginator", "breadcrumb", "alert", "rating"]) {
     const source = `src/styles/components/_${name}.scss`;
     const result = Bun.spawn(
       ["npx", "sass", source, "--style=compressed", "--no-source-map", "--load-path=node_modules"],

@@ -42,3 +42,8 @@ import { createSolidAlert } from "../adapters/alert/solid";
 export const Alert = /*#__PURE__*/ createSolidAlert();
 export type { SolidAlertProps } from "../adapters/alert/solid";
 export type { AlertElementEventMap } from "../elements/alert";
+import "material-addons/elements/css/rating";
+import { createSolidRating } from "../adapters/rating/solid";
+export const Rating = /*#__PURE__*/ createSolidRating();
+export type { SolidRatingProps } from "../adapters/rating/solid";
+export type { RatingElementEventMap } from "../elements/rating";

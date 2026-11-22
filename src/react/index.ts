@@ -43,3 +43,8 @@ import { createReactAlert } from "../adapters/alert/react";
 export const Alert = /*#__PURE__*/ createReactAlert();
 export type { ReactAlertProps } from "../adapters/alert/react";
 export type { AlertElementEventMap } from "../elements/alert";
+import "material-addons/elements/css/rating";
+import { createReactRating } from "../adapters/rating/react";
+export const Rating = /*#__PURE__*/ createReactRating();
+export type { ReactRatingProps } from "../adapters/rating/react";
+export type { RatingElementEventMap } from "../elements/rating";

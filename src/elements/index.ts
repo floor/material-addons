@@ -32,3 +32,6 @@ export type { AvatarElement, AvatarElementEventMap } from "./avatar";
 
 export { alertElement, defineAlert, alertElementEventNames } from "./alert";
 export type { AlertElement, AlertElementEventMap, AlertSpec } from "./alert";
+
+export { ratingElement, defineRating, ratingElementEventNames } from "./rating";
+export type { RatingElement, RatingElementEventMap, RatingSpec } from "./rating";

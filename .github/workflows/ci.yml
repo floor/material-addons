@@ -59,3 +59,5 @@ jobs:
         run: bun run check:breadcrumb
       - name: Alert and framework adapters in Chromium
         run: bun run check:alert
+      - name: Rating half steps, form value, and adapters in Chromium
+        run: bun run check:rating
