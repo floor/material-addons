@@ -1,6 +1,6 @@
 {
   "name": "material-addons",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "description": "Additional components and utilities for the material system, featuring forms, specialized elements, and extended functionality for modern applications",
   "type": "module",
   "sideEffects": [
