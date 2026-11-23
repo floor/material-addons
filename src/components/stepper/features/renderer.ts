@@ -217,6 +217,121 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
     });
   };
 
+  // Compact labels: when the measured labels do not fit the row, the inactive
+  // steps show their indicator only and the active step keeps its label. The
+  // decision is a pure function of the labels' own measured widths and the
+  // row's width, so it cannot depend on the mode it is measured in: it does
+  // not go stale when the steps change, and it cannot flap
+  let compact = false;
+  let iconOnly = false;
+  let lastResolved: "horizontal" | "vertical" = "horizontal";
+
+  const measureLabels = (resolved: "horizontal" | "vertical"): void => {
+    lastResolved = resolved;
+    const reset = (): void => {
+      compact = false;
+      iconOnly = false;
+      element.classList.remove(cls(STEPPER_MODIFIERS.COMPACT_LABELS), cls(STEPPER_MODIFIERS.COMPACT_ICONS));
+    };
+    lastWidth = element.clientWidth;
+    if (resolved !== "horizontal" || settings.display !== "labels" || element.clientWidth === 0) {
+      reset();
+      return;
+    }
+    // Measure the real full layout: the classes come off, every label is read
+    // as it renders there, and the answer is whether anything is clipped —
+    // the same test a reader sees, so a row that fits in full mode (a wide
+    // row, or labels that wrap into their share) stays in it
+    element.classList.remove(
+      cls(STEPPER_MODIFIERS.COMPACT_LABELS),
+      cls(STEPPER_MODIFIERS.COMPACT_ICONS),
+      cls(STEPPER_MODIFIERS.DISPLAY_DOTS),
+      cls(STEPPER_MODIFIERS.COMPACT_DOTS),
+    );
+    const style = getComputedStyle(element);
+    const value = (name: string, fallback: number): number =>
+      Number.parseFloat(style.getPropertyValue(name)) || fallback;
+    const padding = value("--mtrl-stepper-header-padding", 16);
+    const indicator = value("--mtrl-stepper-indicator-size", 24);
+    const gap = value("--mtrl-stepper-header-gap", 12);
+    const fixed = 2 * padding + indicator + gap;
+    const indicatorOnly = 2 * padding + indicator;
+    const railMin = 8 + 4;
+    const items = Array.from(list.children) as HTMLElement[];
+    const labels = items
+      .map((item) => item.querySelector<HTMLElement>(`.${cls(STEPPER_CLASSES.LABEL)}`))
+      .filter((label): label is HTMLElement => Boolean(label && (label.textContent ?? "").trim()));
+    const clipped = labels.some((label) => label.scrollWidth > label.clientWidth + 1);
+    const overflows = list.scrollWidth > element.clientWidth + 1;
+    // A wrapped label can fit without clipping yet still paint outside its
+    // header, as a bottom-placed stack lets it; the indicators and the rail
+    // must fit too
+    const escapes = labels.some((label) => {
+      const header = label.closest(`.${cls(STEPPER_CLASSES.HEADER)}`);
+      if (!header) return false;
+      const box = label.getBoundingClientRect();
+      const frame = header.getBoundingClientRect();
+      return box.width > 0 && (box.left < frame.left - 1 || box.right > frame.right + 1);
+    });
+    if (!clipped && !overflows && !escapes) {
+      compact = false;
+      iconOnly = false;
+      return;
+    }
+    compact = true;
+    // Not even a small label box beside the indicators: the active label goes
+    // too. The icon row has its own tighter padding, and when even that row
+    // cannot hold the steps the dots display takes over
+    let compactFootprint = 0;
+    let rails = 0;
+    for (const item of items) {
+      const rail = item.querySelector(`.${cls(STEPPER_CLASSES.CONNECTOR)}`);
+      const active = item.classList.contains(cls(STEPPER_MODIFIERS.ACTIVE));
+      compactFootprint += active ? fixed : indicatorOnly;
+      if (rail) {
+        compactFootprint += railMin;
+        rails += 1;
+      }
+    }
+    const width = element.clientWidth;
+    iconOnly = compactFootprint + 16 > width + 1;
+    const iconFootprint = items.length * (2 * 8 + indicator) + rails * railMin;
+    const dotsFallback = iconOnly && iconFootprint > width + 1;
+    element.classList.toggle(cls(STEPPER_MODIFIERS.DISPLAY_DOTS), dotsFallback);
+    element.classList.toggle(cls(STEPPER_MODIFIERS.COMPACT_DOTS), dotsFallback);
+    element.classList.toggle(cls(STEPPER_MODIFIERS.COMPACT_LABELS), compact);
+    element.classList.toggle(cls(STEPPER_MODIFIERS.COMPACT_ICONS), iconOnly);
+  };
+
+  // A forced horizontal stepper has no orientation observer to lean on, so
+  // the renderer watches its own width for the compact threshold. Only an
+  // inline-size change re-decides — the class change itself alters the height,
+  // which would otherwise feed straight back — and the class write is deferred
+  // to the next frame, out of the observer callback, so a transition cannot
+  // raise a resize loop
+  let lastWidth = -1;
+  let measureFrame: number | null = null;
+  const scheduleMeasure = (): void => {
+    if (measureFrame !== null) return;
+    const raf = typeof requestAnimationFrame === "function"
+      ? requestAnimationFrame
+      : (callback: (time: number) => void) => setTimeout(() => callback(0), 0) as unknown as number;
+    measureFrame = raf(() => {
+      measureFrame = null;
+      measureLabels(lastResolved);
+    });
+  };
+  let labelObserver: ResizeObserver | null = null;
+  if (typeof ResizeObserver === "function") {
+    labelObserver = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width ?? element.clientWidth;
+      if (Math.abs(width - lastWidth) < 1) return;
+      lastWidth = width;
+      scheduleMeasure();
+    });
+    labelObserver.observe(element);
+  }
+
   const sync = (steps: StepState[], resolved: "horizontal" | "vertical"): void => {
     const vertical = resolved === "vertical";
     element.classList.toggle(cls(STEPPER_MODIFIERS.VERTICAL), vertical);
@@ -230,14 +345,19 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
     progress.setAttribute("aria-valuetext", readout);
     progressLabel.textContent = readout;
     progressFill.style.width = active ? `${((active.index + 1) / Math.max(steps.length, 1)) * 100}%` : "0%";
-    // The layout options travel with the state, not only the creation classes
+    // The layout options travel with the state, not only the creation classes.
+    // A bottom label is a horizontal arrangement — the number over the words,
+    // the rail through the headers — so a vertical stepper reads it as the end
+    // label instead: the number stays beside the label and the connector under
+    // the number, whatever the container did to resolve `orientation: "auto"`.
+    const labelPlacement = vertical && settings.labelPlacement === "bottom" ? "end" : settings.labelPlacement;
     element.classList.toggle(
       cls(STEPPER_MODIFIERS.LABEL_BOTTOM),
-      settings.labelPlacement === "bottom",
+      labelPlacement === "bottom",
     );
     element.classList.toggle(
       cls(STEPPER_MODIFIERS.LABEL_END),
-      settings.labelPlacement !== "bottom",
+      labelPlacement !== "bottom",
     );
     element.classList.toggle(
       cls(STEPPER_MODIFIERS.HEADER_BOTTOM),
@@ -252,8 +372,9 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
     element.classList.toggle(cls(STEPPER_MODIFIERS.DISPLAY_COUNT), settings.display === "count");
     element.classList.toggle(cls(STEPPER_MODIFIERS.DISPLAY_DOTS), settings.display === "dots");
     element.classList.toggle(cls(STEPPER_MODIFIERS.DISPLAY_PROGRESS), settings.display === "progress");
-    const compact = settings.display === "count" || settings.display === "progress";
-    list.hidden = compact;
+    measureLabels(resolved);
+    const compactDisplay = settings.display === "count" || settings.display === "progress";
+    list.hidden = compactDisplay;
     count.hidden = settings.display !== "count";
     progress.hidden = settings.display !== "progress";
     const off = element.getAttribute("aria-disabled") === "true";
@@ -323,7 +444,7 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
         // Vertical: the panel sits under its own header; horizontal: the panels
         // share one region below the list. In a compact display the list is
         // hidden, so its panels stay in the shared region too.
-        const parent = vertical && !compact ? item : panels;
+        const parent = vertical && !compactDisplay ? item : panels;
         if (wrapper.parentElement !== parent) parent.appendChild(wrapper);
       }
     });
@@ -339,6 +460,15 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
     panelElements,
     render,
     sync,
-    destroy: () => element.replaceChildren(),
+    destroy: () => {
+      labelObserver?.disconnect();
+      labelObserver = null;
+      if (measureFrame !== null) {
+        if (typeof cancelAnimationFrame === "function") cancelAnimationFrame(measureFrame);
+        else clearTimeout(measureFrame);
+        measureFrame = null;
+      }
+      element.replaceChildren();
+    },
   };
 };

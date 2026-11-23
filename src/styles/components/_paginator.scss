@@ -1,0 +1,192 @@
+// src/styles/components/_paginator.scss
+//
+// The paginator. Material Design 3 publishes no paginator; the row geometry,
+// the 25-row page and the 48dp target follow the MD2 data-table behavior
+// page the spec note cites, on the shipped system roles. Every number the
+// note fixes is a token (paginator-spec.md, 2026-11-20).
+
+// Private: a top-level variable is not forwarded, so it cannot collide with
+// another component's own
+$-paginator: "mtrl-paginator";
+
+.#{$-paginator} {
+  --#{$-paginator}-gap: 16px;
+  --#{$-paginator}-min-height: 52px;
+  --#{$-paginator}-target: 48px;
+  --#{$-paginator}-icon-size: 24px;
+  --#{$-paginator}-label-color: var(--mtrl-sys-color-on-surface-variant);
+  --#{$-paginator}-label-font: var(--mtrl-sys-typescale-body-medium-size, 0.875rem);
+  --#{$-paginator}-button-color: var(--mtrl-sys-color-on-surface-variant);
+  --#{$-paginator}-button-shape: var(--mtrl-sys-shape-corner-full, 9999px);
+  --#{$-paginator}-page-color: var(--mtrl-sys-color-on-surface);
+  --#{$-paginator}-page-current-bg: var(--mtrl-sys-color-secondary-container);
+  --#{$-paginator}-page-current-color: var(--mtrl-sys-color-on-secondary-container);
+  --#{$-paginator}-disabled-color: color-mix(in srgb, var(--mtrl-sys-color-on-surface) 38%, transparent);
+  --#{$-paginator}-focus-outline: 2px solid var(--mtrl-sys-color-secondary);
+  --#{$-paginator}-state-hover: 0.08;
+  --#{$-paginator}-state-pressed: 0.1;
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--#{$-paginator}-gap);
+  min-block-size: var(--#{$-paginator}-min-height);
+  font-family: var(--mtrl-ref-typeface-plain, Roboto, sans-serif);
+}
+
+.#{$-paginator}__page-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--#{$-paginator}-label-color);
+  font-size: var(--#{$-paginator}-label-font);
+}
+
+.#{$-paginator}__page-size-label {
+  white-space: nowrap;
+}
+
+.#{$-paginator}__page-size-select {
+  min-block-size: 40px;
+  padding: 0 8px;
+  border: 1px solid var(--mtrl-sys-color-outline);
+  border-radius: var(--mtrl-sys-shape-corner-extra-small, 4px);
+  background: var(--mtrl-sys-color-surface);
+  color: var(--mtrl-sys-color-on-surface);
+  font: inherit;
+}
+
+.#{$-paginator}__page-size-select:focus-visible {
+  outline: var(--#{$-paginator}-focus-outline);
+  outline-offset: 2px;
+}
+
+.#{$-paginator}__page-size-select:disabled {
+  color: var(--#{$-paginator}-disabled-color);
+  border-color: var(--#{$-paginator}-disabled-color);
+}
+
+.#{$-paginator}__range {
+  margin: 0;
+  color: var(--#{$-paginator}-label-color);
+  font-size: var(--#{$-paginator}-label-font);
+  white-space: nowrap;
+}
+
+.#{$-paginator}__navigation {
+  display: flex;
+  align-items: center;
+  margin-inline-start: auto;
+}
+
+.#{$-paginator}__button,
+.#{$-paginator}__page {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  inline-size: var(--#{$-paginator}-target);
+  block-size: var(--#{$-paginator}-target);
+  padding: 0;
+  border: 0;
+  border-radius: var(--#{$-paginator}-button-shape);
+  background: none;
+  color: var(--#{$-paginator}-button-color);
+  font: inherit;
+  cursor: pointer;
+  transition: background-color 100ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.#{$-paginator}__button span,
+.#{$-paginator}__button svg {
+  inline-size: var(--#{$-paginator}-icon-size);
+  block-size: var(--#{$-paginator}-icon-size);
+  fill: currentColor;
+}
+
+@media (hover: hover) {
+  .#{$-paginator}__button:hover:not(:disabled),
+  .#{$-paginator}__page:hover:not(:disabled) {
+    background: color-mix(in srgb, currentColor calc(var(--#{$-paginator}-state-hover) * 100%), transparent);
+  }
+}
+
+.#{$-paginator}__button:focus-visible,
+.#{$-paginator}__page:focus-visible {
+  outline: var(--#{$-paginator}-focus-outline);
+  outline-offset: -2px;
+}
+
+.#{$-paginator}__button:active:not(:disabled),
+.#{$-paginator}__page:active:not(:disabled) {
+  background: color-mix(in srgb, currentColor calc(var(--#{$-paginator}-state-pressed) * 100%), transparent);
+}
+
+.#{$-paginator}__button:disabled,
+.#{$-paginator}__page:disabled {
+  color: var(--#{$-paginator}-disabled-color);
+  cursor: default;
+}
+
+.#{$-paginator}__pages {
+  display: inline-flex;
+  align-items: center;
+}
+
+.#{$-paginator}__page {
+  inline-size: auto;
+  min-inline-size: var(--#{$-paginator}-target);
+  padding: 0 8px;
+  color: var(--#{$-paginator}-page-color);
+  font-variant-numeric: tabular-nums;
+}
+
+.#{$-paginator}__page--current {
+  background: var(--#{$-paginator}-page-current-bg);
+  color: var(--#{$-paginator}-page-current-color);
+}
+
+.#{$-paginator}__ellipsis {
+  display: inline-grid;
+  place-items: center;
+  min-inline-size: 24px;
+  block-size: var(--#{$-paginator}-target);
+  color: var(--#{$-paginator}-label-color);
+}
+
+// Chevrons mirror under RTL; the first and last glyphs do too, so first sits
+// at the inline start on either side.
+[dir="rtl"] .#{$-paginator}__button span,
+[dir="rtl"] .#{$-paginator}__button svg {
+  transform: scaleX(-1);
+}
+
+@media (forced-colors: active) {
+  .#{$-paginator}__button,
+  .#{$-paginator}__page {
+    color: ButtonText;
+    border: 1px solid ButtonText;
+  }
+
+  .#{$-paginator}__page--current {
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .#{$-paginator}__button:focus-visible,
+  .#{$-paginator}__page:focus-visible {
+    outline: 2px solid Highlight;
+  }
+
+  .#{$-paginator}__button:disabled,
+  .#{$-paginator}__page:disabled {
+    color: GrayText;
+    border-color: GrayText;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .#{$-paginator}__button,
+  .#{$-paginator}__page {
+    transition: none;
+  }
+}

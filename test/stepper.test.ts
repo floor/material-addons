@@ -382,6 +382,92 @@ describe("Stepper compact displays", () => {
   });
 });
 
+describe("Stepper label placement", () => {
+  test("a vertical stepper reads a bottom label as the end label", () => {
+    const vertical = createStepper({ orientation: "vertical", labelPlacement: "bottom", steps: steps() });
+    expect(vertical.element.classList.contains("mtrl-stepper--label-end")).toBe(true);
+    expect(vertical.element.classList.contains("mtrl-stepper--label-bottom")).toBe(false);
+    vertical.destroy();
+  });
+
+  test("a horizontal stepper keeps the bottom label", () => {
+    const horizontal = createStepper({ orientation: "horizontal", labelPlacement: "bottom", steps: steps() });
+    expect(horizontal.element.classList.contains("mtrl-stepper--label-bottom")).toBe(true);
+    expect(horizontal.element.classList.contains("mtrl-stepper--label-end")).toBe(false);
+    horizontal.destroy();
+  });
+
+  test("turning a bottom-labelled stepper vertical moves it to the end layout", () => {
+    const stepper = createStepper({ orientation: "horizontal", labelPlacement: "bottom", steps: steps() });
+    expect(stepper.element.classList.contains("mtrl-stepper--label-bottom")).toBe(true);
+    stepper.setOrientation("vertical");
+    expect(stepper.element.classList.contains("mtrl-stepper--label-end")).toBe(true);
+    expect(stepper.element.classList.contains("mtrl-stepper--label-bottom")).toBe(false);
+    stepper.setOrientation("horizontal");
+    expect(stepper.element.classList.contains("mtrl-stepper--label-bottom")).toBe(true);
+    stepper.destroy();
+  });
+});
+
+describe("Stepper compact labels", () => {
+  test("a row whose labels are squeezed switches to compact labels and back", async () => {
+    const stepper = createStepper({ orientation: "horizontal", steps: steps() });
+    document.body.append(stepper.element);
+    const root = stepper.element;
+    // jsdom has no layout: the reads the renderer makes are answered from one
+    // state, keyed by the element the read happens on
+    const state = { width: 900, box: 120, text: 120 };
+    const prototype = dom.window.HTMLElement.prototype as unknown as Record<string, unknown>;
+    const width = Object.getOwnPropertyDescriptor(prototype, "clientWidth");
+    const scroll = Object.getOwnPropertyDescriptor(prototype, "scrollWidth");
+    Object.defineProperty(prototype, "clientWidth", {
+      configurable: true,
+      get(this: HTMLElement) {
+        if (this.classList?.contains("mtrl-stepper")) return state.width;
+        if (this.classList?.contains("mtrl-stepper__label")) return state.box;
+        return 0;
+      },
+    });
+    Object.defineProperty(prototype, "scrollWidth", {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.classList?.contains("mtrl-stepper__label") ? state.text : 0;
+      },
+    });
+    try {
+      // A wide viewport with room for the labels
+      state.width = 900;
+      state.box = 120;
+      state.text = 120;
+      stepper.setSteps(stepper.getSteps());
+      expect(root.classList.contains("mtrl-stepper--compact-labels")).toBe(false);
+      // A box narrower than the text it holds is clipped
+      state.width = 240;
+      state.box = 10;
+      state.text = 120;
+      stepper.setSteps(stepper.getSteps());
+      expect(root.classList.contains("mtrl-stepper--compact-labels")).toBe(true);
+      // Back to a wide viewport, where nothing is clipped again
+      state.width = 900;
+      state.box = 120;
+      stepper.setSteps(stepper.getSteps());
+      expect(root.classList.contains("mtrl-stepper--compact-labels")).toBe(false);
+    } finally {
+      if (width) Object.defineProperty(prototype, "clientWidth", width);
+      else Reflect.deleteProperty(prototype, "clientWidth");
+      if (scroll) Object.defineProperty(prototype, "scrollWidth", scroll);
+      else Reflect.deleteProperty(prototype, "scrollWidth");
+    }
+    stepper.destroy();
+  });
+
+  test("a vertical stepper never takes the compact label class", () => {
+    const stepper = createStepper({ orientation: "vertical", steps: steps() });
+    expect(stepper.element.classList.contains("mtrl-stepper--compact-labels")).toBe(false);
+    stepper.destroy();
+  });
+});
+
 describe("Stepper keyboard", () => {
   test("arrows move focus without activating; Enter activates the focused step", async () => {
     const stepper = mount();

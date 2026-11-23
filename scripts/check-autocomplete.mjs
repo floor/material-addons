@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { createServer } from "vite";
+import { MATERIAL_DEPS } from "./vite-deps.mjs";
 
 const server = await createServer({
   configFile: false,
-  optimizeDeps: { entries: ["test/browser/autocomplete.html"] },
+  optimizeDeps: { include: MATERIAL_DEPS, entries: ["test/browser/autocomplete.html"] },
   server: { host: "127.0.0.1", port: 0, hmr: false },
 });
 let browser;
@@ -17,7 +18,10 @@ try {
   page.on("pageerror", error => errors.push(error.message));
   const reset = async () => {
     await page.goto(`http://127.0.0.1:${port}/test/browser/autocomplete.html`);
-    await page.waitForFunction(() => !!window.autocomplete);
+    // A dependency discovered mid-run reloads the page: settle the network
+    // before waiting for the fixture, with room for a slow cold start
+    await page.waitForLoadState("networkidle");
+    await page.waitForFunction(() => !!window.autocomplete, {}, { timeout: 60000 });
   };
   const mount = (mode, direction, variant, forced = false) => page.evaluate(({ mode, direction, variant, forced }) => {
     document.documentElement.dataset.themeMode = mode;
