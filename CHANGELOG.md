@@ -2,6 +2,54 @@
 
 Published as `mtrl-addons` up to 0.9.x. This file has written notes from 0.8.0, and the commit history below for everything earlier.
 
+## [3.3.0] - 2026-11-23
+
+### Added
+
+- `createPaginator` and `<m-paginator>` provide page navigation, a live
+  item range, a rows-per-page selector and optional numbered buttons.
+  Page changes are cancellable.
+- `createBreadcrumb`, `<m-breadcrumb>` and `<m-breadcrumb-item>` show
+  the ancestor trail and identify the current page. Long trails can
+  collapse their middle items into a menu while keeping the first and
+  current items visible.
+- `createAlert` and `<m-alert>` provide inline severity notices in tonal,
+  outlined and filled variants, with an optional action and cancellable
+  dismissal. Dismissing a focused alert moves focus to the next eligible
+  control, or to the previous one if needed.
+- `createDataGrid` virtualizes table rows and supports sortable columns,
+  single or multiple row selection, and cell keyboard navigation in
+  both writing directions. Selection stays in place as rows recycle.
+- `createRating` and `<m-rating>` support whole and half stars, keyboard
+  input, a read-only score and form submission with required validation.
+- The paginator, breadcrumb, alert and rating ship with shadow styles
+  and adapters for React, Vue, Svelte and Solid.
+- `createTree`, `<m-tree>` and `<m-tree-item>` provide expanding nodes,
+  keyboard navigation, type-ahead, selection and lazy children.
+  `material-addons/components/tree/virtual` adds `createVirtualTree`
+  for large trees.
+- Horizontal steppers adapt when their labels do not fit. They keep the
+  active label visible and truncate it as needed, then fall back to dots
+  at tighter widths. Each step keeps its full accessible name.
+
+### Changed
+
+- The data grid and virtual tree use `vlist` as a runtime dependency
+  (`>=3.8.6 <4.0.0`). The standard tree entry keeps its own DOM rendering.
+- The Sass styles index forwards the skeleton component name as
+  `$skeleton-component` alongside the tree's `$tree-component`.
+
+### Fixed
+
+- An avatar hides a failed image and falls back to initials when needed,
+  preserving its accessible name. A subsequent image that loads restores
+  the image display.
+- A vertical stepper treats `labelPlacement: "bottom"` as `"end"` so the
+  indicators and connectors stay aligned and the label sits beside them.
+- `material-addons/styles` includes the autocomplete popup's listbox
+  stylesheet in Material's listbox layer. The popup gets its surface,
+  elevation, corners and row spacing from the shipped stylesheet.
+
 ## [3.2.0] - 2026-11-20
 
 ### Added
