@@ -10,10 +10,12 @@
 @forward "./components/autocomplete";
 @forward "./components/stepper";
 @forward "./components/expansion-panel";
-@forward "./components/skeleton";
+@forward "./components/skeleton" as skeleton-*;
+@forward "./components/tree" as tree-*;
 
 // Rules for the elements before their definitions arrive
 @forward "./elements/stepper";
+@forward "./elements/tree";
 @forward "./elements/expansion-panel";
 @forward "./elements/autocomplete";
 
@@ -21,5 +23,13 @@
 // @forward "./components/datagrid";      // Advanced grid functionality
 // @forward "./components/treeview";      // Tree navigation
 
+@forward "./components/paginator";
+@forward "./elements/paginator";
+@forward "./components/breadcrumb";
+@forward "./elements/breadcrumb";
 @forward "./components/avatar";
 @forward "./elements/avatar";
+@forward "./components/alert";
+@forward "./elements/alert";
+@forward "./components/rating";
+@forward "./elements/rating";
