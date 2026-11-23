@@ -382,6 +382,33 @@ describe("Stepper compact displays", () => {
   });
 });
 
+describe("Stepper label placement", () => {
+  test("a vertical stepper reads a bottom label as the end label", () => {
+    const vertical = createStepper({ orientation: "vertical", labelPlacement: "bottom", steps: steps() });
+    expect(vertical.element.classList.contains("mtrl-stepper--label-end")).toBe(true);
+    expect(vertical.element.classList.contains("mtrl-stepper--label-bottom")).toBe(false);
+    vertical.destroy();
+  });
+
+  test("a horizontal stepper keeps the bottom label", () => {
+    const horizontal = createStepper({ orientation: "horizontal", labelPlacement: "bottom", steps: steps() });
+    expect(horizontal.element.classList.contains("mtrl-stepper--label-bottom")).toBe(true);
+    expect(horizontal.element.classList.contains("mtrl-stepper--label-end")).toBe(false);
+    horizontal.destroy();
+  });
+
+  test("turning a bottom-labelled stepper vertical moves it to the end layout", () => {
+    const stepper = createStepper({ orientation: "horizontal", labelPlacement: "bottom", steps: steps() });
+    expect(stepper.element.classList.contains("mtrl-stepper--label-bottom")).toBe(true);
+    stepper.setOrientation("vertical");
+    expect(stepper.element.classList.contains("mtrl-stepper--label-end")).toBe(true);
+    expect(stepper.element.classList.contains("mtrl-stepper--label-bottom")).toBe(false);
+    stepper.setOrientation("horizontal");
+    expect(stepper.element.classList.contains("mtrl-stepper--label-bottom")).toBe(true);
+    stepper.destroy();
+  });
+});
+
 describe("Stepper keyboard", () => {
   test("arrows move focus without activating; Enter activates the focused step", async () => {
     const stepper = mount();

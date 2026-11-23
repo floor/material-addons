@@ -230,14 +230,19 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
     progress.setAttribute("aria-valuetext", readout);
     progressLabel.textContent = readout;
     progressFill.style.width = active ? `${((active.index + 1) / Math.max(steps.length, 1)) * 100}%` : "0%";
-    // The layout options travel with the state, not only the creation classes
+    // The layout options travel with the state, not only the creation classes.
+    // A bottom label is a horizontal arrangement — the number over the words,
+    // the rail through the headers — so a vertical stepper reads it as the end
+    // label instead: the number stays beside the label and the connector under
+    // the number, whatever the container did to resolve `orientation: "auto"`.
+    const labelPlacement = vertical && settings.labelPlacement === "bottom" ? "end" : settings.labelPlacement;
     element.classList.toggle(
       cls(STEPPER_MODIFIERS.LABEL_BOTTOM),
-      settings.labelPlacement === "bottom",
+      labelPlacement === "bottom",
     );
     element.classList.toggle(
       cls(STEPPER_MODIFIERS.LABEL_END),
-      settings.labelPlacement !== "bottom",
+      labelPlacement !== "bottom",
     );
     element.classList.toggle(
       cls(STEPPER_MODIFIERS.HEADER_BOTTOM),
