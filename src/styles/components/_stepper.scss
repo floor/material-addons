@@ -276,6 +276,7 @@
 // dots display's do, so every header keeps its full name
 .mtrl-stepper--compact-labels .mtrl-stepper__item:not(.mtrl-stepper__item--active) .mtrl-stepper__label-group {
   position: absolute;
+  align-items: stretch;
   width: 1px;
   height: 1px;
   overflow: hidden;
