@@ -2,9 +2,9 @@ import { expect, test } from "bun:test";
 import "material/elements/css/ripple";
 import { registerStyles } from "material/elements";
 import { alertElement, defineAlert } from "../../src/elements/alert";
-import { installAutocompleteDom } from "../utils/autocomplete-dom";
+import { installDom } from "../utils/dom";
 
-installAutocompleteDom();
+installDom();
 
 test("<m-alert> reflects attributes, slots body content, and dispatches cancelable beforedismiss", async () => {
   registerStyles({ alert: ".mtrl-alert{display:flex}" });

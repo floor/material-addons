@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { createAvatar } from "../../src/components/avatar";
-import { installAutocompleteDom } from "../utils/autocomplete-dom";
+import { installDom } from "../utils/dom";
 
 describe("createAvatar", () => {
-  installAutocompleteDom();
+  installDom();
 
   test("uses the default geometry and falls back for unknown options", () => {
     const avatar = createAvatar({ variant: "unknown", size: "unknown", shape: "unknown", className: "owner" });

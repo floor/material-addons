@@ -1,7 +1,7 @@
 // test/components/data-grid.test.ts
 
 import { beforeEach, describe, expect, test } from "bun:test";
-import { installAutocompleteDom } from "../utils/autocomplete-dom";
+import { installDom } from "../utils/dom";
 
 // jsdom has no ResizeObserver and no layout. vlist observes its viewport and
 // builds the header on the observation, so the stub reports one 800x400 box;
@@ -31,7 +31,7 @@ class TestResizeObserver {
 import { createDataGrid } from "../../src/components/data-grid";
 import { alignFor } from "../../src/components/data-grid/columns";
 
-installAutocompleteDom();
+installDom();
 
 beforeEach(() => {
   Object.defineProperty(globalThis, "ResizeObserver", { value: TestResizeObserver, configurable: true, writable: true });

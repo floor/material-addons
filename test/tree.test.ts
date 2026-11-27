@@ -4,7 +4,7 @@
 // the keyboard map is exercised through real events.
 
 import { beforeAll, describe, expect, test } from "bun:test";
-import { installAutocompleteDom } from "./utils/autocomplete-dom";
+import { installDom } from "./utils/dom";
 import { JSDOM } from "jsdom";
 
 let dom: JSDOM;
@@ -30,7 +30,7 @@ const key = (element: HTMLElement, k: string) =>
   element.dispatchEvent(new KeyboardEvent("keydown", { key: k, bubbles: true, cancelable: true }));
 
 describe("createTree", () => {
-  installAutocompleteDom();
+  installDom();
 
   test("defaults and anatomy", () => {
     const tree = createTree({ nodes: NODES });

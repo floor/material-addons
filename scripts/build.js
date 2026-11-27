@@ -5,7 +5,6 @@ import { existsSync } from "fs";
 import { join, dirname, extname } from "path";
 import { fileURLToPath } from "url";
 import { watch } from "fs";
-import { readListboxStyle } from "./listbox-style.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = join(__dirname, "..");
@@ -19,7 +18,6 @@ const DIST_DIR = join(ROOT_DIR, "dist");
 const MJS_OUTPUT = join(DIST_DIR, "index.mjs");
 const CSS_OUTPUT = join(DIST_DIR, "styles.css");
 const STYLES_ENTRY = join(ROOT_DIR, "src/styles/index.scss");
-const AUTOCOMPLETE_CSS = join(DIST_DIR, "components/autocomplete/autocomplete.css");
 const PREUPGRADE_CSS = join(DIST_DIR, "elements/preupgrade.css");
 
 // Granular module entry points for tree-shaking
@@ -27,7 +25,7 @@ const PREUPGRADE_CSS = join(DIST_DIR, "elements/preupgrade.css");
 const adapterPlugin = {
   name: "adapter-element-entry",
   setup(build) {
-    build.onResolve({ filter: /^(?:\.\.\/)+elements\/(stepper|autocomplete|avatar|alert|rating|navigation-tabs)$/ }, ({ path }) => ({
+    build.onResolve({ filter: /^(?:\.\.\/)+elements\/(stepper|avatar|alert|rating|navigation-tabs)$/ }, ({ path }) => ({
       path: `material-addons/${path.slice(path.lastIndexOf("elements/"))}`, external: true,
     }));
   },
@@ -55,7 +53,6 @@ const MODULES = [
     name: framework, entry: `src/${framework}/index.ts`, outDir: `dist/${framework}`, adapter: true,
   })),
   { name: "svelte runtime", entry: "src/adapters/svelte.ts", outDir: "dist/svelte", basename: "runtime", adapter: true },
-  { name: "svelte autocomplete runtime", entry: "src/adapters/autocomplete/svelte.ts", outDir: "dist/svelte", basename: "autocomplete-runtime", adapter: true },
   { name: "svelte avatar runtime", entry: "src/adapters/avatar/svelte.ts", outDir: "dist/svelte", basename: "avatar-runtime", adapter: true },
   { name: "svelte skeleton runtime", entry: "src/adapters/skeleton/svelte.ts", outDir: "dist/svelte", basename: "skeleton-runtime", adapter: true },
   { name: "svelte alert runtime", entry: "src/adapters/alert/svelte.ts", outDir: "dist/svelte", basename: "alert-runtime", adapter: true },
@@ -129,11 +126,6 @@ const MODULES = [
     basename: "constants",
   },
   {
-    name: "autocomplete",
-    entry: "src/components/autocomplete/index.ts",
-    outDir: "dist/components/autocomplete",
-  },
-  {
     name: "expansion panel",
     entry: "src/components/expansion-panel/index.ts",
     outDir: "dist/components/expansion-panel",
@@ -154,26 +146,6 @@ const MODULES = [
       setup(build) {
         build.onResolve({ filter: /^\.\.\/components\/expansion-panel$/ }, () => ({
           path: "../components/expansion-panel/index.mjs", external: true,
-        }));
-      },
-    }],
-  },
-  {
-    name: "autocomplete constants",
-    entry: "src/components/autocomplete/constants.ts",
-    outDir: "dist/components/autocomplete",
-    basename: "constants",
-  },
-  {
-    name: "autocomplete element",
-    entry: "src/elements/autocomplete.ts",
-    outDir: "dist/elements",
-    basename: "autocomplete",
-    plugins: [{
-      name: "reuse-addon-factory",
-      setup(build) {
-        build.onResolve({ filter: /^\.\.\/components\/autocomplete$/ }, () => ({
-          path: "../components/autocomplete/index.mjs", external: true,
         }));
       },
     }],
@@ -312,8 +284,7 @@ const buildStyles = async () => {
     const sassArgs = [
       "sass",
       `${STYLES_ENTRY}:${CSS_OUTPUT}`,
-      `${join(ROOT_DIR, "src/styles/components/_autocomplete.scss")}:${AUTOCOMPLETE_CSS}`,
-      `${join(ROOT_DIR, "src/styles/elements/_autocomplete.scss")}:${PREUPGRADE_CSS}`,
+      `${join(ROOT_DIR, "src/styles/elements/_preupgrade.scss")}:${PREUPGRADE_CSS}`,
       isProduction ? "--style=compressed" : "--style=expanded",
       // material's abstracts are used by @use "material/src/styles/…"; it publishes
       // src/styles for exactly this. Without a load path sass would only find
@@ -349,22 +320,6 @@ const buildStyles = async () => {
     const cssSize = existsSync(CSS_OUTPUT)
       ? (await Bun.file(CSS_OUTPUT).size) / 1024
       : 0;
-
-    // The autocomplete popup is material's listbox. Its stylesheet ships with
-    // this add-on's document sheet, added after the Sass compile so the copy
-    // is the peer's own — already in `@layer mtrl.listbox`, which keeps the
-    // cascade identical for a page that also loads `material/styles/listbox`
-    await Bun.write(CSS_OUTPUT, `${await Bun.file(CSS_OUTPUT).text()}\n${readListboxStyle()}`);
-
-    const autocomplete = (await Bun.file(AUTOCOMPLETE_CSS).text()).replace(/\/\*# sourceMappingURL=.*?\*\/\s*$/, "");
-    const styles = { listbox: readListboxStyle(), autocomplete };
-    await Bun.write(join(DIST_DIR, "elements/autocomplete-css.mjs"), [
-      'import "material/elements/css/text-field";',
-      'import { registerStyles } from "material/elements";',
-      `registerStyles(${JSON.stringify(styles)});`,
-      "",
-    ].join("\n"));
-    await Bun.write(join(DIST_DIR, "elements/autocomplete-css.d.ts"), "export {};\n");
 
     console.log("✓ SCSS build successful");
     console.log(`  CSS bundle: ${cssSize.toFixed(2)} KB`);

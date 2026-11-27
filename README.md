@@ -1,9 +1,8 @@
 # material-addons
 
-A form builder, a stepper, an autocomplete, a colour picker, a layout schema and gesture recognition for [material](https://github.com/floor/material), the Material Design 3 component library. The TypeScript library requires Material as a peer. The framework adapters use optional peers.
+A form builder, a stepper, a colour picker, a layout schema and gesture recognition for [material](https://github.com/floor/material), the Material Design 3 component library. The TypeScript library requires Material as a peer. The framework adapters use optional peers.
 
 - **Form.** Builds a set of fields from a layout and keeps their data: it reads and sets it, knows when it has changed, validates it and submits it.
-- **Autocomplete.** An editable text field with a suggestion popup, keyboard navigation and optional async suggestions.
 - **Stepper.** An ordered list of steps over one panel at a time, with linear or free progression, a validation pipeline and compact displays.
 - **Expansion panel.** A disclosure panel with a header button and a collapsible body, and an accordion that coordinates several of them.
 - **Navigation tabs.** A bar of page links with a current-page indicator and native keyboard navigation.
@@ -502,60 +501,6 @@ document.body.append(...results.map((result) => {
 }));
 ```
 
-## Autocomplete
-
-The factory uses Material's text field styles, and this add-on's stylesheet carries Material's listbox sheet for the popup, so no separate listbox import is needed. Pass strings for simple suggestions or objects with a stable value and a display label.
-
-<!-- example: run, shows "France" -->
-```javascript
-import 'material/styles';
-import 'material-addons/styles';
-import { createAutocomplete } from 'material-addons/components/autocomplete';
-
-const country = createAutocomplete({
-  label: 'Country',
-  name: 'country',
-  strict: true,
-  options: [{ value: 'fr', text: 'France' }, { value: 'jp', text: 'Japan' }],
-  value: 'fr',
-});
-document.body.append(country.element);
-country.open();
-```
-
-With strict mode, only a suggestion can be selected. In free-form mode, blurring commits other text. For remote suggestions, supply an async source that accepts the query and an abort signal. Set `filter: false` when the source filters its own results.
-
-The custom element uses its option children as suggestions. The style module registers the shadow sheets before the element is defined.
-
-<!-- example: run, shows "Switzerland" -->
-```javascript
-import 'material/styles';
-import 'material-addons/elements/preupgrade.css';
-import 'material-addons/elements/css/autocomplete';
-import { defineAutocomplete } from 'material-addons/elements/autocomplete';
-
-document.body.innerHTML = `
-  <m-autocomplete label="Country" value="ch" strict>
-    <m-autocomplete-option value="ch">Switzerland</m-autocomplete-option>
-  </m-autocomplete>
-`;
-defineAutocomplete();
-document.querySelector('m-autocomplete').open();
-```
-
-#### Framework adapters
-
-| Framework | Import | Components | Model |
-| --- | --- | --- | --- |
-| React | `material-addons/react` | `Autocomplete`, `AutocompleteOption` | `value` and `onChange` |
-| Vue | `material-addons/vue` | `MAutocomplete`, `MAutocompleteOption` | `v-model` or `v-model:value` |
-| Svelte 5 | `material-addons/svelte` | `Autocomplete`, `AutocompleteOption` | `bind:value` |
-| Solid | `material-addons/solid` | `Autocomplete`, `AutocompleteOption` | `value` and `onChange` |
-
-Use `defaultValue` for an uncontrolled initial selection. The adapters register the elements and shadow styles on the client. Each entry exports `AutocompleteElementEventMap`. Event handlers receive the custom event, and `event.detail.value` carries the selection on `change`. In Svelte use lowercase handler props such as `onchange` and `onselect`. Import `material-addons/styles` for pre-upgrade styles.
-
-The element works in the browser and submits its committed value under its name. Its definition can be imported on the server.
-
 ## Avatar
 
 Use an image, a monogram, or an icon. The small, medium, and large sizes draw a 24, 30, or 40 px shape. A button or link has a target of at least 48 × 48 px. `supportingText` describes the avatar, and `ariaLabel` overrides its accessible name. Set `decorative` when the surrounding content already names it.
@@ -946,7 +891,7 @@ The gestures:
 
 | Import | From |
 |--------|------|
-| The form, the stepper, the autocomplete, the colour picker, the colour conversions, the expansion panel, the skeleton, the avatar, the alert and the rating, plus the layout and gestures | `material-addons` |
+| The form, the stepper, the colour picker, the colour conversions, the expansion panel, the skeleton, the avatar, the alert and the rating, plus the layout and gestures | `material-addons` |
 | The alert factory and types | `material-addons/components/alert` |
 | The alert element and its shadow styles | `material-addons/elements/alert`, `material-addons/elements/css/alert` |
 | The rating factory and types | `material-addons/components/rating` |
@@ -955,9 +900,6 @@ The gestures:
 | The navigation-tabs element and its shadow styles | `material-addons/elements/navigation-tabs`, `material-addons/elements/css/navigation-tabs` |
 | The avatar factory and types | `material-addons/components/avatar` |
 | The avatar element and its shadow styles | `material-addons/elements/avatar`, `material-addons/elements/css/avatar` |
-| The autocomplete factory and types | `material-addons/components/autocomplete` |
-| The autocomplete and option elements | `material-addons/elements/autocomplete` |
-| The autocomplete's shadow styles | `material-addons/elements/css/autocomplete` |
 | The pre-upgrade styles | `material-addons/elements/preupgrade.css` |
 | The stepper factory | `material-addons/components/stepper` |
 | The skeleton factory and types | `material-addons/components/skeleton` |
@@ -978,7 +920,7 @@ The gestures:
 | The expansion panel elements | `material-addons/elements/expansion-panel` |
 | The stepper's shadow styles | `material-addons/elements/css/stepper` |
 | The expansion panel's shadow styles | `material-addons/elements/css/expansion-panel` |
-| A component's constants | `material-addons/components/form/constants`, `material-addons/components/colorpicker/constants`, `material-addons/components/autocomplete/constants`, `material-addons/components/stepper/constants`, `material-addons/components/expansion-panel/constants`, `material-addons/components/skeleton/constants`, `material-addons/components/avatar/constants`, `material-addons/components/alert/constants`, `material-addons/components/rating/constants` |
+| A component's constants | `material-addons/components/form/constants`, `material-addons/components/colorpicker/constants`, `material-addons/components/stepper/constants`, `material-addons/components/expansion-panel/constants`, `material-addons/components/skeleton/constants`, `material-addons/components/avatar/constants`, `material-addons/components/alert/constants`, `material-addons/components/rating/constants` |
 | The stylesheet | `material-addons/styles` |
 
 ## Upgrading
@@ -1006,7 +948,6 @@ bun run dev                 # build into dist/, and again on each change
 bun run build --production  # the build a release ships
 bun run check:package       # the packed package: its files, its manifest, its entry points
 bun run readme:check        # this file's examples, in Chromium
-bun run check:autocomplete  # autocomplete interactions and form behavior, in Chromium
 bun run check:avatar        # avatar styles, native activation, and adapters, in Chromium
 bun run check:alert         # alert severities, variants, dismiss lifecycle, and adapters, in Chromium
 bun run check:rating        # rating half steps, form value, and adapters, in Chromium

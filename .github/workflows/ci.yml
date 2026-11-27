@@ -37,8 +37,6 @@ jobs:
         run: npx playwright install --with-deps chromium webkit
       - name: README examples, as written, against the packed package
         run: bun run readme:check
-      - name: Autocomplete browser behavior
-        run: bun run check:autocomplete
       - name: Stepper browser behavior
         run: bun run check:stepper
       - name: Expansion panel browser behavior
@@ -51,7 +49,7 @@ jobs:
         run: bun run check:skeleton
       - name: Skeleton adapters in Chromium
         run: bun run check:skeleton-adapters
-      - name: Stepper and autocomplete adapters in Chromium
+      - name: Stepper adapters in Chromium
         run: bun run check:stepper-adapters
       - name: Avatar and framework adapters in Chromium
         run: bun run check:avatar

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { createNavigationTabs, renderNavigationTabs } from "../../src/components/navigation-tabs";
-import { installAutocompleteDom } from "../utils/autocomplete-dom";
+import { installDom } from "../utils/dom";
 
 test("renders a landmark with escaped native links and one current page", () => {
   expect(renderNavigationTabs('Docs "A&B"', [
@@ -18,7 +18,7 @@ test("renders a landmark with escaped native links and one current page", () => 
 });
 
 describe("createNavigationTabs", () => {
-  installAutocompleteDom();
+  installDom();
 
   function mount() {
     const container = document.createElement("div");

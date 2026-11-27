@@ -2,9 +2,9 @@ import { beforeEach, expect, test } from "bun:test";
 import "material/elements/css/ripple";
 import { registerStyles } from "material/elements";
 import { defineRating, ratingElement } from "../../src/elements/rating";
-import { installAutocompleteDom } from "../utils/autocomplete-dom";
+import { installDom } from "../utils/dom";
 
-installAutocompleteDom();
+installDom();
 
 // jsdom ElementInternals has neither setFormValue nor setValidity. Record the
 // call the element makes so a required miss can be asserted without a browser.

@@ -4,11 +4,11 @@
 // importing the module touches no document.
 
 import { describe, expect, test } from "bun:test";
-import { installAutocompleteDom } from "../utils/autocomplete-dom";
+import { installDom } from "../utils/dom";
 import { treeElement, defineTree, treeItemDeclaration } from "../../src/elements/tree";
 
 describe("<m-tree>", () => {
-  installAutocompleteDom();
+  installDom();
 
   test("the declaration names the item tag and its attributes", () => {
     expect(treeItemDeclaration.name).toBe("tree-item");
