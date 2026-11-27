@@ -238,10 +238,7 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
       reset();
       return;
     }
-    // Measure the real full layout: the classes come off, every label is read
-    // as it renders there, and the answer is whether anything is clipped —
-    // the same test a reader sees, so a row that fits in full mode (a wide
-    // row, or labels that wrap into their share) stays in it
+    // Measure the full row with its natural header widths and minimum rails.
     element.classList.remove(
       cls(STEPPER_MODIFIERS.COMPACT_LABELS),
       cls(STEPPER_MODIFIERS.COMPACT_ICONS),
@@ -261,19 +258,29 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
     const labels = items
       .map((item) => item.querySelector<HTMLElement>(`.${cls(STEPPER_CLASSES.LABEL)}`))
       .filter((label): label is HTMLElement => Boolean(label && (label.textContent ?? "").trim()));
-    const clipped = labels.some((label) => label.scrollWidth > label.clientWidth + 1);
     const overflows = list.scrollWidth > element.clientWidth + 1;
-    // A wrapped label can fit without clipping yet still paint outside its
-    // header, as a bottom-placed stack lets it; the indicators and the rail
-    // must fit too
-    const escapes = labels.some((label) => {
-      const header = label.closest(`.${cls(STEPPER_CLASSES.HEADER)}`);
-      if (!header) return false;
+    const labelDoesNotFit = !overflows && labels.some((label) => {
+      if (label.scrollWidth > label.clientWidth + 1) return true;
       const box = label.getBoundingClientRect();
-      const frame = header.getBoundingClientRect();
-      return box.width > 0 && (box.left < frame.left - 1 || box.right > frame.right + 1);
+      const header = label.closest(`.${cls(STEPPER_CLASSES.HEADER)}`);
+      if (header && box.width > 0) {
+        const frame = header.getBoundingClientRect();
+        if (box.left < frame.left - 1 || box.right > frame.right + 1) return true;
+      }
+      const labelStyle = getComputedStyle(label);
+      if (labelStyle.overflowWrap === "normal" && labelStyle.wordBreak === "normal") return false;
+
+      // A consumer can override the label's wrapping rules directly. Measure
+      // the smallest width with ordinary break opportunities so splitting a
+      // word cannot hide a label that needs compact mode.
+      const probe = label.cloneNode(true) as HTMLElement;
+      probe.style.cssText = "position:absolute;visibility:hidden;inline-size:min-content;min-inline-size:0;max-inline-size:none;overflow-wrap:normal;word-break:normal";
+      label.after(probe);
+      const minWidth = probe.getBoundingClientRect().width;
+      probe.remove();
+      return box.width + 1 < minWidth;
     });
-    if (!clipped && !overflows && !escapes) {
+    if (!overflows && !labelDoesNotFit) {
       compact = false;
       iconOnly = false;
       return;
@@ -372,7 +379,6 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
     element.classList.toggle(cls(STEPPER_MODIFIERS.DISPLAY_COUNT), settings.display === "count");
     element.classList.toggle(cls(STEPPER_MODIFIERS.DISPLAY_DOTS), settings.display === "dots");
     element.classList.toggle(cls(STEPPER_MODIFIERS.DISPLAY_PROGRESS), settings.display === "progress");
-    measureLabels(resolved);
     const compactDisplay = settings.display === "count" || settings.display === "progress";
     list.hidden = compactDisplay;
     count.hidden = settings.display !== "count";
@@ -448,6 +454,8 @@ export const withRenderer = (settings: StepperSettings) => (component: StepperHo
         if (wrapper.parentElement !== parent) parent.appendChild(wrapper);
       }
     });
+    // Active font weight and supporting text can change the row's footprint.
+    measureLabels(resolved);
   };
 
   return {

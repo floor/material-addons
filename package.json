@@ -217,6 +217,7 @@
     "check:package": "node scripts/check-package.mjs",
     "readme:check": "node scripts/check-readme.mjs",
     "check:stepper": "node scripts/check-stepper.mjs",
+    "check:stepper-label-width": "bun scripts/check-stepper-label-width.ts",
     "check:skeleton": "node scripts/check-skeleton.mjs",
     "check:skeleton-adapters": "node scripts/check-skeleton-adapters.mjs",
     "check:tree": "node scripts/check-tree.mjs",
