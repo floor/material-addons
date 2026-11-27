@@ -146,6 +146,8 @@
 
 .mtrl-stepper__label {
   overflow: hidden;
+  overflow-wrap: normal;
+  word-break: normal;
   color: var(--mtrl-stepper-label-inactive-color);
   font-weight: var(--mtrl-stepper-label-inactive-weight);
 }
@@ -246,12 +248,35 @@
   align-items: center;
 }
 
+// Keep each full header at its natural width. Only the items with rails
+// grow, so the rails share spare space while their minimum length still counts
+// toward the row's footprint.
+.mtrl-stepper--horizontal.mtrl-stepper--display-labels:not(.mtrl-stepper--compact-labels) {
+  .mtrl-stepper__item {
+    flex: 1 0 max-content;
+  }
+
+  .mtrl-stepper__item:last-child {
+    flex-grow: 0;
+  }
+
+  .mtrl-stepper__header {
+    flex: none;
+    inline-size: max-content;
+  }
+
+  .mtrl-stepper__connector {
+    flex: 1 0 auto;
+  }
+}
+
 // Compact labels: the row does not fit, so the inactive steps show their
 // indicator only and the active step keeps its label, truncated inside its
 // own header. The hidden label groups stay in the accessibility tree, as the
 // dots display's do, so every header keeps its full name
 .mtrl-stepper--compact-labels .mtrl-stepper__item:not(.mtrl-stepper__item--active) .mtrl-stepper__label-group {
   position: absolute;
+  align-items: stretch;
   width: 1px;
   height: 1px;
   overflow: hidden;
