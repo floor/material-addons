@@ -47,3 +47,8 @@ import { createVueRating } from "../adapters/rating/vue";
 export const MRating = /*#__PURE__*/ createVueRating();
 export type { VueRatingProps, VueRatingEmits } from "../adapters/rating/vue";
 export type { RatingElementEventMap } from "../elements/rating";
+import "material-addons/elements/css/navigation-tabs";
+import { createVueNavigationTabs } from "../adapters/navigation-tabs/vue";
+export const MNavigationTabs: ReturnType<typeof createVueNavigationTabs> = /*#__PURE__*/ createVueNavigationTabs();
+export type { VueNavigationTabsProps } from "../adapters/navigation-tabs/vue";
+export type { NavigationTabsElementEventMap } from "../elements/navigation-tabs";

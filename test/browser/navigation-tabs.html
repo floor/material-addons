@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en" data-theme="baseline">
+<meta charset="utf-8">
+<title>Navigation tabs check</title>
+<style>
+  body { margin: 24px; }
+  #fixture { display: grid; gap: 20px; }
+  nav, m-navigation-tabs { max-width: 560px; }
+  #drawers { display: flex; }
+</style>
+<main id="fixture">
+  <button id="before">Before</button>
+  <div id="server"><!-- navigation tabs render here --></div>
+  <button id="after">After</button>
+  <div id="no-ripple"></div>
+  <m-navigation-tabs id="element" aria-label="Element navigation" sticky current="#matrix">
+    <a href="#overview">Overview</a>
+    <a href="#matrix">Matrix</a>
+  </m-navigation-tabs>
+  <div id="drawers"></div>
+</main>
+<script type="module">
+  import "material/styles";
+  import "material-addons/styles";
+  const fixture = document.querySelector("#fixture");
+  const framework = new URL(location.href).searchParams.get("framework");
+
+  if (framework) {
+    fixture.replaceChildren();
+    const first = ["#overview", "Overview"];
+    const second = ["#matrix", "Matrix"];
+    window.adapterChanges = [];
+    window.recordNavigation = event => window.adapterChanges.push(event.detail.href);
+    const props = { ariaLabel: "Adapter navigation", current: "#overview", onChange: window.recordNavigation };
+    if (framework === "react") {
+      const { createElement: h } = await import("react");
+      const { createRoot } = await import("react-dom/client");
+      const { NavigationTabs } = await import("material-addons/react");
+      createRoot(fixture).render(h(NavigationTabs, props,
+        ...[first, second].map(([href, label]) => h("a", { href, key: href }, label))));
+    } else if (framework === "vue") {
+      const { createApp, h } = await import("vue");
+      const { MNavigationTabs } = await import("material-addons/vue");
+      createApp({ render: () => h(MNavigationTabs, props, () =>
+        [first, second].map(([href, label]) => h("a", { href }, label))) }).mount(fixture);
+    } else if (framework === "solid") {
+      const { createComponent } = await import("solid-js");
+      const { Dynamic, render } = await import("solid-js/web");
+      const { NavigationTabs } = await import("material-addons/solid");
+      render(() => createComponent(NavigationTabs, { ...props, get children() {
+        return [first, second].map(([href, children]) => createComponent(Dynamic, { component: "a", href, children }));
+      } }), fixture);
+    } else {
+      const { mount } = await import("svelte");
+      const { default: App } = await import("./NavigationTabsSvelteFixture.svelte");
+      mount(App, { target: fixture });
+    }
+  } else {
+    const { createNavigationTabs, renderNavigationTabs } = await import("material-addons/components/navigation-tabs");
+    const nav = document.querySelector("#server nav");
+    const link = nav.firstElementChild;
+    window.tabs = createNavigationTabs({ element: nav });
+    window.adopted = window.tabs.element === nav && link === nav.firstElementChild;
+    const noRipple = document.querySelector("#no-ripple");
+    noRipple.innerHTML = renderNavigationTabs("No ripple", [{ href: "#without-ripple", label: "Plain" }]);
+    createNavigationTabs({ element: noRipple.firstElementChild, ripple: false });
+
+    const { createDrawer } = await import("material/components/drawer");
+    for (const ripple of [false, true]) {
+      const drawer = createDrawer({
+        variant: "standard", open: true, ripple,
+        items: [{ id: "home", label: "Drawer home", href: "#drawer-home" },
+          { id: "active", label: "Drawer current", href: "#drawer-current", active: true }],
+      });
+      drawer.element.id = ripple ? "drawer-ripple" : "drawer-layers";
+      document.querySelector("#drawers").append(drawer.element);
+    }
+    await import("material-addons/elements/css/navigation-tabs");
+    const { defineNavigationTabs } = await import("material-addons/elements/navigation-tabs");
+    defineNavigationTabs();
+  }
+</script>
+</html>

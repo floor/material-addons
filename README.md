@@ -6,6 +6,7 @@ A form builder, a stepper, an autocomplete, a colour picker, a layout schema and
 - **Autocomplete.** An editable text field with a suggestion popup, keyboard navigation and optional async suggestions.
 - **Stepper.** An ordered list of steps over one panel at a time, with linear or free progression, a validation pipeline and compact displays.
 - **Expansion panel.** A disclosure panel with a header button and a collapsible body, and an accordion that coordinates several of them.
+- **Navigation tabs.** A bar of page links with a current-page indicator and native keyboard navigation.
 - **Alert.** An inline status or severity callout with a leading icon, a headline and body copy, an optional action button and a cancellable dismiss.
 - **Colour picker.** An HSV area, a hue slider, swatches, a hex field and an eyedropper; inline, as a dropdown or as a dialog.
 - **Layout.** Builds a tree of elements and components from an array, and gives each named component back.
@@ -838,6 +839,53 @@ The adapters register the client element and its shadow styles. Each entry expor
 | Compiled stylesheet | 1.0 KB |
 | Combined | 4.2 KB |
 
+## Navigation tabs
+
+Use navigation tabs to link related pages. The current link has `aria-current="page"` and a pill based on the [Material 3 navigation drawer](https://m3.material.io/components/navigation-drawer/specs). Tab moves through the links in document order.
+
+On the server, use `renderNavigationTabs(label, tabs)` to generate the navigation landmark and links. Each tab has an `href` and a `label`. Use `current` to mark the current page. The optional `icon` field accepts trusted, decorative SVG markup.
+
+<!-- example: run, shows "Overview" -->
+```javascript
+import 'material/styles';
+import 'material-addons/styles';
+import { createNavigationTabs, renderNavigationTabs } from 'material-addons/components/navigation-tabs';
+
+document.body.insertAdjacentHTML('beforeend', renderNavigationTabs('Button documentation', [
+  { href: '/components/button/', label: 'Overview', current: true },
+  { href: '/components/button/develop/', label: 'Develop' },
+]));
+const tabs = createNavigationTabs({ element: document.querySelector('.mtrl-navigation-tabs') });
+```
+
+In a server-rendered page, the browser only needs the `createNavigationTabs` call. It keeps the original links and adds Material's ripple. Pass `ripple: false` to turn it off. For client-side routing, call `tabs.setCurrent(href)` after navigation.
+
+The method matches the authored address and emits `change` with `{ href }` when the current page changes. Use `getCurrent()` to read it and `setCurrent(null)` to clear it. `destroy()` removes the ripple and event subscriptions and leaves the links in place.
+
+Pass `{ sticky: true }` as the third render argument or the factory option to stick the bar. Use `--mtrl-navigation-tabs-sticky-offset` to set its distance from the top of the scroll container.
+
+### The element and framework adapters
+
+Import the shadow styles and define `<m-navigation-tabs>` once. Mark the current link with `aria-current="page"`, or set the host's `current` attribute to that link's address. The optional attributes `sticky` and `no-ripple` control positioning and the press ripple.
+
+<!-- example: fragment -->
+```javascript
+import 'material-addons/elements/css/navigation-tabs';
+import { defineNavigationTabs } from 'material-addons/elements/navigation-tabs';
+
+defineNavigationTabs();
+```
+
+<!-- example: fragment -->
+```html
+<m-navigation-tabs aria-label="Button documentation" current="/components/button/">
+  <a href="/components/button/">Overview</a>
+  <a href="/components/button/develop/">Develop</a>
+</m-navigation-tabs>
+```
+
+The React, Solid, and Svelte entries export `NavigationTabs`. The Vue entry exports `MNavigationTabs`. Give them an `ariaLabel`, an optional `current` href, and the links as children.
+
 ## Layout
 
 `createLayout` takes an array: a tag or a factory, a name when the item is to be read back, its options, then its children. It returns the root element and each named component.
@@ -903,6 +951,8 @@ The gestures:
 | The alert element and its shadow styles | `material-addons/elements/alert`, `material-addons/elements/css/alert` |
 | The rating factory and types | `material-addons/components/rating` |
 | The rating element and its shadow styles | `material-addons/elements/rating`, `material-addons/elements/css/rating` |
+| The navigation-tabs factory, server renderer and types | `material-addons/components/navigation-tabs` |
+| The navigation-tabs element and its shadow styles | `material-addons/elements/navigation-tabs`, `material-addons/elements/css/navigation-tabs` |
 | The avatar factory and types | `material-addons/components/avatar` |
 | The avatar element and its shadow styles | `material-addons/elements/avatar`, `material-addons/elements/css/avatar` |
 | The autocomplete factory and types | `material-addons/components/autocomplete` |

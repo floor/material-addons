@@ -48,3 +48,8 @@ import { createReactRating } from "../adapters/rating/react";
 export const Rating = /*#__PURE__*/ createReactRating();
 export type { ReactRatingProps } from "../adapters/rating/react";
 export type { RatingElementEventMap } from "../elements/rating";
+import "material-addons/elements/css/navigation-tabs";
+import { createReactNavigationTabs } from "../adapters/navigation-tabs/react";
+export const NavigationTabs: ReturnType<typeof createReactNavigationTabs> = /*#__PURE__*/ createReactNavigationTabs();
+export type { ReactNavigationTabsProps } from "../adapters/navigation-tabs/react";
+export type { NavigationTabsElementEventMap } from "../elements/navigation-tabs";
