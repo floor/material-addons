@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { createBreadcrumb } from "../../src/components/breadcrumb";
-import { installAutocompleteDom } from "../utils/autocomplete-dom";
+import { installDom } from "../utils/dom";
 
 const items = [
   { value: "home", label: "Home", href: "/" },
@@ -9,7 +9,7 @@ const items = [
 ];
 
 describe("createBreadcrumb", () => {
-  installAutocompleteDom();
+  installDom();
 
   test("renders an ordered list with separators and one current page", () => {
     const crumb = createBreadcrumb({ items });

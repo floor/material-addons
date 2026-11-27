@@ -7,7 +7,6 @@
 // Import component styles (only addons-specific enhancements)
 @forward "./components/form";
 @forward "./components/colorpicker";
-@forward "./components/autocomplete";
 @forward "./components/stepper";
 @forward "./components/expansion-panel";
 @forward "./components/skeleton" as skeleton-*;
@@ -17,7 +16,6 @@
 @forward "./elements/stepper";
 @forward "./elements/tree";
 @forward "./elements/expansion-panel";
-@forward "./elements/autocomplete";
 
 // Future addons-specific component styles will be added here
 // @forward "./components/datagrid";      // Advanced grid functionality

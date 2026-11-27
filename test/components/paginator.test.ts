@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { createPaginator } from "../../src/components/paginator";
-import { installAutocompleteDom } from "../utils/autocomplete-dom";
+import { installDom } from "../utils/dom";
 
 const mount = (config = {}) => {
   const paginator = createPaginator(config);
@@ -9,7 +9,7 @@ const mount = (config = {}) => {
 };
 
 describe("createPaginator", () => {
-  installAutocompleteDom();
+  installDom();
 
   test("defaults: page 1, page size 25, one page, the 0–0 range", () => {
     const paginator = mount();

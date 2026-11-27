@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { setIcons } from "material/core/icons";
 import { createAlert } from "../../src/components/alert";
-import { installAutocompleteDom } from "../utils/autocomplete-dom";
+import { installDom } from "../utils/dom";
 
 describe("createAlert", () => {
-  installAutocompleteDom();
+  installDom();
 
   test("defaults to info tonal status alert and falls back for unknown options", () => {
     const alert = createAlert({ severity: "unknown", variant: "unknown", className: "custom-alert" });

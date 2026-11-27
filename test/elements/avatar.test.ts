@@ -3,9 +3,9 @@ import "material/elements/css/ripple";
 import "material/elements/css/badge";
 import { registerStyles } from "material/elements";
 import { avatarElement, defineAvatar } from "../../src/elements/avatar";
-import { installAutocompleteDom } from "../utils/autocomplete-dom";
+import { installDom } from "../utils/dom";
 
-installAutocompleteDom();
+installDom();
 
 test("client avatar reflects attributes, preserves slotted markup and uses a button for direct listeners", async () => {
   registerStyles({ avatar: ".mtrl-avatar{display:inline-flex}" });

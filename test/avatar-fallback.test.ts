@@ -1,9 +1,9 @@
 // Unit: the image fallback swaps the broken picture for the initials.
 import { describe, expect, test } from "bun:test";
-import { installAutocompleteDom } from "./utils/autocomplete-dom";
+import { installDom } from "./utils/dom";
 
 describe("avatar image fallback", () => {
-  installAutocompleteDom();
+  installDom();
 
   test("a broken image hides and the initials take the shape", async () => {
     const { createAvatar } = await import("../src/components/avatar");

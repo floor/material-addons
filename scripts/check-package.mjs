@@ -122,11 +122,6 @@ const EXPECTED_PATHS = [
   "dist/svelte/breadcrumb-runtime.mjs",
   "src/styles/components/_breadcrumb.scss",
   "src/styles/elements/_breadcrumb.scss",
-  "dist/adapters/autocomplete/contract.d.ts",
-  "dist/adapters/autocomplete/react.d.ts",
-  "dist/adapters/autocomplete/solid.d.ts",
-  "dist/adapters/autocomplete/svelte.d.ts",
-  "dist/adapters/autocomplete/vue.d.ts",
   "dist/adapters/avatar/contract.d.ts",
   "dist/adapters/avatar/react.d.ts",
   "dist/adapters/avatar/solid.d.ts",
@@ -147,17 +142,6 @@ const EXPECTED_PATHS = [
   "dist/adapters/svelte.d.ts",
   "dist/adapters/vue-expansion.d.ts",
   "dist/adapters/vue.d.ts",
-  "dist/components/autocomplete/api.d.ts",
-  "dist/components/autocomplete/autocomplete.css",
-  "dist/components/autocomplete/autocomplete.d.ts",
-  "dist/components/autocomplete/config.d.ts",
-  "dist/components/autocomplete/constants.d.ts",
-  "dist/components/autocomplete/constants.mjs",
-  "dist/components/autocomplete/features/withListbox.d.ts",
-  "dist/components/autocomplete/features/withTextField.d.ts",
-  "dist/components/autocomplete/index.d.ts",
-  "dist/components/autocomplete/index.mjs",
-  "dist/components/autocomplete/types.d.ts",
   "dist/components/avatar/avatar.d.ts",
   "dist/components/avatar/config.d.ts",
   "dist/components/avatar/constants.d.ts",
@@ -270,10 +254,6 @@ const EXPECTED_PATHS = [
   "dist/core/layout/jsx.d.ts",
   "dist/core/layout/schema.d.ts",
   "dist/core/layout/types.d.ts",
-  "dist/elements/autocomplete-css.d.ts",
-  "dist/elements/autocomplete-css.mjs",
-  "dist/elements/autocomplete.d.ts",
-  "dist/elements/autocomplete.mjs",
   "dist/elements/avatar.d.ts",
   "dist/elements/avatar.mjs",
   "dist/elements/css/avatar.css",
@@ -306,15 +286,10 @@ const EXPECTED_PATHS = [
   "dist/styles.css",
   "dist/svelte/Accordion.svelte",
   "dist/svelte/Accordion.svelte.d.ts",
-  "dist/svelte/Autocomplete.svelte",
-  "dist/svelte/Autocomplete.svelte.d.ts",
-  "dist/svelte/AutocompleteOption.svelte",
-  "dist/svelte/AutocompleteOption.svelte.d.ts",
   "dist/svelte/Avatar.svelte",
   "dist/svelte/Avatar.svelte.d.ts",
   "dist/svelte/ExpansionPanel.svelte",
   "dist/svelte/ExpansionPanel.svelte.d.ts",
-  "dist/svelte/autocomplete-runtime.mjs",
   "dist/svelte/Step.svelte",
   "dist/svelte/Step.svelte.d.ts",
   "dist/svelte/Stepper.svelte",
@@ -329,7 +304,6 @@ const EXPECTED_PATHS = [
   "dist/vue/index.d.ts",
   "dist/vue/index.mjs",
   "package.json",
-  "src/styles/components/_autocomplete.scss",
   "src/styles/components/_avatar.scss",
   "src/styles/components/_rating.scss",
   "src/styles/components/_colorpicker.scss",
@@ -337,8 +311,8 @@ const EXPECTED_PATHS = [
   "src/styles/components/_form.scss",
   "src/styles/components/_stepper.scss",
   "src/styles/core/_layout.scss",
-  "src/styles/elements/_autocomplete.scss",
   "src/styles/elements/_avatar.scss",
+  "src/styles/elements/_preupgrade.scss",
   "src/styles/elements/_rating.scss",
   "src/styles/elements/_expansion-panel.scss",
   "src/styles/elements/_stepper.scss",
@@ -415,7 +389,7 @@ try {
   const specifiers = [];
   const adapters = new Map([["./react", "react"], ["./vue", "vue"], ["./solid", "solid-js"]]);
   for (const [entry, conditions] of Object.entries(pkg.exports)) {
-    const components = entry.includes("*") ? ["form", "colorpicker", "autocomplete", "stepper", "expansion-panel", "avatar", "alert", "rating"] : [""];
+    const components = entry.includes("*") ? ["form", "colorpicker", "stepper", "expansion-panel", "avatar", "alert", "rating"] : [""];
     for (const component of components) {
       const paths = typeof conditions === "string" ? [conditions] : Object.values(conditions);
       for (const path of paths) {
@@ -426,7 +400,7 @@ try {
       }
     }
   }
-  assert.equal(specifiers.length, 49);
+  assert.equal(specifiers.length, 45);
   run(process.execPath, ["--input-type=module", "-e", `
     import assert from 'node:assert/strict';
     import { createRequire } from 'node:module';
@@ -447,7 +421,6 @@ try {
       import assert from 'node:assert/strict';
       const adapter = await import(${JSON.stringify(pkg.name + entry.slice(1))});
       assert.ok(adapter.${name} && adapter.${child});
-      assert.ok(adapter.${prefix}Autocomplete && adapter.${prefix}AutocompleteOption);
       assert.ok(adapter.${prefix}Avatar);
       assert.ok(adapter.${prefix}Alert);
       assert.ok(adapter.${prefix}Rating);
@@ -463,9 +436,7 @@ try {
   }
   console.log(`Packed ${pkg.name}@${pkg.version}: manifest has no scripts or devDependencies; ${packed.files.length} paths; ${specifiers.length} entry points import as ESM and refuse require.`);
   for (const path of [
-    "dist/components/autocomplete/index.mjs", "dist/elements/autocomplete.mjs",
-    "dist/components/autocomplete/autocomplete.css", "dist/elements/preupgrade.css",
-    "dist/elements/autocomplete-css.mjs",
+    "dist/elements/preupgrade.css",
     "dist/components/avatar/index.mjs",
     "dist/elements/avatar.mjs", "dist/elements/css/avatar.css",
     "dist/components/alert/index.mjs",

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach } from "bun:test";
 import { JSDOM } from "jsdom";
 
-export function installAutocompleteDom() {
+export function installDom() {
   let dom: JSDOM;
   const original = new Map<string, PropertyDescriptor | undefined>();
   beforeEach(() => {

@@ -14,12 +14,6 @@ export const ${prefix}Stepper = /*#__PURE__*/ create${factory}Stepper();
 export const ${prefix}Step = /*#__PURE__*/ create${factory}Step();
 export type { ${factory}StepperProps${framework === "vue" ? ", VueStepperEmits" : `, ${factory}StepProps`} } from "../adapters/${framework}";
 export type { StepperElementEventMap } from "../elements/stepper";
-import "material-addons/elements/css/autocomplete";
-import { create${factory}Autocomplete, create${factory}AutocompleteOption } from "../adapters/autocomplete/${framework}";
-export const ${prefix}Autocomplete = /*#__PURE__*/ create${factory}Autocomplete();
-export const ${prefix}AutocompleteOption = /*#__PURE__*/ create${factory}AutocompleteOption();
-export type { ${factory}AutocompleteProps, ${factory === "Vue" ? "VueAutocompleteEmits" : `${factory}AutocompleteOptionProps`} } from "../adapters/autocomplete/${framework}";
-export type { AutocompleteElementEventMap } from "../elements/autocomplete";
 import "material-addons/elements/css/avatar";
 import { create${factory}Avatar } from "../adapters/avatar/${framework}";
 export const ${prefix}Avatar = /*#__PURE__*/ create${factory}Avatar();
@@ -104,11 +98,6 @@ const svelteSpecs = [
   {
     tag: "stepper", name: "Stepper", host: "stepperHost", runtime: "runtime.mjs", types: "../adapters/svelte",
     declaration: { tag: "step", name: "Step", host: "stepHost" },
-  },
-  {
-    tag: "autocomplete", name: "Autocomplete", host: "autocompleteHost",
-    runtime: "autocomplete-runtime.mjs", types: "../adapters/autocomplete/svelte",
-    declaration: { tag: "autocomplete-option", name: "AutocompleteOption", host: "optionHost" },
   },
 ];
 

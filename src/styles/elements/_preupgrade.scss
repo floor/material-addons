@@ -1,0 +1,10 @@
+// Undefined-element rules, as a sheet of their own. The main stylesheet
+// forwards the same partials.
+@forward "stepper";
+@forward "tree";
+@forward "expansion-panel";
+@forward "paginator";
+@forward "breadcrumb";
+@forward "avatar";
+@forward "alert";
+@forward "rating";

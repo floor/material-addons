@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { createRating } from "../../src/components/rating";
-import { installAutocompleteDom } from "../utils/autocomplete-dom";
+import { installDom } from "../utils/dom";
 
-installAutocompleteDom();
+installDom();
 
 function star(root: HTMLElement, index: number) {
   return root.querySelector<HTMLElement>(`.mtrl-rating__star[data-star="${index}"]`);
