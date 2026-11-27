@@ -1,0 +1,11 @@
+m-navigation-tabs:not(:defined),
+mtrl-navigation-tabs:not(:defined) {
+  display: block;
+}
+
+m-navigation-tabs[sticky]:not(:defined),
+mtrl-navigation-tabs[sticky]:not(:defined) {
+  position: sticky;
+  inset-block-start: var(--mtrl-navigation-tabs-sticky-offset, 0px);
+  z-index: var(--mtrl-navigation-tabs-sticky-z-index, 1);
+}

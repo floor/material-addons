@@ -1,0 +1,147 @@
+@use "material/src/styles/abstract/variables" as v;
+@use "material/src/styles/abstract/mixins" as m;
+
+.mtrl-navigation-tabs {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 4px;
+  width: 100%;
+  border-radius: var(--mtrl-sys-shape-corner-full, 9999px);
+  background: var(--mtrl-sys-color-surface-container-low);
+  --_tabs-spatial: #{v.motion("spring-default-spatial-duration")};
+  --_tabs-spatial-easing: #{v.motion("spring-default-spatial-easing")};
+  --_tabs-effects: #{v.motion("spring-default-effects-duration")};
+  --_tabs-effects-easing: #{v.motion("spring-default-effects-easing")};
+}
+
+.mtrl-navigation-tabs--sticky {
+  position: sticky;
+  inset-block-start: var(--mtrl-navigation-tabs-sticky-offset, 0px);
+  z-index: var(--mtrl-navigation-tabs-sticky-z-index, 1);
+}
+
+.mtrl-navigation-tabs__tab {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 56px;
+  min-width: 0;
+  padding-inline: 12px;
+  border-radius: inherit;
+  color: var(--mtrl-sys-color-on-surface-variant);
+  text-decoration: none;
+  @include m.typography("label-large");
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--_tabs-effects) var(--_tabs-effects-easing);
+}
+
+.mtrl-navigation-tabs__tab:hover,
+.mtrl-navigation-tabs__tab:focus-visible,
+.mtrl-navigation-tabs__tab:active {
+  color: var(--mtrl-sys-color-on-surface);
+}
+
+.mtrl-navigation-tabs__tab:focus-visible {
+  outline: 3px solid var(--mtrl-sys-color-secondary);
+  outline-offset: 2px;
+  z-index: 1;
+}
+
+.mtrl-navigation-tabs__tab[aria-current="page"] {
+  color: var(--mtrl-sys-color-on-secondary-container);
+}
+
+.mtrl-navigation-tabs__indicator,
+.mtrl-navigation-tabs__indicator::before,
+.mtrl-navigation-tabs__indicator::after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.mtrl-navigation-tabs__indicator {
+  overflow: hidden;
+}
+
+.mtrl-navigation-tabs__indicator::before,
+.mtrl-navigation-tabs__indicator::after {
+  content: "";
+  opacity: 0;
+}
+
+.mtrl-navigation-tabs__indicator::before {
+  background: var(--mtrl-sys-color-secondary-container);
+  transform: scaleX(0.32);
+  transition: transform var(--_tabs-spatial) var(--_tabs-spatial-easing),
+    opacity var(--_tabs-spatial) var(--_tabs-effects-easing);
+}
+
+.mtrl-navigation-tabs__indicator::after {
+  background: currentColor;
+  transition: opacity var(--_tabs-effects) var(--_tabs-effects-easing);
+}
+
+.mtrl-navigation-tabs__tab[aria-current="page"] .mtrl-navigation-tabs__indicator::before {
+  opacity: 1;
+  transform: scaleX(1);
+  transition-duration: var(--_tabs-spatial), var(--_tabs-effects);
+}
+
+.mtrl-navigation-tabs__tab:hover .mtrl-navigation-tabs__indicator::after {
+  opacity: var(--mtrl-sys-state-hover-state-layer-opacity, 0.08);
+}
+
+.mtrl-navigation-tabs__tab:focus-visible .mtrl-navigation-tabs__indicator::after {
+  opacity: var(--mtrl-sys-state-focus-state-layer-opacity, 0.1);
+}
+
+.mtrl-navigation-tabs__tab:active .mtrl-navigation-tabs__indicator::after {
+  opacity: var(--mtrl-sys-state-pressed-state-layer-opacity, 0.1);
+}
+
+/* Match the drawer: a rippled link uses the ripple for its pressed layer. */
+.mtrl-navigation-tabs__tab:active:has(> .mtrl-ripple) .mtrl-navigation-tabs__indicator::after {
+  opacity: 0;
+}
+
+/* Material's own ripple stylesheet supplies the container and wave styles. */
+.mtrl-navigation-tabs__tab > .mtrl-ripple {
+  z-index: 1;
+}
+
+.mtrl-navigation-tabs__tab > :not(.mtrl-navigation-tabs__indicator, .mtrl-ripple) {
+  position: relative;
+  z-index: 2;
+}
+
+.mtrl-navigation-tabs__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mtrl-navigation-tabs__icon {
+  display: inline-flex;
+  flex: none;
+}
+
+.mtrl-navigation-tabs__icon > svg {
+  width: 20px;
+  height: 20px;
+}
+
+@media (width < 600px) {
+  .mtrl-navigation-tabs__icon { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mtrl-navigation-tabs__tab,
+  .mtrl-navigation-tabs__indicator::before,
+  .mtrl-navigation-tabs__indicator::after { transition: none; }
+}

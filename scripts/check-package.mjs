@@ -9,6 +9,28 @@ import { releasePack } from "./release-pack.mjs";
 // Recorded before the first commit on this branch, from
 // `fnm exec --using=22 -- npm pack --dry-run --json` after a production build.
 const EXPECTED_PATHS = [
+  "dist/adapters/navigation-tabs/contract.d.ts",
+  "dist/adapters/navigation-tabs/react.d.ts",
+  "dist/adapters/navigation-tabs/solid.d.ts",
+  "dist/adapters/navigation-tabs/svelte.d.ts",
+  "dist/adapters/navigation-tabs/vue.d.ts",
+  "dist/components/navigation-tabs/config.d.ts",
+  "dist/components/navigation-tabs/constants.d.ts",
+  "dist/components/navigation-tabs/index.d.ts",
+  "dist/components/navigation-tabs/navigation-tabs.d.ts",
+  "dist/components/navigation-tabs/render.d.ts",
+  "dist/components/navigation-tabs/types.d.ts",
+  "dist/components/navigation-tabs/index.mjs",
+  "dist/elements/navigation-tabs.d.ts",
+  "dist/elements/navigation-tabs.mjs",
+  "dist/elements/css/navigation-tabs.css",
+  "dist/elements/css/navigation-tabs.d.ts",
+  "dist/elements/css/navigation-tabs.js",
+  "dist/svelte/NavigationTabs.svelte",
+  "dist/svelte/NavigationTabs.svelte.d.ts",
+  "dist/svelte/navigation-tabs-runtime.mjs",
+  "src/styles/components/_navigation-tabs.scss",
+  "src/styles/elements/_navigation-tabs.scss",
   "dist/adapters/alert/contract.d.ts",
   "dist/adapters/alert/react.d.ts",
   "dist/adapters/alert/solid.d.ts",
@@ -426,7 +448,7 @@ try {
       }
     }
   }
-  assert.equal(specifiers.length, 49);
+  assert.equal(specifiers.length, 52);
   run(process.execPath, ["--input-type=module", "-e", `
     import assert from 'node:assert/strict';
     import { createRequire } from 'node:module';
@@ -451,6 +473,7 @@ try {
       assert.ok(adapter.${prefix}Avatar);
       assert.ok(adapter.${prefix}Alert);
       assert.ok(adapter.${prefix}Rating);
+      assert.ok(adapter.${prefix}NavigationTabs);
     `], fixture);
   }
   assert.match(readFileSync(join(addon, "dist/react/index.mjs"), "utf8"), /^"use client";/);
