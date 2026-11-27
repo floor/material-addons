@@ -133,13 +133,25 @@
       "types": "./dist/elements/css/avatar.d.ts",
       "import": "./dist/elements/css/avatar.js"
     },
+    "./components/navigation-tabs": {
+      "types": "./dist/components/navigation-tabs/index.d.ts",
+      "import": "./dist/components/navigation-tabs/index.mjs"
+    },
     "./components/rating": {
       "types": "./dist/components/rating/index.d.ts",
       "import": "./dist/components/rating/index.mjs"
     },
+    "./elements/navigation-tabs": {
+      "types": "./dist/elements/navigation-tabs.d.ts",
+      "import": "./dist/elements/navigation-tabs.mjs"
+    },
     "./elements/rating": {
       "types": "./dist/elements/rating.d.ts",
       "import": "./dist/elements/rating.mjs"
+    },
+    "./elements/css/navigation-tabs": {
+      "types": "./dist/elements/css/navigation-tabs.d.ts",
+      "import": "./dist/elements/css/navigation-tabs.js"
     },
     "./elements/css/rating": {
       "types": "./dist/elements/css/rating.d.ts",
@@ -207,6 +219,7 @@
     "check:skeleton": "node scripts/check-skeleton.mjs",
     "check:skeleton-adapters": "node scripts/check-skeleton-adapters.mjs",
     "check:tree": "node scripts/check-tree.mjs",
+    "check:navigation-tabs": "node scripts/check-navigation-tabs.mjs",
     "check:avatar": "node scripts/check-avatar.mjs",
     "check:alert": "node scripts/check-alert.mjs",
     "check:rating": "node scripts/check-rating.mjs",

@@ -41,3 +41,8 @@ import { createSolidRating } from "../adapters/rating/solid";
 export const Rating = /*#__PURE__*/ createSolidRating();
 export type { SolidRatingProps } from "../adapters/rating/solid";
 export type { RatingElementEventMap } from "../elements/rating";
+import "material-addons/elements/css/navigation-tabs";
+import { createSolidNavigationTabs } from "../adapters/navigation-tabs/solid";
+export const NavigationTabs: ReturnType<typeof createSolidNavigationTabs> = /*#__PURE__*/ createSolidNavigationTabs();
+export type { SolidNavigationTabsProps } from "../adapters/navigation-tabs/solid";
+export type { NavigationTabsElementEventMap } from "../elements/navigation-tabs";

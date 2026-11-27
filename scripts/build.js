@@ -25,7 +25,7 @@ const PREUPGRADE_CSS = join(DIST_DIR, "elements/preupgrade.css");
 const adapterPlugin = {
   name: "adapter-element-entry",
   setup(build) {
-    build.onResolve({ filter: /^(?:\.\.\/)+elements\/(stepper|avatar|alert|rating)$/ }, ({ path }) => ({
+    build.onResolve({ filter: /^(?:\.\.\/)+elements\/(stepper|avatar|alert|rating|navigation-tabs)$/ }, ({ path }) => ({
       path: `material-addons/${path.slice(path.lastIndexOf("elements/"))}`, external: true,
     }));
   },
@@ -37,6 +37,18 @@ const externalEntry = (filter, path) => ({
 });
 
 const MODULES = [
+  {
+    name: "navigation tabs", entry: "src/components/navigation-tabs/index.ts", outDir: "dist/components/navigation-tabs",
+  },
+  {
+    name: "navigation tabs element", entry: "src/elements/navigation-tabs.ts", outDir: "dist/elements", basename: "navigation-tabs",
+    plugins: [
+      externalEntry(/^\.\.\/components\/navigation-tabs$/, "../components/navigation-tabs/index.mjs"),
+    ],
+  },
+  {
+    name: "svelte navigation tabs runtime", entry: "src/adapters/navigation-tabs/svelte.ts", outDir: "dist/svelte", basename: "navigation-tabs-runtime", adapter: true,
+  },
   ...["react", "vue", "solid"].map(framework => ({
     name: framework, entry: `src/${framework}/index.ts`, outDir: `dist/${framework}`, adapter: true,
   })),
@@ -247,6 +259,7 @@ const MODULES = [
       externalEntry(/^\.\/avatar$/, "./avatar.mjs"),
       externalEntry(/^\.\/alert$/, "./alert.mjs"),
       externalEntry(/^\.\/rating$/, "./rating.mjs"),
+      externalEntry(/^\.\/navigation-tabs$/, "./navigation-tabs.mjs"),
     ],
   },
 ];
@@ -350,7 +363,7 @@ const buildStyles = async () => {
 const buildElementStyles = async () => {
   const dir = join(DIST_DIR, "elements/css");
   await mkdir(dir, { recursive: true });
-  for (const name of ["stepper", "expansion-panel", "avatar", "skeleton", "paginator", "breadcrumb", "alert", "rating", "tree"]) {
+  for (const name of ["stepper", "expansion-panel", "avatar", "skeleton", "paginator", "breadcrumb", "alert", "rating", "tree", "navigation-tabs"]) {
     const source = `src/styles/components/_${name}.scss`;
     const result = Bun.spawn(
       ["npx", "sass", source, "--style=compressed", "--no-source-map", "--load-path=node_modules"],

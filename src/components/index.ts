@@ -166,3 +166,5 @@ export type {
 } from "./data-grid";
 
 export * from "./rating";
+
+export * from "./navigation-tabs";
